@@ -6,25 +6,8 @@
 
 #include "font.hpp"
 
-void IRAM_ATTR ILI9341::commandModeCallback(void* param)
-{
-	auto& dc = *(GPIO*)param;
-	dc = false;
-}
-
-void IRAM_ATTR ILI9341::dataModeCallback(void* param)
-{
-	auto& dc = *(GPIO*)param;
-	dc = true;
-}
-
-static bool sleepOutWhillWait()
-{
-	vTaskDelay(1);
-	return true;
-}
-
-ILI9341::ILI9341(ILI9341&& move)
+template <class Color>
+ILI9341<Color>::ILI9341(ILI9341&& move)
 {
 	using std::swap;
 	swap(move.spi, spi);
@@ -33,7 +16,8 @@ ILI9341::ILI9341(ILI9341&& move)
 	swap(move.resetGpio, resetGpio);
 }
 
-ILI9341& ILI9341::operator=(ILI9341&& move)
+template <class Color>
+ILI9341<Color>& ILI9341<Color>::operator=(ILI9341&& move)
 {
 	using std::swap;
 	swap(move.spi, spi);
@@ -43,7 +27,8 @@ ILI9341& ILI9341::operator=(ILI9341&& move)
 	return *this;
 }
 
-void ILI9341::reset()
+template <class Color>
+void ILI9341<Color>::reset()
 {
 	resetGpio = false;
 	vTaskDelay(1 / portTICK_PERIOD_MS);
@@ -51,69 +36,89 @@ void ILI9341::reset()
 	vTaskDelay(150 / portTICK_PERIOD_MS);
 }
 
-void ILI9341::init(Color color)
+template <class Color>
+void ILI9341<Color>::init(Color color)
 {
 	reset();
 	command(0x11); // sleep out
-	spi.waitForTransmition(sleepOutWhillWait);
+	spi.waitForTransmition();
 	vTaskDelay(10 / portTICK_PERIOD_MS);
 
 	command(0xC0, { 0x0A }, 1); // power contorl 1
 	command(0x36, { 0x20 | 0x08 }, 1); // Memory Access Control : XY反转，BGR模式
-	command(0x3A, { 0x55 }, 1); // 16 bit
+
+	if constexpr (std::is_same<Color, Color565>::value)
+	{
+		command(0x3A, { 0x55 }, 1); // 16 bit
+	}
+
 	command(0x21); // inverse on
 
 	command(0x29); // display on
 
 	clear(color);
-	spi.waitForTransmition(sleepOutWhillWait);
+	spi.waitForTransmition();
 	display();
 }
 
-bool ILI9341::command(unsigned char command)
+template <class Color>
+bool ILI9341<Color>::command(unsigned char command)
 {
-	return spi.transmit({ (char)command }, 8, commandModeCallback, &dataCommandSelect);
+	void IRAM_ATTR gpioClearCallback(void*);
+	return spi.transmit({ (char)command }, 8, gpioClearCallback, &dataCommandSelect);
 }
 
-bool ILI9341::command(unsigned char command, SPIDevice::SmallData_t data, int size)
+template <class Color>
+bool ILI9341<Color>::command(unsigned char command, SPIDevice::SmallData_t data, int size)
 {
-	if (!spi.transmit({ (char)command }, 8, commandModeCallback, &dataCommandSelect))
+	void IRAM_ATTR gpioClearCallback(void*);
+	void IRAM_ATTR gpioSetCallback(void*);
+	if (!spi.transmit({ (char)command }, 8, gpioClearCallback, &dataCommandSelect))
 		return false;
-	return spi.transmit(data, size * 8, dataModeCallback, &dataCommandSelect);
+	return spi.transmit(data, size * 8, gpioSetCallback, &dataCommandSelect);
 }
 
-bool ILI9341::data(SPIDevice::SmallData_t data, int size)
+template <class Color>
+bool ILI9341<Color>::data(SPIDevice::SmallData_t data, int size)
 {
-	return spi.transmit(data, size * 8, dataModeCallback, &dataCommandSelect);
+	void IRAM_ATTR gpioSetCallback(void*);
+	return spi.transmit(data, size * 8, gpioSetCallback, &dataCommandSelect);
 }
 
-bool ILI9341::data(char* data, size_t size)
+template <class Color>
+bool ILI9341<Color>::data(char* data, size_t size)
 {
-	return spi.transmit(data, size * 8, dataModeCallback, &dataCommandSelect);
+	void IRAM_ATTR gpioSetCallback(void*);
+	return spi.transmit(data, size * 8, gpioSetCallback, &dataCommandSelect);
 }
 
-void ILI9341::drawModeStart()
+template <class Color>
+void ILI9341<Color>::drawModeStart()
 {
 	command(0x2C);
 }
 
-void ILI9341::drawModeContinue()
+template <class Color>
+void ILI9341<Color>::drawModeContinue()
 {
 	command(0x3C);
 }
 
-void ILI9341::setAddressWindow(Vector2us start, Vector2us end)
+template <class Color>
+void ILI9341<Color>::setAddressWindow(Vector2us start, Vector2us end)
 {
 	command(0x2A, { (char)(start.x >> 8), (char)(start.x & 0xFF), (char)((end.x) >> 8), (char)((end.x) & 0xFF) }, 4);
 	command(0x2B, { (char)(start.y >> 8), (char)(start.y & 0xFF), (char)((end.y) >> 8), (char)((end.y) & 0xFF) }, 4);
 }
 
-void ILI9341::drawPixel(Vector2us position, Color color)
+template <class Color>
+void ILI9341<Color>::drawPixel(Vector2us position, Color color)
 {
 	(*frameBuffer)[position.y][position.x] = color;
 }
 
-void ILI9341::drawLine(Vector2us start, Vector2us end, Color color)
+template <class Color>
+void ILI9341<Color>::drawLine(Vector2us start, Vector2us end, Color color)
 {
 	using Vector2s = Vector2<signed short>;
 	Vector2s delta = (Vector2s)end - (Vector2s)start;
@@ -156,7 +161,8 @@ void ILI9341::drawLine(Vector2us start, Vector2us end, Color color)
 	}
 }
 
-void ILI9341::drawRectangle(Vector2us start, Vector2us end, Color color)
+template <class Color>
+void ILI9341<Color>::drawRectangle(Vector2us start, Vector2us end, Color color)
 {
 	while (start.y <= end.y)
 	{
@@ -166,15 +172,8 @@ void ILI9341::drawRectangle(Vector2us start, Vector2us end, Color color)
 
 }
 
-// void LCD::drawTriangle(Vector2us position[3], Color color)
-// {
-// 	if (position[0].y > position[1].y) position[0].swap(position[1]);
-// 	if (position[0].y > position[2].y) position[0].swap(position[2]);
-// 	if (position[1].y > position[2].y) position[1].swap(position[2]);
-// 	// 0 <= 1 <= 2
-// }
-
-int ILI9341::drawText(Vector2us position, char text, Color textColor, Color backgroundColor)
+template <class Color>
+int ILI9341<Color>::drawText(Vector2us position, char text, Color textColor, Color backgroundColor)
 {
 	if (text < 0x20) return 0;
 	text -= 0x20;
@@ -200,7 +199,8 @@ int ILI9341::drawText(Vector2us position, char text, Color textColor, Color back
 	return 1;
 }
 
-int ILI9341::drawText(Vector2us position, const char* text, Color textColor, Color BackgroundColor)
+template <class Color>
+int ILI9341<Color>::drawText(Vector2us position, const char* text, Color textColor, Color BackgroundColor)
 {
 	int drawCount = 0;
 
@@ -231,7 +231,8 @@ int ILI9341::drawText(Vector2us position, const char* text, Color textColor, Col
 	return drawCount;
 }
 
-int ILI9341::drawNumber(Vector2us position, int number, unsigned base, Color textColor, Color backgroundColor)
+template <class Color>
+int ILI9341<Color>::drawNumber(Vector2us position, int number, unsigned base, Color textColor, Color backgroundColor)
 {
 	if (number < 0)
 	{
@@ -241,7 +242,8 @@ int ILI9341::drawNumber(Vector2us position, int number, unsigned base, Color tex
 	else return drawNumber(position, (unsigned)number, base, textColor, backgroundColor);
 }
 
-int ILI9341::drawNumber(Vector2us position, unsigned number, unsigned base, Color textColor, Color backgroundColor)
+template <class Color>
+int ILI9341<Color>::drawNumber(Vector2us position, unsigned number, unsigned base, Color textColor, Color backgroundColor)
 {
 	if (number == 0)
 	{
@@ -264,32 +266,46 @@ int ILI9341::drawNumber(Vector2us position, unsigned number, unsigned base, Colo
 	return drawCount;
 }
 
-void ILI9341::clear(Color color)
+template <class Color>
+void ILI9341<Color>::clear(Color color)
 {
 	drawRectangle({ 0,0 }, { 319,239 }, color);
 }
 
-void ILI9341::display()
+template <class Color>
+void ILI9341<Color>::display()
 {
 	setAddressWindow({ 0,0 }, { 319,239 });
 	drawModeStart();
-	constexpr size_t sendStep = ScreenTotolSize / 5;
-	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 0, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
-	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 1, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
-	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 2, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
-	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 3, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
-	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 4, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
+
+	constexpr size_t sendStep = ScreenTotolSize / (std::is_same<Color, Color565>::value ? 5 : 8);
+
+	void IRAM_ATTR gpioSetCallback(void*);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 0, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 1, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 2, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 3, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 4, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
+
+	if constexpr (std::is_same<Color, Color666>::value)
+	{
+		spi.transmit(&(*frameBuffer)[0][0] + sendStep * 5, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
+		spi.transmit(&(*frameBuffer)[0][0] + sendStep * 6, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
+		spi.transmit(&(*frameBuffer)[0][0] + sendStep * 7, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
+	}
 }
 
-void ILI9341::waitForDisplay()
+template <class Color>
+void ILI9341<Color>::waitForDisplay()
 {
 	spi.waitForTransmition();
 }
 
-void ILI9341::test()
+template <class Color>
+void ILI9341<Color>::test()
 {
-	drawText({ 105,10 }, "QWERTYUIO\nPASDFGHJK\nLZXCVBNM", 0xFFFF, 0xFF00); // LE
-	drawText({ 185,10 }, "qwertyuio\npasdfghjk\nlzxcvbnm", 0xFFFF, 0xFF00); // LE
+	drawText({ 105,10 }, "QWERTYUIO\nPASDFGHJK\nLZXCVBNM", Color::White, Color::Blue); // LE
+	drawText({ 185,10 }, "qwertyuio\npasdfghjk\nlzxcvbnm", Color::White, Color::Blue); // LE
 
 	drawText({ 105,70 }, "123456789\n0!@#$%^&*\n()`~-=_+");
 	drawText({ 185,70 }, "[]{}|\\:;\n\"'<>,.?/\nLCD OK");
@@ -299,7 +315,7 @@ void ILI9341::test()
 	display();
 	vTaskDelay(3000 / portTICK_PERIOD_MS);
 
-	drawText({ 105,150 }, "\nfox\t\t\t\t\t\t\t    \n         dog", 0x0000, 0xFF00); // LE
+	drawText({ 105,150 }, "\nfox\t\t\t\t\t\t\t    \n         dog", Color::White, Color::Blue); // LE
 
 	display();
 	vTaskDelay(2000 / portTICK_PERIOD_MS);
