@@ -22,6 +22,8 @@ void app_main(void)
 	lcd.init();
 	lcd.waitForDisplay();
 
+	lcd.drawText({ 0,0 }, std::is_same<LCD, ILI9341<Color666>>::value ? "666" : "565");
+
 	for (unsigned char i = 0; i < 64; i++)
 	{
 		lcd.drawPixel({ i, 050 }, { i,0,0 });
