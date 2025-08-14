@@ -18,28 +18,49 @@ void app_main(void)
 	lcd = ILI9341{ spi, {GPIO_NUM_21}, {GPIO_NUM_47}, {GPIO_NUM_48}, &screenBuffer };
 
 	lcd.init();
-	vTaskDelay(100);
-	lcd.waitForDisplay();
 
-	while (true)
+	ILI9341::Color color = 0x0000;
+	Vector2us position = { 0, 0 };
+
+	while (position.y < lcd.ScreenSize.y && color < 0x001F)
 	{
-		lcd.clear(0xFFFF);
-		lcd.display();
-		vTaskDelay(100);
-		lcd.waitForDisplay();
-
-		lcd.drawRectangle({ 0,0 }, { 99,240 }, 0x00F8); // LE
-		lcd.drawRectangle({ 100,0 }, { 199,240 }, 0xE007); // LE
-		lcd.drawRectangle({ 200,0 }, { 319,240 }, 0x1F00); // LE
-		lcd.drawNumber({ 0,0 }, -3254);
-		lcd.drawText({ 0,50 }, "hello\nILI9341");
-		lcd.drawLine({ 319,0 }, { 0,239 }, 0x0000);
-
-		lcd.test();
-
-		lcd.clear(0x0000);
-		lcd.display();
-		vTaskDelay(100);
-		lcd.waitForDisplay();
+		lcd.drawPixel(position, (((color << 8) & 0xFF00) | ((color >> 8) & 0x00FF)));
+		color += 0x0001;
+		position.x++;
+		if (position.x >= lcd.ScreenSize.x)
+		{
+			position.x = 0;
+			position.y++;
+		}
 	}
+
+	color = 0x0000;
+	position = { 0, 100 };
+	while (position.y < lcd.ScreenSize.y && color < 0x07E0)
+	{
+		lcd.drawPixel(position, (((color << 8) & 0xFF00) | ((color >> 8) & 0x00FF)));
+		color += 0x0020;
+		position.x++;
+		if (position.x >= lcd.ScreenSize.x)
+		{
+			position.x = 0;
+			position.y++;
+		}
+	}
+
+	color = 0x0000;
+	position = { 0, 200 };
+	while (position.y < lcd.ScreenSize.y && color < 0xF800)
+	{
+		lcd.drawPixel(position, (((color << 8) & 0xFF00) | ((color >> 8) & 0x00FF)));
+		color += 0x0800;
+		position.x++;
+		if (position.x >= lcd.ScreenSize.x)
+		{
+			position.x = 0;
+			position.y++;
+		}
+	}
+
+	lcd.display();
 }
