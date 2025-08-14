@@ -282,16 +282,16 @@ void ILI9341<Color>::display()
 
 	void IRAM_ATTR gpioSetCallback(void*);
 	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 0, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
-	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 1, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
-	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 2, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
-	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 3, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
-	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 4, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 1, sendStep * sizeof(Color) * 8);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 2, sendStep * sizeof(Color) * 8);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 3, sendStep * sizeof(Color) * 8);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 4, sendStep * sizeof(Color) * 8);
 
 	if constexpr (std::is_same<Color, Color666>::value)
 	{
-		spi.transmit(&(*frameBuffer)[0][0] + sendStep * 5, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
-		spi.transmit(&(*frameBuffer)[0][0] + sendStep * 6, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
-		spi.transmit(&(*frameBuffer)[0][0] + sendStep * 7, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
+		spi.transmit(&(*frameBuffer)[0][0] + sendStep * 5, sendStep * sizeof(Color) * 8);
+		spi.transmit(&(*frameBuffer)[0][0] + sendStep * 6, sendStep * sizeof(Color) * 8);
+		spi.transmit(&(*frameBuffer)[0][0] + sendStep * 7, sendStep * sizeof(Color) * 8);
 	}
 }
 

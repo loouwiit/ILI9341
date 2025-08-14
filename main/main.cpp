@@ -7,7 +7,7 @@ extern "C" void app_main(void);
 
 constexpr char TAG[] = "LCD";
 
-using LCD = ILI9341<Color666>;
+using LCD = ILI9341<Color565>;
 
 DMA_ATTR LCD::Frame_t screenBuffer;
 
@@ -22,7 +22,8 @@ void app_main(void)
 	lcd.init();
 	lcd.waitForDisplay();
 
-	lcd.drawText({ 0,0 }, std::is_same<LCD, ILI9341<Color666>>::value ? "666" : "565");
+	lcd.drawText({ 0,0 }, std::is_same<LCD, ILI9341<Color666>>::value ? "RGB666" : "RGB565");
+	lcd.drawLine({ 100,0 }, { 100,239 });
 
 	for (unsigned char i = 0; i < 64; i++)
 	{
@@ -32,4 +33,23 @@ void app_main(void)
 	}
 
 	lcd.test();
+	lcd.waitForDisplay();
+
+	auto lastTime = clock();
+	unsigned deltaTime = 0;
+
+	// 666 @ 40M : 46ms
+	// 565 @ 40M : 30ms
+	// 666 @ 80M~: 23ms
+	// 565 @ 80M~: 15ms
+
+	while (true)
+	{
+		vTaskDelay(1);
+		lastTime = clock();
+		lcd.display();
+		lcd.waitForDisplay();
+		deltaTime = clock() - lastTime;
+		lcd.drawNumber({ 0,16 }, deltaTime);
+	}
 }
