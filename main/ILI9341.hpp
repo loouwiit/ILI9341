@@ -10,7 +10,7 @@ public:
 	constexpr static Vector2us ScreenSize = { 320, 240 };
 	constexpr static size_t ScreenTotolSize = ScreenSize.y * ScreenSize.x;
 	using Color = uint16_t;
-	using Fream_t = Color[ScreenSize.y][ScreenSize.x];
+	using Frame_t = Color[ScreenSize.y][ScreenSize.x];
 
 	ILI9341() = default;
 	ILI9341(ILI9341&) = delete;
@@ -19,9 +19,9 @@ public:
 	ILI9341(ILI9341&& move);
 	ILI9341& operator=(ILI9341&& move);
 
-	ILI9341(SPI& host, GPIO dataCommandSelect, GPIO reset, GPIO CS, Fream_t* buffer, int speed = SPI_MASTER_FREQ_40M) :
+	ILI9341(SPI& host, GPIO dataCommandSelect, GPIO reset, GPIO CS, Frame_t* buffer, int speed = SPI_MASTER_FREQ_40M) :
 		spi{ host, CS, 16, speed },
-		freamBuffer{ buffer },
+		frameBuffer{ buffer },
 		dataCommandSelect{ dataCommandSelect, GPIO::Mode::GPIO_MODE_OUTPUT },
 		resetGpio{ reset, GPIO::Mode::GPIO_MODE_OUTPUT }
 	{}
@@ -60,7 +60,7 @@ protected:
 	static IRAM_ATTR void commandModeCallback(void* param);
 	static IRAM_ATTR void dataModeCallback(void* param);
 
-	Fream_t* freamBuffer = nullptr;
+	Frame_t* frameBuffer = nullptr;
 
 	GPIO dataCommandSelect{};
 	GPIO resetGpio{};

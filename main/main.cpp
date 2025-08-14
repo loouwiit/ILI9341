@@ -7,7 +7,7 @@ extern "C" void app_main(void);
 
 constexpr char TAG[] = "LCD";
 
-DMA_ATTR ILI9341::Fream_t screenBuffer;
+DMA_ATTR ILI9341::Frame_t screenBuffer;
 
 SPI spi{};
 ILI9341 lcd{};

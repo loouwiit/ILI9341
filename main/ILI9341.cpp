@@ -28,7 +28,7 @@ ILI9341::ILI9341(ILI9341&& move)
 {
 	using std::swap;
 	swap(move.spi, spi);
-	swap(move.freamBuffer, freamBuffer);
+	swap(move.frameBuffer, frameBuffer);
 	swap(move.dataCommandSelect, dataCommandSelect);
 	swap(move.resetGpio, resetGpio);
 }
@@ -37,7 +37,7 @@ ILI9341& ILI9341::operator=(ILI9341&& move)
 {
 	using std::swap;
 	swap(move.spi, spi);
-	swap(move.freamBuffer, freamBuffer);
+	swap(move.frameBuffer, frameBuffer);
 	swap(move.dataCommandSelect, dataCommandSelect);
 	swap(move.resetGpio, resetGpio);
 	return *this;
@@ -110,7 +110,7 @@ void ILI9341::setAddressWindow(Vector2us start, Vector2us end)
 
 void ILI9341::drawPixel(Vector2us position, Color color)
 {
-	(*freamBuffer)[position.y][position.x] = color;
+	(*frameBuffer)[position.y][position.x] = color;
 }
 
 void ILI9341::drawLine(Vector2us start, Vector2us end, Color color)
@@ -160,7 +160,7 @@ void ILI9341::drawRectangle(Vector2us start, Vector2us end, Color color)
 {
 	while (start.y <= end.y)
 	{
-		std::fill(&(*freamBuffer)[start.y][start.x], &(*freamBuffer)[start.y][end.x] + 1, color);
+		std::fill(&(*frameBuffer)[start.y][start.x], &(*frameBuffer)[start.y][end.x] + 1, color);
 		start.y++;
 	}
 
@@ -188,9 +188,9 @@ int ILI9341::drawText(Vector2us position, char text, Color textColor, Color back
 		{
 			bool draw = mod & ((1 << 7) >> j);
 			if (draw)
-				(*freamBuffer)[position.y][position.x] = textColor;
+				(*frameBuffer)[position.y][position.x] = textColor;
 			else
-				(*freamBuffer)[position.y][position.x] = backgroundColor;
+				(*frameBuffer)[position.y][position.x] = backgroundColor;
 
 			position.x++;
 		}
@@ -274,11 +274,11 @@ void ILI9341::display()
 	setAddressWindow({ 0,0 }, { 319,239 });
 	drawModeStart();
 	constexpr size_t sendStep = ScreenTotolSize / 5;
-	spi.transmit(&(*freamBuffer)[0][0] + sendStep * 0, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
-	spi.transmit(&(*freamBuffer)[0][0] + sendStep * 1, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
-	spi.transmit(&(*freamBuffer)[0][0] + sendStep * 2, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
-	spi.transmit(&(*freamBuffer)[0][0] + sendStep * 3, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
-	spi.transmit(&(*freamBuffer)[0][0] + sendStep * 4, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 0, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 1, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 2, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 3, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
+	spi.transmit(&(*frameBuffer)[0][0] + sendStep * 4, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
 }
 
 void ILI9341::waitForDisplay()
