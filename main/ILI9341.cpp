@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <esp_task.h>
+#include <esp_log.h>
 
 #include "font.hpp"
 
@@ -27,6 +28,7 @@ ILI9341::ILI9341(ILI9341&& move)
 {
 	using std::swap;
 	swap(move.spi, spi);
+	swap(move.freamBuffer, freamBuffer);
 	swap(move.dataCommandSelect, dataCommandSelect);
 	swap(move.resetGpio, resetGpio);
 }
@@ -35,6 +37,7 @@ ILI9341& ILI9341::operator=(ILI9341&& move)
 {
 	using std::swap;
 	swap(move.spi, spi);
+	swap(move.freamBuffer, freamBuffer);
 	swap(move.dataCommandSelect, dataCommandSelect);
 	swap(move.resetGpio, resetGpio);
 	return *this;
@@ -62,7 +65,8 @@ void ILI9341::init(Color color)
 
 	command(0x29); // display on
 
-	// clear(color);
+	clear(color);
+	spi.waitForTransmition(sleepOutWhillWait);
 	display();
 }
 
@@ -106,9 +110,7 @@ void ILI9341::setAddressWindow(Vector2us start, Vector2us end)
 
 void ILI9341::drawPixel(Vector2us position, Color color)
 {
-	setAddressWindow(position, position);
-	drawModeStart();
-	data({ (char)(color >> 8), (char)(color & 0xFF) }, 2);
+	(*freamBuffer)[position.y][position.x] = color;
 }
 
 void ILI9341::drawLine(Vector2us start, Vector2us end, Color color)
@@ -156,16 +158,12 @@ void ILI9341::drawLine(Vector2us start, Vector2us end, Color color)
 
 void ILI9341::drawRectangle(Vector2us start, Vector2us end, Color color)
 {
-	unsigned count = (end.x - start.x + 1) * (end.y - start.y + 1);
-	count = (count + 1) / 2;
+	while (start.y <= end.y)
+	{
+		std::fill(&(*freamBuffer)[start.y][start.x], &(*freamBuffer)[start.y][end.x] + 1, color);
+		start.y++;
+	}
 
-	SPIDevice::SmallData_t colorBuffer = { (char)(color >> 8), (char)(color & 0xFF),(char)(color >> 8), (char)(color & 0xFF) };
-
-	setAddressWindow(start, end);
-	drawModeStart();
-
-	for (unsigned i = 0; i < count; i++)
-		data(colorBuffer, 4);
 }
 
 // void LCD::drawTriangle(Vector2us position[3], Color color)
@@ -183,12 +181,6 @@ int ILI9341::drawText(Vector2us position, char text, Color textColor, Color back
 
 	const unsigned char* font = fonts[(unsigned char)text];
 
-	SPIDevice::SmallData_t textColorBuffer = { (char)(textColor >> 8), (char)(textColor & 0xFF) };
-	SPIDevice::SmallData_t backgroundColorBuffer = { (char)(backgroundColor >> 8), (char)(backgroundColor & 0xFF) };
-
-	setAddressWindow(position, position + Vector2us{ 7,15 });
-	drawModeStart();
-
 	for (unsigned char i = 0;i < 16;i++)
 	{
 		const unsigned char& mod = font[i];
@@ -196,14 +188,14 @@ int ILI9341::drawText(Vector2us position, char text, Color textColor, Color back
 		{
 			bool draw = mod & ((1 << 7) >> j);
 			if (draw)
-			{
-				data(textColorBuffer, 2);
-			}
+				(*freamBuffer)[position.y][position.x] = textColor;
 			else
-			{
-				data(backgroundColorBuffer, 2);
-			}
+				(*freamBuffer)[position.y][position.x] = backgroundColor;
+
+			position.x++;
 		}
+		position.x -= 8;
+		position.y++;
 	}
 	return 1;
 }
@@ -274,43 +266,41 @@ int ILI9341::drawNumber(Vector2us position, unsigned number, unsigned base, Colo
 
 void ILI9341::clear(Color color)
 {
-	drawRectangle({ 0,0 }, { 320,240 }, color);
+	drawRectangle({ 0,0 }, { 319,239 }, color);
 }
 
 void ILI9341::display()
+{
+	setAddressWindow({ 0,0 }, { 319,239 });
+	drawModeStart();
+	constexpr size_t sendStep = ScreenTotolSize / 5;
+	spi.transmit(&(*freamBuffer)[0][0] + sendStep * 0, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
+	spi.transmit(&(*freamBuffer)[0][0] + sendStep * 1, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
+	spi.transmit(&(*freamBuffer)[0][0] + sendStep * 2, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
+	spi.transmit(&(*freamBuffer)[0][0] + sendStep * 3, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
+	spi.transmit(&(*freamBuffer)[0][0] + sendStep * 4, sendStep * sizeof(Color) * 8, dataModeCallback, &dataCommandSelect);
+}
+
+void ILI9341::waitForDisplay()
 {
 	spi.waitForTransmition();
 }
 
 void ILI9341::test()
 {
-	drawText({ 5,10 }, "QWERTYUIO\nPASDFGHJK\nLZXCVBNM", 0xFFFF, 0x00FF);
-	drawText({ 85,10 }, "qwertyuio\npasdfghjk\nlzxcvbnm", 0xFFFF, 0x00FF);
+	drawText({ 105,10 }, "QWERTYUIO\nPASDFGHJK\nLZXCVBNM", 0xFFFF, 0xFF00); // LE
+	drawText({ 185,10 }, "qwertyuio\npasdfghjk\nlzxcvbnm", 0xFFFF, 0xFF00); // LE
+
+	drawText({ 105,70 }, "123456789\n0!@#$%^&*\n()`~-=_+");
+	drawText({ 185,70 }, "[]{}|\\:;\n\"'<>,.?/\nLCD OK");
+
+	drawText({ 105,150 }, "The quick brown\nfox jumps over\nthe lazy dog");
+
+	display();
+	vTaskDelay(3000 / portTICK_PERIOD_MS);
+
+	drawText({ 105,150 }, "\nfox\t\t\t\t\t\t\t    \n         dog", 0x0000, 0xFF00); // LE
 
 	display();
 	vTaskDelay(2000 / portTICK_PERIOD_MS);
-
-	drawText({ 5,10 }, "         \n         \n         ");
-	drawText({ 85,10 }, "         \n         \n         ");
-	drawText({ 5,10 }, "123456789\n0!@#$%^&*\n()`~-=_+");
-	drawText({ 85,10 }, "[]{}|\\:;\n\"'<>,.?/\nLCD OK");
-
-	display();
-	vTaskDelay(2000 / portTICK_PERIOD_MS);
-
-	drawText({ 5,10 }, "         \n         \n         ");
-	drawText({ 85,10 }, "         \n         \n         ");
-	drawText({ 5,10 }, "The quick brown\nfox jumps over\nthe lazy dog");
-
-	display();
-	vTaskDelay(1500 / portTICK_PERIOD_MS);
-
-	drawText({ 5,10 }, "\nfox\t\t\t\t\t\t\t    \n         dog", 0x0000, 0x00FF);
-
-	display();
-	vTaskDelay(500 / portTICK_PERIOD_MS);
-
-	drawText({ 5,10 }, "               \n              \n            ");
-	display();
-	vTaskDelay(500 / portTICK_PERIOD_MS);
 }

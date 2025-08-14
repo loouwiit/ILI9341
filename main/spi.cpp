@@ -18,6 +18,7 @@ SPI::SPI(SpiHost host, GPIO MISO, GPIO MOSI, GPIO CLOCK) :
 	buscfg.sclk_io_num = CLOCK;
 	buscfg.quadwp_io_num = GPIO::NC;
 	buscfg.quadhd_io_num = GPIO::NC;
+	buscfg.max_transfer_sz = 1 << 15; // dma 限制
 
 	auto ret = spi_bus_initialize(host, &buscfg, SPI_DMA_CH_AUTO);
 	ESP_ERROR_CHECK(ret);
@@ -113,7 +114,7 @@ SPIDevice::~SPIDevice()
 	transmitionCount = 0;
 }
 
-bool SPIDevice::transmit(const char* data, size_t sizeInBit, function_t callbackBefore, void* callbackBeforeData, function_t callbackAfter, void* callbackAfterData)
+bool SPIDevice::transmit(const void* data, size_t sizeInBit, function_t callbackBefore, void* callbackBeforeData, function_t callbackAfter, void* callbackAfterData)
 {
 	auto& nowTransmition = transmition[transmitionIndex];
 

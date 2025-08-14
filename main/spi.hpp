@@ -56,7 +56,7 @@ public:
 	SPIDevice& operator=(SPIDevice&& move);
 	~SPIDevice();
 
-	bool transmit(const char* data, size_t sizeInBit, function_t callbackBefore = emptyCallback, void* callbackBeforeData = nullptr, function_t callbackAfter = emptyCallback, void* callbackAfterData = nullptr);
+	bool transmit(const void* data, size_t sizeInBit, function_t callbackBefore = emptyCallback, void* callbackBeforeData = nullptr, function_t callbackAfter = emptyCallback, void* callbackAfterData = nullptr);
 	bool transmit(SmallData_t data, size_t sizeInBit, function_t callbackBefore = emptyCallback, void* callbackBeforeData = nullptr, function_t callbackAfter = emptyCallback, void* callbackAfterData = nullptr);
 	unsigned char getTransmittingCount();
 
