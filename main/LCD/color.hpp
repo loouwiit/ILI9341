@@ -70,3 +70,6 @@ public:
 	const static Color565 Blue;
 };
 static_assert(sizeof(Color565) == 2, "565模式下Color应为2字节");
+
+template <class T>
+concept ColorTemplate = requires{std::is_same<T, Color565>::value || std::is_same<T, Color666>::value;};
