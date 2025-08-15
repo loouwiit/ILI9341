@@ -1,13 +1,11 @@
 #pragma once
 
 #include "color.hpp"
-#include "drawable.hpp"
 #include "vector.hpp"
-#include "type_traits"
 
 // DMA_ATTR please
 template <ColorTemplate Color, Vector2us Size>
-class Frame : DrawTarget<Frame<Color, Size>>
+class FrameBuffer
 {
 public:
 	Color frame[Size.y][Size.x];

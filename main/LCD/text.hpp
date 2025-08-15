@@ -1,6 +1,5 @@
 #pragma once
 
-#include "drawable.hpp"
 #include "vector.hpp"
 #include "color.hpp"
 #include "frame.hpp"
@@ -8,7 +7,7 @@
 #include "cmath"
 
 template <ColorTemplate Color>
-class Character : public Drawable<Character<Color>>
+class Character
 {
 public:
 	Vector2us position{};
@@ -23,7 +22,8 @@ public:
 	Character(Character&&) = default;
 	Character& operator=(Character&&) = default;
 
-	Vector2us drawTo(auto& target) const
+	template <Vector2us Size>
+	Vector2us drawTo(FrameBuffer<Color, Size>& target)
 	{
 		if (text < 0x20) return { 0,0 };
 
@@ -52,7 +52,7 @@ public:
 };
 
 template <ColorTemplate Color>
-class Text : public Drawable<Text<Color>>
+class Text
 {
 public:
 	Vector2us position{};
@@ -67,7 +67,8 @@ public:
 	Text(Text&&) = default;
 	Text& operator=(Text&&) = default;
 
-	Vector2us drawTo(auto& target) const
+	template <Vector2us Size>
+	Vector2us drawTo(FrameBuffer<Color, Size>& target)
 	{
 		Vector2us lineBegin = position;
 		Character<Color> tempCharacter{ position, '\0', textColor, backgroundColor };
@@ -102,7 +103,7 @@ public:
 };
 
 template <ColorTemplate Color, class T>
-class Number : public Drawable<Number<Color, T>>
+class Number
 {
 public:
 	Vector2us position;
@@ -118,7 +119,8 @@ public:
 	Number(Number&&) = default;
 	Number& operator=(Number&&) = default;
 
-	Vector2us drawTo(auto& target) const
+	template <Vector2us Size>
+	Vector2us drawTo(FrameBuffer<Color, Size>& target)
 	{
 		Character<Color> tempCharacter{ position, '0', textColor, backgroundColor };
 		Vector2us& nowPosition = tempCharacter.position;

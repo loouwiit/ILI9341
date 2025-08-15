@@ -15,7 +15,9 @@ constexpr char TAG[] = "LCD";
 using Color = Color565;
 using LCD = ILI9341<Color>;
 
-DMA_ATTR Frame<Color, LCD::ScreenSize> screenBuffer;
+DMA_ATTR FrameBuffer<Color, LCD::ScreenSize> screenBuffer;
+
+using Frame = LCD::Frame;
 
 SPI spi{};
 LCD lcd{};

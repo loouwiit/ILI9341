@@ -1,12 +1,11 @@
 #pragma once
 
-#include "drawable.hpp"
 #include "vector.hpp"
 #include "color.hpp"
 #include "frame.hpp"
 
 template <ColorTemplate Color>
-class Rectangle : public Drawable<Rectangle<Color>>
+class Rectangle
 {
 public:
 	Vector2us start{};
@@ -20,8 +19,8 @@ public:
 	Rectangle(Rectangle&&) = default;
 	Rectangle& operator=(Rectangle&&) = default;
 
-	template <Vector2us FrameSize>
-	Vector2us drawTo(Frame<Color, FrameSize>& target)
+	template <Vector2us Size>
+	Vector2us drawTo(FrameBuffer<Color, Size>& target)
 	{
 		for (unsigned short i = start.y; i < end.y; i++)
 			std::fill(&target[i][start.x], &target[i][end.x] + 1, color);

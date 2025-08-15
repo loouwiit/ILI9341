@@ -1,12 +1,11 @@
 #pragma once
 
-#include "drawable.hpp"
 #include "vector.hpp"
 #include "color.hpp"
 #include "frame.hpp"
 
 template <ColorTemplate Color>
-class Pixel : public Drawable<Pixel<Color>>
+class Pixel
 {
 public:
 	Pixel() = default;
@@ -19,8 +18,8 @@ public:
 	Vector2us position{};
 	Color color{};
 
-	template <Vector2us FrameSize>
-	Vector2us drawTo(Frame<Color, FrameSize>& target)
+	template <Vector2us Size>
+	Vector2us drawTo(FrameBuffer<Color, Size>& target)
 	{
 		target[position] = color;
 		return { 1,1 };

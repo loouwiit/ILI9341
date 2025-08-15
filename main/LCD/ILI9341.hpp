@@ -7,17 +7,16 @@
 #include "vector.hpp"
 
 #include "color.hpp"
-#include "drawable.hpp"
 #include "frame.hpp"
 
 template <ColorTemplate Color>
-class ILI9341 : public DrawTarget<ILI9341<Color>>
+class ILI9341
 {
 public:
 	constexpr static Vector2us ScreenSize = { 320, 240 };
 	constexpr static size_t ScreenTotolSize = ScreenSize.y * ScreenSize.x;
 
-	using Frame_t = Frame<Color, ScreenSize>;
+	using Frame = FrameBuffer<Color, ScreenSize>;
 
 	ILI9341() = default;
 	ILI9341(ILI9341&) = delete;
@@ -26,7 +25,7 @@ public:
 	ILI9341(ILI9341&& move);
 	ILI9341& operator=(ILI9341&& move);
 
-	ILI9341(SPI& host, GPIO dataCommandSelect, GPIO reset, GPIO CS, Frame_t* buffer, int speed = SPI_MASTER_FREQ_40M) :
+	ILI9341(SPI& host, GPIO dataCommandSelect, GPIO reset, GPIO CS, Frame* buffer, int speed = SPI_MASTER_FREQ_40M) :
 		spi{ host, CS, 16, speed },
 		frame{ buffer },
 		dataCommandSelect{ dataCommandSelect, GPIO::Mode::GPIO_MODE_OUTPUT },
@@ -57,7 +56,7 @@ protected:
 	void drawModeStart();
 	void drawModeContinue();
 
-	Frame_t* frame = nullptr;
+	Frame* frame = nullptr;
 
 	GPIO dataCommandSelect{};
 	GPIO resetGpio{};

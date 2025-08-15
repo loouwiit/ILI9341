@@ -1,12 +1,11 @@
 #pragma once
 
-#include "drawable.hpp"
 #include "vector.hpp"
 #include "color.hpp"
 #include "frame.hpp"
 
 template <ColorTemplate Color>
-class Line : public Drawable<Pixel<Color>>
+class Line
 {
 public:
 	Vector2us start{};
@@ -20,8 +19,8 @@ public:
 	Line(Line&&) = default;
 	Line& operator=(Line&&) = default;
 
-	template <Vector2us FrameSize>
-	Vector2us drawTo(Frame<Color, FrameSize>& target)
+	template <Vector2us Size>
+	Vector2us drawTo(FrameBuffer<Color, Size>& target)
 	{
 		using Vector2s = Vector2<signed short>;
 		Vector2s delta = (Vector2s)end - (Vector2s)start;
