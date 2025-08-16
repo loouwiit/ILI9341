@@ -207,7 +207,7 @@ unsigned char SPIDevice::getTransmittingCount()
 	return transmitionCount;
 }
 
-void SPIDevice::waitForTransmition(bool (*waitFunction)())
+void SPIDevice::waitForTransmition(waitFunction_t waitFunction)
 {
 	while (transmitionCount != 0 && waitFunction()) {}
 }

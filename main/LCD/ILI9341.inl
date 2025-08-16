@@ -145,9 +145,9 @@ void ILI9341<Color>::display()
 }
 
 template <ColorTemplate Color>
-void ILI9341<Color>::waitForDisplay()
+void ILI9341<Color>::waitForDisplay(SPIDevice::waitFunction_t waitFunction)
 {
-	spi.waitForTransmition();
+	spi.waitForTransmition(waitFunction);
 }
 
 #include "text.hpp"

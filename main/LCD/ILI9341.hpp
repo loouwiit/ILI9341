@@ -58,7 +58,7 @@ public:
 
 	void clear(Color color = Color::Black);
 	void display();
-	void waitForDisplay();
+	void waitForDisplay(SPIDevice::waitFunction_t waitFunction = SPIDevice::sleepWait);
 
 	void test();
 

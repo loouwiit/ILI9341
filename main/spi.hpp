@@ -1,6 +1,7 @@
 #pragma once
 
 #include <driver/spi_master.h>
+#include <esp_task.h>
 #include "gpio.hpp"
 
 // only for transmit
@@ -44,7 +45,10 @@ public:
 	};
 
 	static void IRAM_ATTR emptyCallback(void*) {};
+
+	using waitFunction_t = bool (*)();
 	static bool defaultWait() { return true; }
+	static bool sleepWait() { vTaskDelay(1); return true; }
 
 	SPIDevice() = default;
 	SPIDevice(SPI& host, GPIO CS = GPIO::NC, unsigned char transmitionSize = 4, int speed = SPI_MASTER_FREQ_8M);
@@ -60,7 +64,7 @@ public:
 	bool transmit(SmallData_t data, size_t sizeInBit, function_t callbackBefore = emptyCallback, void* callbackBeforeData = nullptr, function_t callbackAfter = emptyCallback, void* callbackAfterData = nullptr);
 	unsigned char getTransmittingCount();
 
-	void waitForTransmition(bool (*waitFunction)() = defaultWait);
+	void waitForTransmition(waitFunction_t waitFunction = defaultWait);
 
 protected:
 	class Transmition
