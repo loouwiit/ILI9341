@@ -59,11 +59,15 @@ IICDevice::~IICDevice()
 
 IICDevice::IICDevice(IICDevice&& move)
 {
+	std::swap(move.iicBus, iicBus);
+	std::swap(move.address, address);
 	std::swap(move.deviceHandle, deviceHandle);
 }
 
 IICDevice& IICDevice::operator=(IICDevice&& move)
 {
+	std::swap(move.iicBus, iicBus);
+	std::swap(move.address, address);
 	std::swap(move.deviceHandle, deviceHandle);
 	return *this;
 }
