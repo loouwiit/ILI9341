@@ -57,7 +57,7 @@ public:
 	void init(Color color = Color::Black);
 
 	void clear(Color color = Color::Black);
-	void display();
+	void display(SPIDevice::function_t callBack = SPIDevice::emptyCallback, void* param = nullptr);
 	void waitForDisplay(SPIDevice::waitFunction_t waitFunction = SPIDevice::sleepWait);
 
 	void test();

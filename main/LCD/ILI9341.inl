@@ -122,7 +122,7 @@ void ILI9341<Color>::clear(Color color)
 }
 
 template <ColorTemplate Color>
-void ILI9341<Color>::display()
+void ILI9341<Color>::display(SPIDevice::function_t callBack, void* param)
 {
 	setAddressWindow({ 0,0 }, { 319,239 });
 	drawModeStart();
@@ -134,13 +134,21 @@ void ILI9341<Color>::display()
 	spi.transmit(&(*frame)[0][0] + sendStep * 1, sendStep * sizeof(Color) * 8);
 	spi.transmit(&(*frame)[0][0] + sendStep * 2, sendStep * sizeof(Color) * 8);
 	spi.transmit(&(*frame)[0][0] + sendStep * 3, sendStep * sizeof(Color) * 8);
-	spi.transmit(&(*frame)[0][0] + sendStep * 4, sendStep * sizeof(Color) * 8);
 
-	if constexpr (std::is_same<Color, Color666>::value)
+	if constexpr (std::is_same<Color, Color565>::value)
 	{
+		spi.transmit(&(*frame)[0][0] + sendStep * 4, sendStep * sizeof(Color) * 8, SPIDevice::emptyCallback, nullptr, callBack, param);
+	}
+	else if constexpr (std::is_same<Color, Color666>::value)
+	{
+		spi.transmit(&(*frame)[0][0] + sendStep * 4, sendStep * sizeof(Color) * 8);
 		spi.transmit(&(*frame)[0][0] + sendStep * 5, sendStep * sizeof(Color) * 8);
 		spi.transmit(&(*frame)[0][0] + sendStep * 6, sendStep * sizeof(Color) * 8);
-		spi.transmit(&(*frame)[0][0] + sendStep * 7, sendStep * sizeof(Color) * 8);
+		spi.transmit(&(*frame)[0][0] + sendStep * 7, sendStep * sizeof(Color) * 8, SPIDevice::emptyCallback, nullptr, callBack, param);
+	}
+	else
+	{
+		static_assert(false, "仅支持Color565和Color666");
 	}
 }
 

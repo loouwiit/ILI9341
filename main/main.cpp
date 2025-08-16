@@ -14,6 +14,14 @@ DMA_ATTR LCD::Frame screenBuffer;
 SPI spi{};
 LCD lcd{};
 
+bool autoDisplayEnable = true;
+void autoDisplay(void* param)
+{
+	if (!autoDisplayEnable) return;
+	LCD& lcd = *(LCD*)param;
+	lcd.display(autoDisplay, &lcd);
+}
+
 void app_main(void)
 {
 	vTaskDelay(1000);
@@ -38,9 +46,8 @@ void app_main(void)
 
 	lcd.test();
 	lcd.waitForDisplay();
+	autoDisplay(&lcd);
 
-	auto lastTime = clock();
-	unsigned deltaTime = 0;
 	unsigned count = 0;
 
 	// 666 @ 40M : 46ms
@@ -60,12 +67,6 @@ void app_main(void)
 	while (true)
 	{
 		vTaskDelay(1);
-		lastTime = clock();
-		lcd.display();
-		lcd.waitForDisplay();
-		deltaTime = clock() - lastTime;
-
-		lcd.draw(LCD::Number<unsigned> { {10, 20}, deltaTime });
 
 		number1.number = (signed char)count;
 		number2.number = count;
