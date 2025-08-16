@@ -30,14 +30,23 @@ void app_main(void)
 	spi = SPI{ SPI2_HOST, {GPIO_NUM_NC}, {GPIO_NUM_13}, {GPIO_NUM_14} };
 	lcd = LCD{ spi, {GPIO_NUM_21}, {GPIO_NUM_47}, {GPIO_NUM_48}, &screenBuffer };
 
-	iic = IIC{ {GPIO_NUM_11}, {GPIO_NUM_12} };
-	GPIO reset{ GPIO_NUM_10,GPIO::Mode::GPIO_MODE_OUTPUT };
-
 	lcd.init(LCD::Color::White);
 	lcd.draw(LCD::Rectangle{ {1,1},{318,238},LCD::Color::Black });
 
 	lcd.waitForDisplay();
 	autoDisplay(&lcd);
+
+	GPIO::enableGlobalInterrupt();
+	LCD::Number<unsigned> interruptCount{ {250,100}, 0 };
+
+	iic = IIC{ {GPIO_NUM_11}, {GPIO_NUM_12} };
+	GPIO reset{ GPIO_NUM_10,GPIO::Mode::GPIO_MODE_OUTPUT };
+	GPIO interrupt{ GPIO_NUM_9, GPIO::Mode::GPIO_MODE_INPUT, GPIO::Pull::GPIO_PULLUP_ONLY, GPIO::Interrupt::GPIO_INTR_NEGEDGE,
+		 [](void* param)
+		 {
+			unsigned& number = *(unsigned*)param;
+			number++;
+		 }, &interruptCount.number };
 
 	reset = false;
 	vTaskDelay(1);
@@ -57,8 +66,14 @@ void app_main(void)
 		if (position.y >= 220)
 		{
 			position.y = 10;
-			position.x += 30;
+			position.x += 24;
 		}
 		vTaskDelay(5);
+	}
+
+	while (true)
+	{
+		lcd.draw(interruptCount);
+		vTaskDelay(10);
 	}
 }
