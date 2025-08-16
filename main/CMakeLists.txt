@@ -1,3 +1,3 @@
-idf_component_register(SRCS "spi.cpp" "main.cpp" "LCD/color.cpp" "LCD/ILI9341.cpp"
+idf_component_register(SRCS "iic.cpp" "spi.cpp" "iic.cpp" "main.cpp" "LCD/color.cpp" "LCD/ILI9341.cpp"
                     INCLUDE_DIRS "LCD" "."
-                    PRIV_REQUIRES esp_driver_gpio esp_driver_spi)
+                    PRIV_REQUIRES esp_driver_gpio esp_driver_spi esp_driver_i2c)

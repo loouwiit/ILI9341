@@ -2,6 +2,7 @@
 #include <esp_log.h>
 
 #include "ILI9341.hpp"
+#include "iic.hpp"
 
 extern "C" void app_main(void);
 
@@ -14,6 +15,8 @@ DMA_ATTR LCD::Frame screenBuffer;
 SPI spi{};
 LCD lcd{};
 
+IIC iic{};
+
 bool autoDisplayEnable = true;
 void autoDisplay(void* param)
 {
@@ -24,54 +27,38 @@ void autoDisplay(void* param)
 
 void app_main(void)
 {
-	vTaskDelay(1000);
-
 	spi = SPI{ SPI2_HOST, {GPIO_NUM_NC}, {GPIO_NUM_13}, {GPIO_NUM_14} };
 	lcd = LCD{ spi, {GPIO_NUM_21}, {GPIO_NUM_47}, {GPIO_NUM_48}, &screenBuffer };
 
-	lcd.init(LCD::Color::White);
-	lcd.waitForDisplay();
+	iic = IIC{ {GPIO_NUM_11}, {GPIO_NUM_12} };
+	GPIO reset{ GPIO_NUM_10,GPIO::Mode::GPIO_MODE_OUTPUT };
 
+	lcd.init(LCD::Color::White);
 	lcd.draw(LCD::Rectangle{ {1,1},{318,238},LCD::Color::Black });
 
-	lcd.draw(LCD::Text{ { 1,1 }, std::is_same<LCD, ILI9341<Color666>>::value ? "RGB666" : "RGB565", LCD::Color::White, LCD::Color::Blue });
-	lcd.draw(LCD::Line{ { 100, 0 }, { 100,239 }, LCD::Color::White });
-
-	for (unsigned char i = 0; i < 64; i++)
-	{
-		lcd.draw((LCD::Pixel{ { i, 050 }, { i,0,0 } }));
-		lcd.draw((LCD::Pixel{ { i, 100 }, { 0,i,0 } }));
-		lcd.draw((LCD::Pixel{ { i, 150 }, { 0,0,i } }));
-	}
-
-	lcd.test();
 	lcd.waitForDisplay();
 	autoDisplay(&lcd);
 
-	unsigned count = 0;
+	reset = false;
+	vTaskDelay(1);
+	reset = true;
+	vTaskDelay(1);
 
-	// 666 @ 40M : 46ms
-	// 565 @ 40M : 30ms
-	// 666 @ 80M~: 23ms
-	// 565 @ 80M~: 15ms
-
-	LCD::Rectangle number1Eraser{ { 10,200 }, { 8 * 4,16 }, LCD::Color::Black };
-	LCD::Number<signed char> number1{ {10, 200}, (signed char)count };
-	LCD::Number<unsigned>number2{ {10, 216}, count };
-
-	LCD::Layar<3> countLayer{};
-	countLayer[0] = &number1Eraser;
-	countLayer[1] = &number1;
-	countLayer[2] = &number2;
-
-	while (true)
+	LCD::Number <uint16_t> addressShape{ {10,10}, 0, 16 };
+	auto& position = addressShape.position;
+	auto& address = addressShape.number;
+	for (; address <= 0x7F; address++)
 	{
-		vTaskDelay(1);
+		addressShape.textColor = iic.detect(address) ? LCD::Color::Red : LCD::Color::White;
 
-		number1.number = (signed char)count;
-		number2.number = count;
+		lcd.draw(addressShape);
 
-		lcd.draw(countLayer);
-		count++;
+		position.y += 16;
+		if (position.y >= 220)
+		{
+			position.y = 10;
+			position.x += 30;
+		}
+		vTaskDelay(5);
 	}
 }
