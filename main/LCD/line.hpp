@@ -13,7 +13,7 @@ public:
 	Color color{};
 
 	Line() = default;
-	Line(Vector2us start, Vector2us end, Color color = {}) : start{ start }, end{ end }, color{ color } {}
+	Line(Vector2us start, Vector2us end, Color color = {}) : start{ start }, end{ end + Vector2us{1, 1} }, color{ color } {}
 	Line(Line&) = default;
 	Line& operator=(Line&) = default;
 	Line(Line&&) = default;
@@ -23,7 +23,7 @@ public:
 	{
 		using Vector2s = Vector2<signed short>;
 		Vector2s delta = (Vector2s)end - (Vector2s)start;
-		Vector2us absDelta = { (unsigned char)abs(delta.x), (unsigned char)abs(delta.y) };
+		Vector2us absDelta = { (unsigned short)abs(delta.x), (unsigned short)abs(delta.y) };
 		if (absDelta.x > absDelta.y)
 		{
 			Vector2f position = start;
@@ -35,7 +35,7 @@ public:
 
 			float k = (float)delta.y / (float)delta.x;
 
-			while ((int)position.x <= end.x)
+			while ((unsigned short)position.x < end.x)
 			{
 				target[position] = color;
 				position.x++;
@@ -53,13 +53,13 @@ public:
 
 			float l = (float)delta.x / (float)delta.y;
 
-			while ((int)position.y <= end.y)
+			while ((unsigned short)position.y < end.y)
 			{
 				target[position] = color;
 				position.y++;
 				position.x += l;
 			}
 		}
-		return end - start + Vector2us{1, 1};
+		return end - start;
 	}
 };

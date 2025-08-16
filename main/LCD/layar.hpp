@@ -22,7 +22,7 @@ public:
 
 	Layar(unsigned char elementCount = elementMaxSize) : elementCount{ elementCount } {}
 
-	Layar(Vector2us start, Vector2us end, unsigned char elementCount = elementMaxSize) : start{ start }, end{ end }, elementCount{ elementCount } {}
+	Layar(Vector2us start, Vector2us size, unsigned char elementCount = elementMaxSize) : start{ start }, end{ start + size }, elementCount{ elementCount } {}
 
 	auto& operator[](unsigned char index) { return elements[index]; }
 
@@ -30,6 +30,6 @@ public:
 	{
 		for (unsigned char i = 0; i < elementCount; i++)
 			elements[i]->drawTo(target);
-		return end - start + Vector2us{ 1,1 };
+		return end - start;
 	}
 };

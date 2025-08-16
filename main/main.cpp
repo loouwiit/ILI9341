@@ -48,7 +48,7 @@ void app_main(void)
 	// 666 @ 80M~: 23ms
 	// 565 @ 80M~: 15ms
 
-	LCD::Rectangle number1Eraser{ { 10,200 }, { 9 + 8 * 4,215 }, LCD::Color::Black };
+	LCD::Rectangle number1Eraser{ { 10,200 }, { 8 * 4,16 }, LCD::Color::Black };
 	LCD::Number<signed char> number1{ {10, 200}, (signed char)count };
 	LCD::Number<unsigned>number2{ {10, 216}, count };
 
