@@ -1,13 +1,13 @@
 #pragma once
 
-#include "vector.hpp"
 #include "color.hpp"
-#include "frame.hpp"
+#include "vector.hpp"
+#include "drawable.hpp"
 #include "font.hpp"
 #include "cmath"
 
-template <ColorTemplate Color>
-class Character
+template<ColorTemplate Color, Vector2us Size>
+class Character : public Drawable<Color, Size>
 {
 public:
 	Vector2us position{};
@@ -22,8 +22,7 @@ public:
 	Character(Character&&) = default;
 	Character& operator=(Character&&) = default;
 
-	template <Vector2us Size>
-	Vector2us drawTo(FrameBuffer<Color, Size>& target)
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
 	{
 		if (text < 0x20) return { 0,0 };
 
@@ -51,8 +50,8 @@ public:
 	}
 };
 
-template <ColorTemplate Color>
-class Text
+template<ColorTemplate Color, Vector2us Size>
+class Text : public Drawable<Color, Size>
 {
 public:
 	Vector2us position{};
@@ -67,11 +66,10 @@ public:
 	Text(Text&&) = default;
 	Text& operator=(Text&&) = default;
 
-	template <Vector2us Size>
-	Vector2us drawTo(FrameBuffer<Color, Size>& target)
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
 	{
 		Vector2us lineBegin = position;
-		Character<Color> tempCharacter{ position, '\0', textColor, backgroundColor };
+		Character<Color, Size> tempCharacter{ position, '\0', textColor, backgroundColor };
 		Vector2us& nowPosition = tempCharacter.position;
 
 		for (const char* textPointer = text; *textPointer != '\0'; textPointer++)
@@ -102,8 +100,8 @@ public:
 	}
 };
 
-template <ColorTemplate Color, class T>
-class Number
+template<ColorTemplate Color, Vector2us Size, class T>
+class Number : public Drawable<Color, Size>
 {
 public:
 	Vector2us position;
@@ -119,10 +117,9 @@ public:
 	Number(Number&&) = default;
 	Number& operator=(Number&&) = default;
 
-	template <Vector2us Size>
-	Vector2us drawTo(FrameBuffer<Color, Size>& target)
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
 	{
-		Character<Color> tempCharacter{ position, '0', textColor, backgroundColor };
+		Character<Color, Size> tempCharacter{ position, '0', textColor, backgroundColor };
 		Vector2us& nowPosition = tempCharacter.position;
 		T nowNumber = number;
 

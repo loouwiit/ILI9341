@@ -1,11 +1,11 @@
 #pragma once
 
-#include "vector.hpp"
 #include "color.hpp"
-#include "frame.hpp"
+#include "vector.hpp"
+#include "drawable.hpp"
 
-template <ColorTemplate Color>
-class Pixel
+template <ColorTemplate Color, Vector2us Size>
+class Pixel : public Drawable<Color, Size>
 {
 public:
 	Pixel() = default;
@@ -18,8 +18,7 @@ public:
 	Vector2us position{};
 	Color color{};
 
-	template <Vector2us Size>
-	Vector2us drawTo(FrameBuffer<Color, Size>& target)
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
 	{
 		target[position] = color;
 		return { 1,1 };

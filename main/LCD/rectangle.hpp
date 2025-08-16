@@ -1,11 +1,11 @@
 #pragma once
 
-#include "vector.hpp"
 #include "color.hpp"
-#include "frame.hpp"
+#include "vector.hpp"
+#include "drawable.hpp"
 
-template <ColorTemplate Color>
-class Rectangle
+template <ColorTemplate Color, Vector2us Size>
+class Rectangle : public Drawable<Color, Size>
 {
 public:
 	Vector2us start{};
@@ -19,11 +19,10 @@ public:
 	Rectangle(Rectangle&&) = default;
 	Rectangle& operator=(Rectangle&&) = default;
 
-	template <Vector2us Size>
-	Vector2us drawTo(FrameBuffer<Color, Size>& target)
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
 	{
-		for (unsigned short i = start.y; i < end.y; i++)
+		for (unsigned short i = start.y; i <= end.y; i++)
 			std::fill(&target[i][start.x], &target[i][end.x] + 1, color);
-		return end - start;
+		return end - start + Vector2us{1, 1};
 	}
 };

@@ -3,9 +3,6 @@
 #include <cstdint>
 #include <algorithm>
 
-class Color565;
-class Color666;
-
 class Color666
 {
 public:
@@ -18,6 +15,16 @@ public:
 	// XXBBBBBB
 	uint8_t : 2;
 	uint8_t B : 6;
+
+	constexpr Color666() = default;
+	constexpr Color666(const Color666&) = default;
+	constexpr Color666& operator=(const Color666&) = default;
+	constexpr Color666(Color666&&) = default;
+	constexpr Color666& operator=(Color666&&) = default;
+
+	constexpr Color666(const uint8_t R, const uint8_t G, const uint8_t B) :
+		R{ R }, G{ G }, B{ B }
+	{}
 
 	const static Color666 White;
 	const static Color666 Black;

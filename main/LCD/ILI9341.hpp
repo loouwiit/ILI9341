@@ -6,17 +6,35 @@
 #include "spi.hpp"
 #include "vector.hpp"
 
+#include "drawable.hpp"
 #include "color.hpp"
 #include "frame.hpp"
+#include "layar.hpp"
+#include "line.hpp"
+#include "pixel.hpp"
+#include "rectangle.hpp"
+#include "text.hpp"
 
-template <ColorTemplate Color>
+template <ColorTemplate Color_t>
 class ILI9341
 {
 public:
+	using Color = Color_t;
+
 	constexpr static Vector2us ScreenSize = { 320, 240 };
 	constexpr static size_t ScreenTotolSize = ScreenSize.y * ScreenSize.x;
 
-	using Frame = FrameBuffer<Color, ScreenSize>;
+	using Frame = ::Frame<Color, ScreenSize>;
+	template <unsigned char maxSize>
+	using Layar = ::Layar<Color, ScreenSize, maxSize>;
+	using Line = ::Line<Color, ScreenSize>;
+	using Pixel = ::Pixel<Color, ScreenSize>;
+	using Rectangle = ::Rectangle<Color, ScreenSize>;
+	using Character = ::Character<Color, ScreenSize>;
+	using Text = ::Text<Color, ScreenSize>;
+
+	template <class T>
+	using Number = ::Number<Color, ScreenSize, T>;
 
 	ILI9341() = default;
 	ILI9341(ILI9341&) = delete;
@@ -25,13 +43,14 @@ public:
 	ILI9341(ILI9341&& move);
 	ILI9341& operator=(ILI9341&& move);
 
-	ILI9341(SPI& host, GPIO dataCommandSelect, GPIO reset, GPIO CS, Frame* buffer, int speed = SPI_MASTER_FREQ_40M) :
+	ILI9341(SPI& host, GPIO dataCommandSelect, GPIO reset, GPIO CS, Frame* frame, int speed = SPI_MASTER_FREQ_40M) :
 		spi{ host, CS, 16, speed },
-		frame{ buffer },
+		frame{ frame },
 		dataCommandSelect{ dataCommandSelect, GPIO::Mode::GPIO_MODE_OUTPUT },
 		resetGpio{ reset, GPIO::Mode::GPIO_MODE_OUTPUT }
 	{}
 
+	operator Frame& () { return frame; }
 	Vector2us draw(auto&& element);
 
 	void reset();

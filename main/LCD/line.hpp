@@ -1,11 +1,11 @@
 #pragma once
 
-#include "vector.hpp"
 #include "color.hpp"
-#include "frame.hpp"
+#include "vector.hpp"
+#include "drawable.hpp"
 
-template <ColorTemplate Color>
-class Line
+template <ColorTemplate Color, Vector2us Size>
+class Line : public Drawable<Color, Size>
 {
 public:
 	Vector2us start{};
@@ -19,23 +19,22 @@ public:
 	Line(Line&&) = default;
 	Line& operator=(Line&&) = default;
 
-	template <Vector2us Size>
-	Vector2us drawTo(FrameBuffer<Color, Size>& target)
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
 	{
 		using Vector2s = Vector2<signed short>;
 		Vector2s delta = (Vector2s)end - (Vector2s)start;
 		Vector2us absDelta = { (unsigned char)abs(delta.x), (unsigned char)abs(delta.y) };
 		if (absDelta.x > absDelta.y)
 		{
+			Vector2f position = start;
 			if (delta.x < 0)
 			{
-				start.swap(end);
+				position = end;
 				delta = -delta;
 			}
 
 			float k = (float)delta.y / (float)delta.x;
 
-			Vector2f position = start;
 			while ((int)position.x <= end.x)
 			{
 				target[position] = color;
@@ -45,15 +44,15 @@ public:
 		}
 		else
 		{
+			Vector2f position = start;
 			if (delta.y < 0)
 			{
-				start.swap(end);
+				position = end;
 				delta = -delta;
 			}
 
 			float l = (float)delta.x / (float)delta.y;
 
-			Vector2f position = start;
 			while ((int)position.y <= end.y)
 			{
 				target[position] = color;
@@ -61,6 +60,6 @@ public:
 				position.x += l;
 			}
 		}
-		return delta;
+		return end - start + Vector2us{1, 1};
 	}
 };

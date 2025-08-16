@@ -25,8 +25,8 @@ ILI9341<Color>& ILI9341<Color>::operator=(ILI9341&& move)
 	return *this;
 }
 
-template<ColorTemplate Color>
-inline Vector2us ILI9341<Color>::draw(auto&& element)
+template <ColorTemplate Color>
+Vector2us ILI9341<Color>::draw(auto&& element)
 {
 	return element.drawTo(*frame);
 }
