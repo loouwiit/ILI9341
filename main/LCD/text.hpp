@@ -16,7 +16,7 @@ public:
 	Color backgroundColor{};
 
 	Character() = default;
-	Character(Vector2us position, char text, Color textColor = Color::White, Color backgroundColor = Color::Black) : position{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor } {}
+	Character(Vector2us position, char text = '\0', Color textColor = Color::White, Color backgroundColor = Color::Black) : position{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor } {}
 	Character(Character&) = default;
 	Character& operator=(Character&) = default;
 	Character(Character&&) = default;
@@ -60,7 +60,7 @@ public:
 	Color backgroundColor{};
 
 	Text() = default;
-	Text(Vector2us position, const char* text, Color textColor = Color::White, Color backgroundColor = Color::Black) : position{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor } {}
+	Text(Vector2us position, const char* text = "", Color textColor = Color::White, Color backgroundColor = Color::Black) : position{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor } {}
 	Text(Text&) = default;
 	Text& operator=(Text&) = default;
 	Text(Text&&) = default;
@@ -111,7 +111,7 @@ public:
 	Color backgroundColor;
 
 	Number() = default;
-	Number(Vector2us position, T number, unsigned char base = 10, Color textColor = Color::White, Color backgroundColor = Color::Black) : position{ position }, number{ number }, base{ base }, textColor{ textColor }, backgroundColor{ backgroundColor } {}
+	Number(Vector2us position, T number = T{}, unsigned char base = 10, Color textColor = Color::White, Color backgroundColor = Color::Black) : position{ position }, number{ number }, base{ base }, textColor{ textColor }, backgroundColor{ backgroundColor } {}
 	Number(Number&) = default;
 	Number& operator=(Number&) = default;
 	Number(Number&&) = default;
