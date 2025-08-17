@@ -52,6 +52,7 @@ public:
 
 	operator Frame& () { return frame; }
 	Vector2us draw(auto&& element);
+	bool isDrawing();
 
 	void reset();
 	void init(Color color = Color::Black);

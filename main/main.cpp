@@ -1,5 +1,6 @@
 #include <iostream>
 #include <esp_log.h>
+#include <functional>
 
 #include "ILI9341.hpp"
 #include "FT6X36.hpp"
@@ -18,12 +19,19 @@ LCD lcd{};
 IIC iic{};
 FT6X36 touch{};
 
-bool autoDisplayEnable = true;
-void autoDisplay(void* param)
+std::function<void(LCD&)> drawFunction = [](LCD& lcd) { vTaskDelay(100); };
+void drawThread(void*)
 {
-	if (!autoDisplayEnable) return;
-	LCD& lcd = *(LCD*)param;
-	lcd.display(autoDisplay, &lcd);
+	while (true)
+	{
+		while (lcd.isDrawing())
+			vTaskDelay(1);
+
+		drawFunction(lcd);
+		lcd.display();
+	}
+
+	vTaskDelete(nullptr);
 }
 
 void app_main(void)
@@ -34,8 +42,7 @@ void app_main(void)
 	lcd.init(LCD::Color::White);
 	lcd.draw(LCD::Rectangle{ {1,1},{318,238},LCD::Color::Black });
 
-	lcd.waitForDisplay();
-	autoDisplay(&lcd);
+	xTaskCreate(drawThread, "draw", 0x4096, nullptr, 2, nullptr);
 
 	GPIO::enableGlobalInterrupt();
 	LCD::Number<unsigned> interruptCount{ {250,100}, 0 };
@@ -83,26 +90,8 @@ void app_main(void)
 	line2[0] = &line2X;
 	line2[1] = &line2Y;
 
-	while (true)
-	{
-		if (touch.isNeedUpdate())
+	auto draw = [&](LCD& lcd)
 		{
-			touch.update();
-			number.number++;
-
-			state[0].number = (unsigned)touch[0].state;
-			state[1].number = (unsigned)touch[1].state;
-
-			line1XClear.end.y = (line1XClear.start.y = line1X.start.y) + 1;
-			line1YClear.end.x = (line1YClear.start.x = line1Y.start.x) + 1;
-			line1X.end.y = (line1X.start.y = touch[0].position.y) + 1;
-			line1Y.end.x = (line1Y.start.x = touch[0].position.x) + 1;
-
-			line2XClear.end.y = (line2XClear.start.y = line2X.start.y) + 1;
-			line2YClear.end.x = (line2YClear.start.x = line2Y.start.x) + 1;
-			line2X.end.y = (line2X.start.y = touch[1].position.y) + 1;
-			line2Y.end.x = (line2Y.start.x = touch[1].position.x) + 1;
-
 			lcd.draw(number);
 			lcd.draw(state[0]);
 			lcd.draw(state[1]);
@@ -112,7 +101,29 @@ void app_main(void)
 				lcd.draw(line1);
 			if (state[1].number != 0x04)
 				lcd.draw(line2);
+
+			line1XClear.end.y = (line1XClear.start.y = line1X.start.y) + 1;
+			line1YClear.end.x = (line1YClear.start.x = line1Y.start.x) + 1;
+			line2XClear.end.y = (line2XClear.start.y = line2X.start.y) + 1;
+			line2YClear.end.x = (line2YClear.start.x = line2Y.start.x) + 1;
+		};
+	drawFunction = draw;
+
+	while (true)
+	{
+		if (touch.isNeedUpdate())
+		{
+			touch.update();
+			number.number++;
+
+			state[0].number = (unsigned)touch[0].state;
+			state[1].number = (unsigned)touch[1].state;
+			line1X.end.y = (line1X.start.y = touch[0].position.y) + 1;
+			line1Y.end.x = (line1Y.start.x = touch[0].position.x) + 1;
+
+			line2X.end.y = (line2X.start.y = touch[1].position.y) + 1;
+			line2Y.end.x = (line2Y.start.x = touch[1].position.x) + 1;
 		}
-		vTaskDelay(10);
+		vTaskDelay(1);
 	}
 }

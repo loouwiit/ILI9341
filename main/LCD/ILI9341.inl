@@ -31,6 +31,12 @@ Vector2us ILI9341<Color>::draw(auto&& element)
 	return element.drawTo(*frame);
 }
 
+template<ColorTemplate Color_t>
+inline bool ILI9341<Color_t>::isDrawing()
+{
+	return spi.getTransmittingCount() > 0;
+}
+
 template <ColorTemplate Color>
 void ILI9341<Color>::reset()
 {
