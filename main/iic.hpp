@@ -42,6 +42,14 @@ public:
 
 	bool detect();
 
+	bool transmit(const char data);
+	bool transmit(const void* buffer, size_t size);
+
+	bool receive(void* buffer, size_t size);
+	uint8_t receive();
+
+	bool request(const void* write, size_t writeSize, void* read, size_t readSize);
+
 private:
 	IIC* iicBus = nullptr;
 	uint16_t address{};

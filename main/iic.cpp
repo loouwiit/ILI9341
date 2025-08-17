@@ -76,3 +76,31 @@ bool IICDevice::detect()
 {
 	return iicBus->detect(address);
 }
+
+bool IICDevice::transmit(const char data)
+{
+	return transmit(&data, 1);
+}
+
+bool IICDevice::transmit(const void* buffer, size_t size)
+{
+
+	return ESP_OK == i2c_master_transmit(deviceHandle, (const uint8_t*)buffer, size, 1);
+}
+
+bool IICDevice::receive(void* buffer, size_t size)
+{
+	return ESP_OK == i2c_master_receive(deviceHandle, (uint8_t*)buffer, size, 1);
+}
+
+uint8_t IICDevice::receive()
+{
+	uint8_t buffer = 0;
+	receive(&buffer, 1);
+	return buffer;
+}
+
+bool IICDevice::request(const void* write, size_t writeSize, void* read, size_t readSize)
+{
+	return ESP_OK == i2c_master_transmit_receive(deviceHandle, (const uint8_t*)write, writeSize, (uint8_t*)read, readSize, 1);
+}
