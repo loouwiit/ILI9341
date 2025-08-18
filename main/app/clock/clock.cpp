@@ -32,7 +32,7 @@ void AppClock::init()
 			ESP_LOGI(TAG, "deinit at %s", asctime(localtime(&nowTime)));
 			vTaskDelete(nullptr);
 		}
-	, "appClock", 2048, this, 1, nullptr);
+	, "appClock", 4096, this, 1, nullptr);
 }
 
 void AppClock::deinit()
@@ -49,6 +49,7 @@ void AppClock::draw()
 void AppClock::updateTime(time_t nowTime)
 {
 	tm* tm = localtime(&nowTime);
-	sprintf(dateBuffer, "%.4d/%.2d/%.2d", tm->tm_year, tm->tm_mon, tm->tm_mday);
-	sprintf(timeBuffer, "%.2d:%.2d:%.2d", tm->tm_hour, tm->tm_min, tm->tm_sec);
+
+	strftime(dateBuffer, sizeof(dateBuffer), "%Y/%m/%d", tm);
+	strftime(timeBuffer, sizeof(timeBuffer), "%H:%M:%S", tm);
 }
