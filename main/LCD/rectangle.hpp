@@ -2,10 +2,10 @@
 
 #include "color.hpp"
 #include "vector.hpp"
-#include "drawable.hpp"
+#include "element.hpp"
 
 template <ColorTemplate Color, Vector2us Size>
-class Rectangle : public Drawable<Color, Size>
+class Rectangle : public Element<Color, Size>
 {
 public:
 	Vector2us start{};
@@ -18,6 +18,17 @@ public:
 	Rectangle& operator=(Rectangle&) = default;
 	Rectangle(Rectangle&&) = default;
 	Rectangle& operator=(Rectangle&&) = default;
+
+	Vector2us getSize()
+	{
+		return end - start;
+	}
+
+	virtual bool isClicked(Vector2us point) override final
+	{
+		return start.x <= point.x && point.x < end.x &&
+			start.y <= point.y && point.y < end.y;
+	}
 
 	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
 	{

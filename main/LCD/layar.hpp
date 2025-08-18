@@ -2,18 +2,18 @@
 
 #include "color.hpp"
 #include "vector.hpp"
-#include "drawable.hpp"
+#include "element.hpp"
 #include "algorithm"
 
 template <ColorTemplate Color, Vector2us Size, unsigned char elementMaxSize>
-class Layar : public Drawable<Color, Size>
+class Layar : public Element<Color, Size>
 {
 public:
 	Vector2us start{};
 	Vector2us end{};
 
 	unsigned char elementCount = 0;
-	Drawable<Color, Size>* elements[elementMaxSize];
+	Element<Color, Size>* elements[elementMaxSize];
 
 	Layar(Layar&) = default;
 	Layar& operator=(Layar&) = default;
@@ -25,6 +25,23 @@ public:
 	Layar(Vector2us start, Vector2us size, unsigned char elementCount = elementMaxSize) : start{ start }, end{ start + size }, elementCount{ elementCount } {}
 
 	auto& operator[](unsigned char index) { return elements[index]; }
+
+	Vector2us getSize()
+	{
+		return end - start;
+	}
+
+	virtual bool isClicked(Vector2us point) override final
+	{
+		return start.x <= point.x && point.x < end.x &&
+			start.y <= point.y && point.y < end.y;
+	}
+
+	virtual void finger(Finger& finger) override final
+	{
+		for (unsigned char i = 0; i < elementCount; i++)
+			elements[i]->finger(finger);
+	}
 
 	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
 	{
