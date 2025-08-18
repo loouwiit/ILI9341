@@ -80,8 +80,7 @@ void app_main(void)
 	spi = SPI{ SPI2_HOST, {GPIO_NUM_NC}, {GPIO_NUM_13}, {GPIO_NUM_14} };
 	lcd = LCD{ spi, {GPIO_NUM_21}, {GPIO_NUM_47}, {GPIO_NUM_48}, &screenBuffer };
 
-	lcd.init(LCD::Color::White);
-	lcd.draw(LCD::Rectangle{ {1,1},{318,238},LCD::Color::Black });
+	lcd.init();
 
 	GPIO::enableGlobalInterrupt();
 
@@ -94,6 +93,7 @@ void app_main(void)
 	{
 		ESP_LOGE(TAG, "touch not connected");
 		lcd.draw(LCD::Text{ {10,10}, "touch not connected" });
+		lcd.waitForDisplay();
 		lcd.display();
 		return;
 	}

@@ -182,6 +182,7 @@ void ILI9341<Color>::test()
 
 	draw(Text{ { 105,150 }, "\nfox\t\t\t\t\t\t\t    \n         dog", Color::White, Color::Blue });
 
+	waitForDisplay();
 	display();
 	vTaskDelay(2000 / portTICK_PERIOD_MS);
 }
