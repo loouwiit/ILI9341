@@ -26,7 +26,10 @@ void drawThread(void*)
 {
 	while (true)
 	{
-		while (lcd.isDrawing() || !app->drawMutex.try_lock())
+		while (lcd.isDrawing())
+			vTaskDelay(1);
+
+		while (!app->drawMutex.try_lock())
 			vTaskDelay(1);
 
 		app->draw();
@@ -69,6 +72,23 @@ void touchThread(void*)
 
 void changeApp(App* nextApp)
 {
+	static std::mutex changeMutex;
+	static bool changing = false;
+
+	while (true)
+	{
+		changeMutex.lock();
+		if (changing)
+		{
+			changeMutex.unlock();
+			vTaskDelay(1);
+			continue;
+		}
+		break;
+	}
+	changing = true;
+	changeMutex.unlock();
+
 	xTaskCreate([](void* param)
 		{
 			App* nextApp = (App*)param;
@@ -78,21 +98,20 @@ void changeApp(App* nextApp)
 			nextApp->init();
 
 			App* oldApp = app;
-			while (!oldApp->drawMutex.try_lock())
-				vTaskDelay(1);
-			while (!oldApp->touchMutex.try_lock())
-				vTaskDelay(1);
+			oldApp->touchMutex.lock();
+			oldApp->drawMutex.lock(); // 但我们不释放
 
 			lcd.clear();
 			app = nextApp;
-			oldApp->drawMutex.unlock();
-			oldApp->touchMutex.unlock();
 
 			oldApp->deinit();
 			while (!oldApp->isDeleteAble())
 				vTaskDelay(1);
 
 			delete oldApp;
+			changeMutex.lock();
+			changing = false;
+			changeMutex.unlock();
 			vTaskDelete(nullptr);
 		}
 	, "appChangeThread", 4096, nextApp, 4, nullptr);
