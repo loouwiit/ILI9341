@@ -99,7 +99,7 @@ void FT6X36::update()
 	lastFingerCount = nowFingerCount;
 }
 
-FT6X36::Finger FT6X36::operator[](unsigned char i)
+Finger FT6X36::operator[](unsigned char i)
 {
 	return finger[i];
 }

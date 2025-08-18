@@ -2,26 +2,12 @@
 
 #include "gpio.hpp"
 #include "iic.hpp"
-#include "vector.hpp"
+#include "finger.hpp"
 
 class FT6X36
 {
 public:
 	constexpr static uint16_t address = 0x38;
-
-	class Finger {
-	public:
-		enum class State : unsigned char
-		{
-			Press = 0x01,
-			Realease = 0x02,
-			Contact = 0x03,
-			None = 0x04,
-		};
-
-		State state = State::None;
-		Vector2us position{};
-	};
 
 	FT6X36() = default;
 	FT6X36(IIC& iicBus, GPIO reset, GPIO interrupt);
