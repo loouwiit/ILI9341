@@ -5,6 +5,7 @@
 #include "FT6X36.hpp"
 #include "app.hpp"
 #include "touch/touch.hpp"
+#include "clock/clock.hpp"
 
 extern "C" void app_main(void);
 
@@ -106,7 +107,9 @@ void app_main(void)
 	// for debug only
 	while (true)
 	{
-		vTaskDelay(1000);
+		vTaskDelay(10000);
+		changeApp(new AppClock{ lcd,touch,changeApp });
+		vTaskDelay(10000);
 		changeApp(new AppTouch{ lcd, touch, changeApp });
 	}
 }
