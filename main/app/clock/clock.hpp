@@ -11,7 +11,7 @@ public:
 	virtual void deinit() override;
 
 	virtual void draw() override;
-	virtual void touchUpdate() override {};
+	virtual void back() override;
 
 private:
 	char dateBuffer[11] = "2000/01/01";

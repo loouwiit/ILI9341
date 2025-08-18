@@ -6,7 +6,6 @@
 #include "ILI9341.hpp"
 #include "FT6X36.hpp"
 
-
 class App
 {
 public:
@@ -20,7 +19,8 @@ public:
 	virtual void deinit() { running = false; deleteAble = true; };
 
 	virtual void draw() = 0;
-	virtual void touchUpdate() = 0;
+	virtual void touchUpdate() {};
+	virtual void back() {};
 
 	bool isRunning() { return running; }
 	bool isDeleteAble() { return deleteAble; }

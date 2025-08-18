@@ -72,6 +72,8 @@ void changeApp(App* nextApp)
 	xTaskCreate([](void* param)
 		{
 			App* nextApp = (App*)param;
+			if (nextApp == nullptr)
+				nextApp = new AppDesktop{ lcd, touch, changeApp };
 
 			nextApp->init();
 
@@ -118,6 +120,8 @@ void app_main(void)
 		lcd.display();
 		return;
 	}
+
+	GPIO{ GPIO_NUM_0, GPIO::Mode::GPIO_MODE_INPUT, GPIO::Pull::GPIO_PULLUP_ONLY, GPIO::Interrupt::GPIO_INTR_NEGEDGE, [](void*) {app->back();} };
 
 	app = new AppDesktop{ lcd, touch, changeApp };
 	app->init();

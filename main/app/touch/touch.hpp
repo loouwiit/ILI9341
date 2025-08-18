@@ -11,6 +11,7 @@ public:
 
 	virtual void draw() override;
 	virtual void touchUpdate() override;
+	virtual void back() override;
 
 private:
 	LCD::Layar<LayarClassicSize::Small> count{ 4 };

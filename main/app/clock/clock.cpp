@@ -46,6 +46,11 @@ void AppClock::draw()
 	lcd.draw(timeText);
 }
 
+void AppClock::back()
+{
+	exitCallback(nullptr);
+}
+
 void AppClock::updateTime(time_t nowTime)
 {
 	tm* tm = localtime(&nowTime);

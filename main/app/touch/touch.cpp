@@ -40,7 +40,7 @@ void AppTouch::draw()
 
 void AppTouch::touchUpdate()
 {
-	std::lock_guard lock{drawMutex}; // 防止内存出现问题
+	std::lock_guard lock{ drawMutex }; // 防止内存出现问题
 
 	interruptCount.number++;
 
@@ -54,4 +54,9 @@ void AppTouch::touchUpdate()
 
 	if (state[0].number < (unsigned)Finger::State::None) eventCount[state[0].number].number++;
 	if (state[1].number < (unsigned)Finger::State::None) eventCount[state[1].number].number++;
+}
+
+void AppTouch::back()
+{
+	exitCallback(nullptr);
 }
