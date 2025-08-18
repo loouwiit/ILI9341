@@ -9,6 +9,6 @@ class Drawable
 public:
 	using DrawTarget = Frame<Color, Size>;
 
-	virtual Vector2us drawTo(DrawTarget&) = 0;
+	virtual Vector2us drawTo(DrawTarget&, Vector2s offset = {}) = 0;
 	~Drawable() {};
 };

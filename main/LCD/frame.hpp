@@ -16,7 +16,7 @@ public:
 	}
 
 	constexpr Color* operator [](int i) { return buffer[i]; }
-	constexpr Color& operator [](Vector2us i) { return buffer[i.y][i.x]; }
+	constexpr Color& operator [](Vector2s i) { return buffer[i.y][i.x]; }
 
 	constexpr bool is565() { return std::is_same<Color, Color565>::value; }
 	constexpr bool is666() { return std::is_same<Color, Color666>::value; }

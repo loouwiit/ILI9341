@@ -10,14 +10,14 @@ template<ColorTemplate Color, Vector2us Size>
 class Character : public Element<Color, Size>
 {
 public:
-	Vector2us position{};
+	Vector2s position{};
 	char text{};
 	Color textColor{};
 	Color backgroundColor{};
 	unsigned char scale = 1;
 
 	Character() = default;
-	Character(Vector2us position, char text = '\0', Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1) : position{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Character(Vector2s position, char text = '\0', Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1) : position{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Character(Character&) = default;
 	Character& operator=(Character&) = default;
 	Character(Character&&) = default;
@@ -28,19 +28,19 @@ public:
 		return Vector2us{ 8,16 } *scale;
 	}
 
-	virtual bool isClicked(Vector2us point) override final
+	virtual bool isClicked(Vector2s point) override final
 	{
 		auto sub = point - position; // 如果溢出也能正常比较
 		return sub.x < 8 * scale &&
 			sub.y < 16 * scale;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
 	{
 		if (text < 0x20) return { 0,0 };
 
-		Vector2us nowPosition = position;
-		Vector2us repeatPosition = { 0,0 };
+		Vector2s nowPosition = position + offset;
+		Vector2s repeatPosition = { 0,0 };
 		const unsigned char* font = fonts[(unsigned char)text - 0x20];
 
 		for (unsigned char y = 0; y < 16; y++)
@@ -67,16 +67,16 @@ template<ColorTemplate Color, Vector2us Size>
 class Text : public Element<Color, Size>
 {
 public:
-	Vector2us position{};
-	Vector2us endPosition{};
+	Vector2s position{};
+	Vector2s endPosition{};
 	const char* text = "";
 	Color textColor{};
 	Color backgroundColor{};
 	unsigned char scale = 1;
 
 	Text() = default;
-	Text(Vector2us position, const char* text = "", Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1) : position{ position }, endPosition{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
-	Text(Vector2us position, const char* text, unsigned char scale, Color textColor = Color::White, Color backgroundColor = Color::Black) : position{ position }, endPosition{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Text(Vector2s position, const char* text = "", Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1) : position{ position }, endPosition{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Text(Vector2s position, const char* text, unsigned char scale, Color textColor = Color::White, Color backgroundColor = Color::Black) : position{ position }, endPosition{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Text(Text&) = default;
 	Text& operator=(Text&) = default;
 	Text(Text&&) = default;
@@ -90,7 +90,7 @@ public:
 	Vector2us computeSize()
 	{
 		endPosition = position;
-		Vector2us nowPosition = position;
+		Vector2s nowPosition = position;
 		for (const char* textPointer = text; *textPointer != '\0'; textPointer++)
 		{
 			switch (*textPointer)
@@ -119,27 +119,28 @@ public:
 		return getSize();
 	}
 
-	virtual bool isClicked(Vector2us point) override final
+	virtual bool isClicked(Vector2s point) override final
 	{
 		return position.x <= point.x && point.x < endPosition.x &&
 			position.y <= point.y && point.y < endPosition.y;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
 	{
-		Character<Color, Size> tempCharacter{ position, '\0', textColor, backgroundColor,scale };
-		Vector2us& nowPosition = tempCharacter.position;
+		Vector2s drawPosition = position + offset;
+		Character<Color, Size> tempCharacter{ drawPosition, '\0', textColor, backgroundColor,scale };
+		Vector2s& nowPosition = tempCharacter.position;
 
 		for (const char* textPointer = text; *textPointer != '\0'; textPointer++)
 		{
 			switch (*textPointer)
 			{
 			case '\n':
-				nowPosition.x = position.x;
+				nowPosition.x = drawPosition.x;
 				nowPosition.y += 16 * scale;
 				continue;
 			case '\r':
-				nowPosition.x = position.x;
+				nowPosition.x = drawPosition.x;
 				continue;
 			case '\b':
 				nowPosition.x -= 8 * scale;
@@ -152,7 +153,7 @@ public:
 			nowPosition.x += tempCharacter.drawTo(target).x;
 		}
 
-		return nowPosition - position + Vector2us{ 0, 16 } *scale;
+		return nowPosition - drawPosition + Vector2s{ 0, 16 } *scale;
 	}
 };
 
@@ -160,8 +161,8 @@ template<ColorTemplate Color, Vector2us Size, class T>
 class Number : public Element<Color, Size>
 {
 public:
-	Vector2us position{};
-	Vector2us endPosition{};
+	Vector2s position{};
+	Vector2s endPosition{};
 	T number{};
 	unsigned char base = 10;
 	Color textColor{};
@@ -169,7 +170,7 @@ public:
 	unsigned char scale = 1;
 
 	Number() = default;
-	Number(Vector2us position, T number = T{}, unsigned char base = 10, Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1) : position{ position }, endPosition{ position }, number{ number }, base{ base }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Number(Vector2s position, T number = T{}, unsigned char base = 10, Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1) : position{ position }, endPosition{ position }, number{ number }, base{ base }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Number(Number&) = default;
 	Number& operator=(Number&) = default;
 	Number(Number&&) = default;
@@ -184,7 +185,7 @@ public:
 	{
 		T nowNumber = number;
 		endPosition = position;
-		endPosition += Vector2us{ 8,16 } *scale;
+		endPosition += Vector2s{ 8,16 } *scale;
 
 		while (nowNumber > base)
 		{
@@ -195,16 +196,17 @@ public:
 		return getSize();
 	}
 
-	virtual bool isClicked(Vector2us point) override final
+	virtual bool isClicked(Vector2s point) override final
 	{
 		return position.x <= point.x && point.x < endPosition.x &&
 			position.y <= point.y && point.y < endPosition.y;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
 	{
-		Character<Color, Size> tempCharacter{ position, '0', textColor, backgroundColor, scale };
-		Vector2us& nowPosition = tempCharacter.position;
+		Vector2s drawPosition = position;
+		Character<Color, Size> tempCharacter{ drawPosition, '0', textColor, backgroundColor, scale };
+		Vector2s& nowPosition = tempCharacter.position;
 		T nowNumber = number;
 
 		if (nowNumber == 0)
@@ -230,6 +232,6 @@ public:
 
 		draw(nowNumber, draw); // 递归lambda
 
-		return nowPosition - position + Vector2us{ 0,16 } *scale;
+		return nowPosition - drawPosition + Vector2s{ 0,16 } *scale;
 	}
 };

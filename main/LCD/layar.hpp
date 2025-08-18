@@ -16,8 +16,8 @@ template <ColorTemplate Color, Vector2us Size, unsigned char elementMaxSize>
 class Layar : public Element<Color, Size>
 {
 public:
-	Vector2us start{};
-	Vector2us end{};
+	Vector2s start{};
+	Vector2s end{};
 
 	unsigned char elementCount = 0;
 	Element<Color, Size>* elements[elementMaxSize];
@@ -29,7 +29,7 @@ public:
 
 	Layar(unsigned char elementCount = elementMaxSize) : elementCount{ elementCount } { assert(elementCount <= elementMaxSize); }
 
-	Layar(Vector2us start, Vector2us size, unsigned char elementCount = elementMaxSize) : start{ start }, end{ start + size }, elementCount{ elementCount } { assert(elementCount <= elementMaxSize); }
+	Layar(Vector2s start, Vector2s size, unsigned char elementCount = elementMaxSize) : start{ start }, end{ start + size }, elementCount{ elementCount } { assert(elementCount <= elementMaxSize); }
 
 	auto& operator[](unsigned char index) { return elements[index]; }
 
@@ -38,7 +38,7 @@ public:
 		return end - start;
 	}
 
-	virtual bool isClicked(Vector2us point) override final
+	virtual bool isClicked(Vector2s point) override final
 	{
 		return start.x <= point.x && point.x < end.x &&
 			start.y <= point.y && point.y < end.y;
@@ -50,10 +50,11 @@ public:
 			elements[i]->finger(finger);
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
 	{
+		offset += start;
 		for (unsigned char i = 0; i < elementCount; i++)
-			elements[i]->drawTo(target);
+			elements[i]->drawTo(target, offset);
 		return end - start;
 	}
 };

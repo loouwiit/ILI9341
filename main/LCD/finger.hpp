@@ -13,5 +13,5 @@ public:
 	};
 
 	State state = State::None;
-	Vector2us position{};
+	Vector2s position{};
 };

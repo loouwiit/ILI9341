@@ -14,6 +14,6 @@ public:
 
 	void* clickCallbackParam = nullptr;
 
-	virtual bool isClicked(Vector2us point) = 0;
+	virtual bool isClicked(Vector2s point) = 0;
 	virtual void finger(Finger& finger);
 };

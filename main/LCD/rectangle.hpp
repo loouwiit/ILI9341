@@ -8,12 +8,12 @@ template <ColorTemplate Color, Vector2us Size>
 class Rectangle : public Element<Color, Size>
 {
 public:
-	Vector2us start{};
-	Vector2us end{};
+	Vector2s start{};
+	Vector2s end{};
 	Color color{};
 
 	Rectangle() = default;
-	Rectangle(Vector2us start, Vector2us size, Color color = {}) : start{ start }, end{ start + size }, color{ color } {}
+	Rectangle(Vector2s start, Vector2s size, Color color = {}) : start{ start }, end{ start + size }, color{ color } {}
 	Rectangle(Rectangle&) = default;
 	Rectangle& operator=(Rectangle&) = default;
 	Rectangle(Rectangle&&) = default;
@@ -24,16 +24,18 @@ public:
 		return end - start;
 	}
 
-	virtual bool isClicked(Vector2us point) override final
+	virtual bool isClicked(Vector2s point) override final
 	{
 		return start.x <= point.x && point.x < end.x &&
 			start.y <= point.y && point.y < end.y;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target) override
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
 	{
-		for (unsigned short y = start.y; y < end.y; y++)
-			std::fill(&target[y][start.x], &target[y][end.x], color);
-		return end - start;
+		Vector2s drawStart = start + offset;
+		Vector2s drawEnd = end + offset;
+		for (unsigned short y = drawStart.y; y < drawEnd.y; y++)
+			std::fill(&target[y][drawStart.x], &target[y][drawEnd.x], color);
+		return drawEnd - drawStart;
 	}
 };

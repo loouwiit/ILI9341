@@ -31,5 +31,6 @@ public:
 	constexpr operator Vector2<Y>() { return { (Y)x, (Y)y }; }
 };
 
+using Vector2s = Vector2<short>;
 using Vector2us = Vector2<unsigned short>;
 using Vector2f = Vector2<float>;
