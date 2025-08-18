@@ -1,5 +1,7 @@
 #pragma once
 
+#include "cmath"
+
 template<class T>
 constexpr T abs(T x) { return x < 0 ? -x : x; }
 
@@ -25,11 +27,20 @@ public:
 	constexpr Vector2<T> operator*(const T k) const { return { (T)(x * k), (T)(y * k) }; }
 	constexpr Vector2<T> operator/(const T k) const { return { (T)(x / k), (T)(y / k) }; }
 
-	constexpr void swap(Vector2<T>& swap) { auto t = swap; swap = *this; *this = t; } 
+	constexpr void swap(Vector2<T>& swap) { auto t = swap; swap = *this; *this = t; }
+
+	constexpr auto abs() { return std::sqrt(x * x + y * y); }
+	constexpr auto abs2() { return x * x + y * y; }
 
 	template<class Y>
 	constexpr operator Vector2<Y>() { return { (Y)x, (Y)y }; }
 };
+
+template <class T>
+constexpr auto abs(Vector2<T> v) { return v.abs(); }
+
+template <class T>
+constexpr auto abs2(Vector2<T> v) { return v.abs2(); }
 
 using Vector2s = Vector2<short>;
 using Vector2us = Vector2<unsigned short>;

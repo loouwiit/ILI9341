@@ -11,22 +11,31 @@ public:
 
 	virtual void draw() override;
 	virtual void touchUpdate() override;
+	virtual void back() override;
 
 private:
-	constexpr static Vector2s offset = { 30,50 };
-	constexpr static unsigned short gapSize = 40;
-	constexpr static unsigned short blockSize = 100;
-	constexpr static unsigned char textSize = 2;
+	constexpr static Vector2s StaticOffset = { 30,50 };
+	constexpr static unsigned short GapSize = 40;
+	constexpr static unsigned short BlockSize = 100;
+	constexpr static unsigned char TextSize = 2;
+
+	constexpr static float moveThreshold2 = 100.0f;
 
 	LCD::Layar<LayarClassicSize::Small> applications{ 4 };
 	LCD::Rectangle applicationRectangle[2]{
-		{offset + Vector2s{(blockSize + gapSize) * 0,0}, {blockSize,blockSize}, LCD::Color::White},
-		{offset + Vector2s{(blockSize + gapSize) * 1,0}, {blockSize,blockSize}, LCD::Color::White}
+		{StaticOffset + Vector2s{(BlockSize + GapSize) * 0,0}, {BlockSize,BlockSize}, LCD::Color::White},
+		{StaticOffset + Vector2s{(BlockSize + GapSize) * 1,0}, {BlockSize,BlockSize}, LCD::Color::White}
 	};
 	LCD::Text applicationText[2]{
-		{offset + Vector2s{(blockSize + gapSize) * 0,0} + Vector2s{blockSize / 2, blockSize}, "touch", textSize},
-		{offset + Vector2s{(blockSize + gapSize) * 1,0} + Vector2s{blockSize / 2, blockSize}, "clock", textSize}
+		{StaticOffset + Vector2s{(BlockSize + GapSize) * 0,0} + Vector2s{BlockSize / 2, BlockSize}, "touch", TextSize},
+		{StaticOffset + Vector2s{(BlockSize + GapSize) * 1,0} + Vector2s{BlockSize / 2, BlockSize}, "clock", TextSize}
 	};
 
 	std::mutex clickMutex;
+	short& offset = applications.start.x;
+	bool fingerActive[2] = { false, false };
+	Vector2s lastFingerPosition[2]{};
+	Vector2s fingerMoveTotol[2]{};
+
+	void click(Finger finger);
 };
