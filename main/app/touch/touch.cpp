@@ -27,9 +27,9 @@ void AppTouch::draw()
 	lcd.draw(state[1]);
 	lcd.draw(line1Clear);
 	lcd.draw(line2Clear);
-	if (state[0].number != 0x04)
+	if (state[0].number != (unsigned)Finger::State::None)
 		lcd.draw(line1);
-	if (state[1].number != 0x04)
+	if (state[1].number != (unsigned)Finger::State::None)
 		lcd.draw(line2);
 
 	line1XClear.end.y = (line1XClear.start.y = line1X.start.y) + 1;
@@ -52,6 +52,6 @@ void AppTouch::touchUpdate()
 	line2X.end.y = (line2X.start.y = touch[1].position.y) + 1;
 	line2Y.end.x = (line2Y.start.x = touch[1].position.x) + 1;
 
-	if (state[0].number < 4) eventCount[state[0].number].number++;
-	if (state[1].number < 4) eventCount[state[1].number].number++;
+	if (state[0].number < (unsigned)Finger::State::None) eventCount[state[0].number].number++;
+	if (state[1].number < (unsigned)Finger::State::None) eventCount[state[1].number].number++;
 }

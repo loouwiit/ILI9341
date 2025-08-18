@@ -18,8 +18,8 @@ private:
 	LCD::Number<unsigned> eventCount[3]{ {{10,230 - 16 * 3}}, {{10,230 - 16 * 2}}, {{10,230 - 16 * 1}} };
 
 	LCD::Number<unsigned> state[2]{
-		{ {10,10 + 16 * 1},(unsigned)FT6X36::Finger::State::None },
-		{ {10,10 + 16 * 2},(unsigned)FT6X36::Finger::State::None }
+		{ {10,10 + 16 * 1},(unsigned)Finger::State::None },
+		{ {10,10 + 16 * 2},(unsigned)Finger::State::None }
 	};
 
 	LCD::Layar<2> line1Clear{};
