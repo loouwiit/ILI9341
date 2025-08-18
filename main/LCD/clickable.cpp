@@ -1,6 +1,6 @@
 #include "clickable.hpp"
 
-void Clickable::finger(Finger& finger)
+void Clickable::finger(Finger finger)
 {
 	using State = Finger::State;
 	if (isClicked(finger.position))

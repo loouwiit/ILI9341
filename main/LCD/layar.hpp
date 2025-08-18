@@ -44,8 +44,9 @@ public:
 			start.y <= point.y && point.y < end.y;
 	}
 
-	virtual void finger(Finger& finger) override final
+	virtual void finger(Finger finger) override final
 	{
+		finger.position -= start; // offset
 		for (unsigned char i = 0; i < elementCount; i++)
 			elements[i]->finger(finger);
 	}
