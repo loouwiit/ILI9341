@@ -41,13 +41,21 @@ void drawThread(void*)
 void touchThread(void*)
 {
 	constexpr unsigned char timeOutCount = 100;
-	unsigned char count = 0;
+	unsigned char count = timeOutCount;
 	while (true)
 	{
-		while (!touch.isNeedUpdate() && ++count < timeOutCount)
+		while (!touch.isNeedUpdate())
+		{
+			if (count < timeOutCount)
+			{
+				count++; // 超时判断
+				if (count == timeOutCount) break;
+			}
 			vTaskDelay(1);
+		}
 
-		count = 0;
+		// 有数据 启用超时判断
+		if (touch.isNeedUpdate()) count = 0;
 
 		while (!app->touchMutex.try_lock())
 			vTaskDelay(1);
