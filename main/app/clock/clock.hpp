@@ -16,8 +16,14 @@ public:
 private:
 	char dateBuffer[11] = "2000/01/01";
 	char timeBuffer[9] = "00:00:00";
-	LCD::Text dateText{ {320 / 2 - 10 * 8 / 2, 100}, dateBuffer };
-	LCD::Text timeText{ {320 / 2 - 8 * 8 / 2, 116}, timeBuffer };
+
+	constexpr static Vector2us Offset = { 0, (unsigned short)-8 };
+	constexpr static unsigned short GapSize = 24;
+	constexpr static unsigned char DateScale = 3;
+	constexpr static unsigned char TimeScale = 4;
+
+	LCD::Text dateText{ Offset + Vector2us{320 / 2 - 10 * 8 * DateScale / 2, 240 / 2 - 16 * DateScale / 2 - 16 * TimeScale / 2 - GapSize / 2}, dateBuffer, LCD::Color::White, LCD::Color::Black, DateScale };
+	LCD::Text timeText{ Offset + Vector2us{320 / 2 - 8 * 8 * TimeScale / 2, 240 / 2 - 16 * DateScale / 2 - 16 * TimeScale / 2 + GapSize / 2 + 16 * DateScale}, timeBuffer, LCD::Color::White, LCD::Color::Black, TimeScale };
 
 	void updateTime(time_t nowTime);
 };
