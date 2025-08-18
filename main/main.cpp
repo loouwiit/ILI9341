@@ -70,24 +70,31 @@ void touchThread(void*)
 
 void changeApp(App* nextApp)
 {
-	nextApp->init();
+	xTaskCreate([](void* param)
+		{
+			App* nextApp = (App*)param;
 
-	App* oldApp = app;
-	while (!oldApp->drawMutex.try_lock())
-		vTaskDelay(1);
-	while (!oldApp->touchMutex.try_lock())
-		vTaskDelay(1);
+			nextApp->init();
 
-	lcd.clear();
-	app = nextApp;
-	oldApp->drawMutex.unlock();
-	oldApp->touchMutex.unlock();
+			App* oldApp = app;
+			while (!oldApp->drawMutex.try_lock())
+				vTaskDelay(1);
+			while (!oldApp->touchMutex.try_lock())
+				vTaskDelay(1);
 
-	oldApp->deinit();
-	while (!oldApp->isDeleteAble())
-		vTaskDelay(1);
+			lcd.clear();
+			app = nextApp;
+			oldApp->drawMutex.unlock();
+			oldApp->touchMutex.unlock();
 
-	delete oldApp;
+			oldApp->deinit();
+			while (!oldApp->isDeleteAble())
+				vTaskDelay(1);
+
+			delete oldApp;
+			vTaskDelete(nullptr);
+		}
+	, "appChangeThread", 4096, nextApp, 4, nullptr);
 }
 
 void app_main(void)
