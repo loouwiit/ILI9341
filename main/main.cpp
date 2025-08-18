@@ -4,8 +4,7 @@
 #include "ILI9341.hpp"
 #include "FT6X36.hpp"
 #include "app.hpp"
-#include "touch/touch.hpp"
-#include "clock/clock.hpp"
+#include "desktop/desktop.hpp"
 
 extern "C" void app_main(void);
 
@@ -120,18 +119,9 @@ void app_main(void)
 		return;
 	}
 
-	app = new AppTouch{ lcd, touch, changeApp };
+	app = new AppDesktop{ lcd, touch, changeApp };
 	app->init();
 
 	xTaskCreate(drawThread, "draw", 4096, nullptr, 2, nullptr);
 	xTaskCreate(touchThread, "touch", 4096, nullptr, 2, nullptr);
-
-	// for debug only
-	while (true)
-	{
-		vTaskDelay(10000);
-		changeApp(new AppClock{ lcd,touch,changeApp });
-		vTaskDelay(10000);
-		changeApp(new AppTouch{ lcd, touch, changeApp });
-	}
 }
