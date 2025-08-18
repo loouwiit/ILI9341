@@ -2,6 +2,8 @@
 
 void AppTouch::init()
 {
+	App::init();
+
 	line1Clear[0] = &line1XClear;
 	line1Clear[1] = &line1YClear;
 	line1[0] = &line1X;

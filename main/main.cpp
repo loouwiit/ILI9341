@@ -68,7 +68,10 @@ void changeApp(App* nextApp)
 	oldApp->touchMutex.unlock();
 
 	oldApp->deinit();
-	delete oldApp; // 时序不正确的话会和touchThread和drawThread冲突
+	while (!oldApp->isDeleteAble())
+		vTaskDelay(1);
+
+	delete oldApp;
 }
 
 void app_main(void)

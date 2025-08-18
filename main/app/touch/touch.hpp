@@ -12,6 +12,7 @@ public:
 	virtual void draw() override;
 	virtual void touchUpdate() override;
 
+private:
 	LCD::Number<unsigned> interruptCount{ {250,100}, 0 };
 
 	LCD::Number<unsigned> number{ {10,10} };
