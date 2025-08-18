@@ -5,12 +5,12 @@
 class AppDesktop final : public App
 {
 public:
-AppDesktop(LCD& lcd, FT6X36& touch, ExitCallback_t exitCallback) : App(lcd, touch, exitCallback) {}
+	AppDesktop(LCD& lcd, FT6X36& touch, ExitCallback_t exitCallback) : App(lcd, touch, exitCallback) {}
 
-virtual void init() override;
+	virtual void init() override;
 
-virtual void draw() override;
-virtual void touchUpdate() override;
+	virtual void draw() override;
+	virtual void touchUpdate() override;
 
 private:
 	constexpr static Vector2us offset = { 30,50 };
@@ -18,7 +18,7 @@ private:
 	constexpr static unsigned short blockSize = 100;
 	constexpr static unsigned char textSize = 2;
 
-	LCD::Layar<4> applications{};
+	LCD::Layar<LayarClassicSize::Small> applications{ 4 };
 	LCD::Rectangle applicationRectangle[2]{
 		{offset + Vector2us{(blockSize + gapSize) * 0,0}, {blockSize,blockSize}, LCD::Color::White},
 		{offset + Vector2us{(blockSize + gapSize) * 1,0}, {blockSize,blockSize}, LCD::Color::White}
