@@ -13,9 +13,9 @@ public:
 	virtual void touchUpdate() override;
 
 private:
-	LCD::Number<unsigned> interruptCount{ {250,100}, 0 };
-
-	LCD::Number<unsigned> number{ {10,10} };
+	LCD::Layar<4> count{};
+	LCD::Number<unsigned> interruptCount{ {10,10} };
+	LCD::Number<unsigned> eventCount[3]{ {{10,230 - 16 * 3}}, {{10,230 - 16 * 2}}, {{10,230 - 16 * 1}} };
 
 	LCD::Number<unsigned> state[2]{
 		{ {10,10 + 16 * 1},(unsigned)FT6X36::Finger::State::None },

@@ -49,6 +49,7 @@ private:
 
 	bool needUpdate = false;
 
+	unsigned char lastFingerCount = 0;
 	Finger finger[2]{};
 
 	unsigned char updateFromAddress(uint8_t address);

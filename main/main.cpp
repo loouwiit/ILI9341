@@ -40,9 +40,16 @@ void drawThread(void*)
 
 void touchThread(void*)
 {
+	constexpr unsigned char timeOutCount = 100;
+	unsigned char count = 0;
 	while (true)
 	{
-		while (!touch.isNeedUpdate() || !app->touchMutex.try_lock())
+		while (!touch.isNeedUpdate() && ++count < timeOutCount)
+			vTaskDelay(1);
+
+		count = 0;
+
+		while (!app->touchMutex.try_lock())
 			vTaskDelay(1);
 
 		touch.update();

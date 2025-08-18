@@ -64,8 +64,10 @@ void FT6X36::update()
 {
 	clearNeedUpdate();
 
-	unsigned char fingerCount = read(0x02) & 0x0F;
-	switch (fingerCount)
+	unsigned char nowFingerCount = read(0x02) & 0x0F;
+	unsigned char readFingerCount = std::max(nowFingerCount, lastFingerCount);
+
+	switch (readFingerCount)
 	{
 	case 2:
 	{
@@ -75,8 +77,15 @@ void FT6X36::update()
 	}
 	case 1:
 	{
-		unsigned char id = updateFromAddress(0x03);
-		finger[!id].state = Finger::State::None;
+		switch (updateFromAddress(0x03))
+		{
+		case 1: finger[0].state = Finger::State::None; break;
+		case 0: finger[1].state = Finger::State::None; break;
+		default:
+			finger[0].state = Finger::State::None;
+			finger[1].state = Finger::State::None;
+			break;
+		}
 		break;
 	}
 	case 0:
@@ -86,6 +95,8 @@ void FT6X36::update()
 		break;
 	}
 	}
+
+	lastFingerCount = nowFingerCount;
 }
 
 FT6X36::Finger FT6X36::operator[](unsigned char i)
@@ -100,6 +111,7 @@ unsigned char FT6X36::updateFromAddress(uint8_t address)
 	uint8_t YH = read(address + 2);
 	uint8_t YL = read(address + 3);
 	unsigned char id = YH >> 4;
+	if (id == 0x0F) return -1;
 	finger[id].state = (Finger::State)(XH >> 6);
 	finger[id].position.x = ((YH & 0x0F) << 8) + YL;
 	finger[id].position.y = 240 - (((XH & 0x0F) << 8) + XL);

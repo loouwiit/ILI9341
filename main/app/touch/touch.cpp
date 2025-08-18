@@ -4,6 +4,11 @@ void AppTouch::init()
 {
 	App::init();
 
+	count[0] = &interruptCount;
+	count[1] = &eventCount[0];
+	count[2] = &eventCount[1];
+	count[3] = &eventCount[2];
+
 	line1Clear[0] = &line1XClear;
 	line1Clear[1] = &line1YClear;
 	line1[0] = &line1X;
@@ -17,7 +22,7 @@ void AppTouch::init()
 
 void AppTouch::draw()
 {
-	lcd.draw(number);
+	lcd.draw(count);
 	lcd.draw(state[0]);
 	lcd.draw(state[1]);
 	lcd.draw(line1Clear);
@@ -35,7 +40,7 @@ void AppTouch::draw()
 
 void AppTouch::touchUpdate()
 {
-	number.number++;
+	interruptCount.number++;
 
 	state[0].number = (unsigned)touch[0].state;
 	state[1].number = (unsigned)touch[1].state;
@@ -44,4 +49,7 @@ void AppTouch::touchUpdate()
 
 	line2X.end.y = (line2X.start.y = touch[1].position.y) + 1;
 	line2Y.end.x = (line2Y.start.x = touch[1].position.x) + 1;
+
+	if (state[0].number < 4) eventCount[state[0].number].number++;
+	if (state[1].number < 4) eventCount[state[1].number].number++;
 }
