@@ -7,7 +7,7 @@
 class SystemInfo final : public App
 {
 public:
-	SystemInfo(LCD& lcd, FT6X36& touch, ExitCallback_t exitCallback) : App(lcd, touch, exitCallback) {}
+	SystemInfo(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, newAppCallback) {}
 
 	virtual void init() override final;
 	virtual void deinit() override final;

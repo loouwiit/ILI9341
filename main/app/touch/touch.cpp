@@ -58,5 +58,5 @@ void AppTouch::touchUpdate()
 
 void AppTouch::back()
 {
-	exitCallback(nullptr);
+	changeAppCallback(nullptr);
 }

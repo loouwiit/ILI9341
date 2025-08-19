@@ -14,13 +14,16 @@ using LCD = ILI9341<Color565>;
 
 DMA_ATTR LCD::Frame screenBuffer;
 
-SPI spi{};
-LCD lcd{};
+static SPI spi{};
+static LCD lcd{};
 
-IIC iic{};
-FT6X36 touch{};
+static IIC iic{};
+static FT6X36 touch{};
 
-App* app;
+static App* app[10];
+static unsigned char appIndex = 0;
+static std::mutex changeMutex;
+static bool changing = false;
 
 void drawThread(void*)
 {
@@ -29,11 +32,11 @@ void drawThread(void*)
 		while (lcd.isDrawing())
 			vTaskDelay(1);
 
-		while (!app->drawMutex.try_lock())
+		while (!app[appIndex]->drawMutex.try_lock())
 			vTaskDelay(1);
 
-		app->draw();
-		app->drawMutex.unlock();
+		app[appIndex]->draw();
+		app[appIndex]->drawMutex.unlock();
 		lcd.display();
 	}
 
@@ -59,22 +62,19 @@ void touchThread(void*)
 		// 有数据 启用超时判断
 		if (touch.isNeedUpdate()) count = 0;
 
-		while (!app->touchMutex.try_lock())
+		while (!app[appIndex]->touchMutex.try_lock())
 			vTaskDelay(1);
 
 		touch.update();
-		app->touchUpdate();
-		app->touchMutex.unlock();
+		app[appIndex]->touchUpdate();
+		app[appIndex]->touchMutex.unlock();
 	}
 
 	vTaskDelete(nullptr);
 }
 
-void changeApp(App* nextApp)
+void changeAppCallback(App* nextApp)
 {
-	static std::mutex changeMutex;
-	static bool changing = false;
-
 	while (true)
 	{
 		changeMutex.lock();
@@ -91,19 +91,37 @@ void changeApp(App* nextApp)
 
 	xTaskCreate([](void* param)
 		{
+			App* oldApp = app[appIndex];
+			oldApp->touchMutex.lock(); // 旧app要删除
+			oldApp->drawMutex.lock(); // 无需释放
+			lcd.clear();
+
 			App* nextApp = (App*)param;
 			if (nextApp == nullptr)
-				nextApp = new AppDesktop{ lcd, touch, changeApp };
+			{
+				// exit back
+				if (appIndex == 0)
+				{
+					// back to desktop
+					void newAppCallback(App * nextApp);
+					nextApp = new AppDesktop{ lcd, touch, changeAppCallback, newAppCallback };
+					nextApp->init();
+					app[appIndex] = nextApp;
+				}
+				else
+				{
+					// back to last one
+					appIndex--;
+				}
+			}
+			else
+			{
+				// change to new app
+				nextApp->init();
+				app[appIndex] = nextApp;
+			}
 
-			nextApp->init();
-
-			App* oldApp = app;
-			oldApp->touchMutex.lock();
-			oldApp->drawMutex.lock(); // 但我们不释放
-
-			lcd.clear();
-			app = nextApp;
-
+			// 删除旧app
 			oldApp->deinit();
 			while (!oldApp->isDeleteAble())
 				vTaskDelay(1);
@@ -114,7 +132,58 @@ void changeApp(App* nextApp)
 			changeMutex.unlock();
 			vTaskDelete(nullptr);
 		}
-	, "appChangeThread", 4096, nextApp, 4, nullptr);
+	, "changeAppThread", 4096, nextApp, 4, nullptr);
+}
+
+void newAppCallback(App* nextApp)
+{
+	while (true)
+	{
+		changeMutex.lock();
+		if (changing)
+		{
+			changeMutex.unlock();
+			vTaskDelay(1);
+			continue;
+		}
+		break;
+	}
+	changing = true;
+	changeMutex.unlock();
+
+	xTaskCreate([](void* param)
+		{
+			App* oldApp = app[appIndex];
+			oldApp->touchMutex.lock(); // 旧app要锁住
+			oldApp->drawMutex.lock(); // 确保渲染和触摸不会乱
+			lcd.clear();
+
+			App* nextApp = (App*)param;
+			if (nextApp == nullptr)
+			{
+				// new nullptr ???
+				ESP_LOGE(TAG, "new app with nullptr");
+				oldApp->drawMutex.unlock();
+				oldApp->touchMutex.unlock();
+			}
+			else
+			{
+				// move to new app
+				nextApp->init();
+				app[appIndex + 1] = nextApp;
+				appIndex++;
+			}
+
+			changeMutex.lock();
+			changing = false;
+			changeMutex.unlock();
+
+			oldApp->drawMutex.unlock();
+			oldApp->touchMutex.unlock();
+
+			vTaskDelete(nullptr);
+		}
+	, "newAppThread", 4096, nextApp, 4, nullptr);
 }
 
 void app_main(void)
@@ -153,19 +222,19 @@ void app_main(void)
 			auto nowTime = clock();
 			if (nowTime - pressTime < LongPressClock)
 			{
-				app->back();
+				app[appIndex]->back();
 			}
 			else
 			{
 				xTaskCreate([](void*)
 				{
-					while (!app->drawMutex.try_lock())
+					while (!app[appIndex]->drawMutex.try_lock())
 						vTaskDelay(1);
 					lcd.waitForDisplay();
 					ESP_LOGI(TAG, "re-init");
 					lcd.init();
 					lcd.waitForDisplay();
-					app->drawMutex.unlock();
+					app[appIndex]->drawMutex.unlock();
 					vTaskDelete(nullptr);
 				}
 				, "lcdReset", 4096, nullptr, 4, nullptr);
@@ -173,8 +242,8 @@ void app_main(void)
 		}
 	};
 
-	app = new AppDesktop{ lcd, touch, changeApp };
-	app->init();
+	app[0] = new AppDesktop{ lcd, touch, changeAppCallback, newAppCallback };
+	app[0]->init();
 
 	xTaskCreate(drawThread, "draw", 4096, nullptr, 2, nullptr);
 	xTaskCreate(touchThread, "touch", 4096, nullptr, 2, nullptr);

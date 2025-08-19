@@ -5,7 +5,7 @@
 class AppClock final : public App
 {
 public:
-	AppClock(LCD& lcd, FT6X36& touch, ExitCallback_t exitCallback) : App(lcd, touch, exitCallback) {}
+	AppClock(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, changeAppCallback) {}
 
 	virtual void init() override final;
 	virtual void deinit() override final;

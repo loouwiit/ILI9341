@@ -5,7 +5,7 @@
 class AppTouch final : public App
 {
 public:
-	AppTouch(LCD& lcd, FT6X36& touch, ExitCallback_t exitCallback) : App(lcd, touch, exitCallback) {}
+	AppTouch(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, newAppCallback) {}
 
 	virtual void init() override final;
 

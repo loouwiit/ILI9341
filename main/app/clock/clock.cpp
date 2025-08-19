@@ -48,7 +48,7 @@ void AppClock::draw()
 
 void AppClock::back()
 {
-	exitCallback(nullptr);
+	changeAppCallback(nullptr);
 }
 
 void AppClock::updateTime(time_t nowTime)

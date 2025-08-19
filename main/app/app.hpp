@@ -10,9 +10,9 @@ class App
 {
 public:
 	using LCD = ILI9341<Color565>;
-	using ExitCallback_t = void(*)(App* nextApp);
+	using Callback_t = void(*)(App* nextApp);
 
-	App(LCD& lcd, FT6X36& touch, ExitCallback_t exitCallback) : lcd{ lcd }, touch{ touch }, exitCallback{ exitCallback } {}
+	App(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : lcd{ lcd }, touch{ touch }, changeAppCallback{ changeAppCallback }, newAppCallback{ newAppCallback } {}
 	virtual ~App() {};
 
 	virtual void init() { deleteAble = false; running = true; };
@@ -35,5 +35,6 @@ protected:
 	bool running = false;
 	bool deleteAble = true;
 
-	ExitCallback_t exitCallback = nullptr;
+	Callback_t changeAppCallback = nullptr;
+	Callback_t newAppCallback = nullptr;
 };

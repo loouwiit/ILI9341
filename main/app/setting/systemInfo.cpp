@@ -12,7 +12,7 @@ void SystemInfo::init()
 	title.position.x -= title.computeSize().x / 2;
 	title.computeSize();
 	title.clickCallbackParam = this;
-	title.releaseCallback = [](Finger&, void* param) { SystemInfo& self = *(SystemInfo*)param; self.exitCallback(nullptr); };
+	title.releaseCallback = [](Finger&, void* param) { SystemInfo& self = *(SystemInfo*)param; self.changeAppCallback(nullptr); };
 
 	for (unsigned char i = 0; i < SettingSize; i++)
 	{
@@ -121,7 +121,7 @@ void SystemInfo::touchUpdate()
 
 void SystemInfo::back()
 {
-	exitCallback(nullptr);
+	changeAppCallback(nullptr);
 }
 
 void SystemInfo::click(Finger finger)

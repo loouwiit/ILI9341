@@ -89,11 +89,11 @@ App* AppDesktop::appFactory(unsigned char index)
 	switch (index)
 	{
 	case 0:
-		return new AppSetting{ lcd, touch, exitCallback };
+		return new AppSetting{ lcd, touch, changeAppCallback, newAppCallback };
 	case 1:
-		return new AppClock{ lcd, touch, exitCallback };
+		return new AppClock{ lcd, touch, changeAppCallback, newAppCallback };
 	case 2:
-		return new AppTouch{ lcd, touch, exitCallback };
+		return new AppTouch{ lcd, touch, changeAppCallback, newAppCallback };
 	default:
 		ESP_LOGE(TAG, "failed to new app %s (case %d)", ApplicationName[index], index);
 		return nullptr;
@@ -113,6 +113,6 @@ void AppDesktop::click(Finger finger)
 		}
 
 		ESP_LOGI(TAG, "change to %s", ApplicationName[i]);
-		exitCallback(appFactory(i));
+		changeAppCallback(appFactory(i));
 	}
 }

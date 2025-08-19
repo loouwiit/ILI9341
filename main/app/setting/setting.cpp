@@ -14,7 +14,7 @@ void AppSetting::init()
 	title.position.x -= title.computeSize().x / 2;
 	title.computeSize();
 	title.clickCallbackParam = this;
-	title.releaseCallback = [](Finger&, void* param) { AppSetting& self = *(AppSetting*)param; self.exitCallback(nullptr); };
+	title.releaseCallback = [](Finger&, void* param) { AppSetting& self = *(AppSetting*)param; self.changeAppCallback(nullptr); };
 
 	for (unsigned char i = 0; i < SettingSize; i++)
 	{
@@ -93,7 +93,7 @@ void AppSetting::touchUpdate()
 
 void AppSetting::back()
 {
-	exitCallback(nullptr);
+	changeAppCallback(nullptr);
 }
 
 App* AppSetting::appFactory(unsigned char index)
@@ -103,7 +103,7 @@ App* AppSetting::appFactory(unsigned char index)
 	// case 0:
 	// 	return new WifiSetting{ lcd, touch, exitCallback };
 	case 2:
-		return new SystemInfo{ lcd, touch, exitCallback };
+		return new SystemInfo{ lcd, touch, changeAppCallback, newAppCallback };
 	default:
 		ESP_LOGW(TAG, "failed to new setting %s (case %d)", SettingName[index], index);
 		return nullptr;
@@ -116,21 +116,15 @@ void AppSetting::click(Finger finger)
 
 	if (title.isClicked(finger.position))
 	{
-		clickMutex.lock();
-		exitCallback(nullptr);
+		clickMutex.lock(); // 只锁不放
+		changeAppCallback(nullptr);
 		return;
 	}
 
 	for (unsigned char i = 0; i < SettingSize;i++) if (settings[i].isClicked(finger.position))
 	{
-		if (!clickMutex.try_lock())
-		{
-			ESP_LOGI(TAG, "lock failed");
-			return;
-		}
 		App* nextApp = appFactory(i);
-		if (nextApp != nullptr) exitCallback(appFactory(i));
-		else clickMutex.unlock();
+		if (nextApp != nullptr) newAppCallback(appFactory(i));
 	}
 }
 
