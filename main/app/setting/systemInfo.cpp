@@ -46,8 +46,8 @@ void SystemInfo::init()
 
 			while (self.running)
 			{
-				snprintf(self.ramBuffer + 5, sizeof(self.psramBuffer) - 5, "%dKB", heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024);
-				snprintf(self.psramBuffer + 7, sizeof(self.psramBuffer) - 7, "%dKB", heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024);
+				snprintf(self.ramBuffer + 4, sizeof(self.psramBuffer) - 4, "%dKB", heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024);
+				snprintf(self.psramBuffer + 6, sizeof(self.psramBuffer) - 6, "%dKB", heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024);
 				vTaskList(self.taskListBuffer);
 				vTaskDelay(1000);
 			}
