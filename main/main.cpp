@@ -140,7 +140,37 @@ void app_main(void)
 		return;
 	}
 
-	GPIO{ GPIO_NUM_0, GPIO::Mode::GPIO_MODE_INPUT, GPIO::Pull::GPIO_PULLUP_ONLY, GPIO::Interrupt::GPIO_INTR_NEGEDGE, [](void*) {app->back();} };
+	GPIO{ GPIO_NUM_0, GPIO::Mode::GPIO_MODE_INPUT, GPIO::Pull::GPIO_PULLUP_ONLY, GPIO::Interrupt::GPIO_INTR_ANYEDGE, [](void*)
+		{
+			constexpr clock_t LongPressClock = 3000;
+			static auto pressTime = clock();
+			if ((bool)GPIO { GPIO_NUM_0 } == false)
+			{
+				pressTime = clock();
+				return;
+			}
+
+			auto nowTime = clock();
+			if (nowTime - pressTime < LongPressClock)
+			{
+				app->back();
+			}
+			else
+			{
+				xTaskCreate([](void*)
+				{
+					while (!app->drawMutex.try_lock())
+						vTaskDelay(1);
+					lcd.waitForDisplay();
+					lcd.init();
+					lcd.waitForDisplay();
+					app->drawMutex.unlock();
+					vTaskDelete(nullptr);
+				}
+				, "lcdReset", 4096, nullptr, 4, nullptr);
+			}
+		}
+	};
 
 	app = new AppDesktop{ lcd, touch, changeApp };
 	app->init();
