@@ -21,12 +21,24 @@ public:
 
 	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
 	{
-		using Vector2s = Vector2<signed short>;
-		Vector2s delta = (Vector2s)end - (Vector2s)start;
-		if (abs(delta.x) >abs(delta.y))
+		Vector2s drawStart = start + offset;
+
+		if (drawStart.x < 0) drawStart.x = 0;
+		if (drawStart.y < 0) drawStart.y = 0;
+		if (drawStart.x > Size.x) drawStart.x = Size.x;
+		if (drawStart.y > Size.y) drawStart.y = Size.y;
+
+		Vector2s drawEnd = end + offset;
+
+		if (drawEnd.x < 0) drawEnd.x = 0;
+		if (drawEnd.y < 0) drawEnd.y = 0;
+		if (drawEnd.x > Size.x) drawEnd.x = Size.x;
+		if (drawEnd.y > Size.y) drawEnd.y = Size.y;
+
+		Vector2s delta = (Vector2s)drawEnd - (Vector2s)drawStart;
+		if (abs(delta.x) > abs(delta.y))
 		{
-			Vector2f drawPosition = start + offset;
-			Vector2s drawEnd = end + offset;
+			Vector2f drawPosition = drawStart;
 			if (delta.x < 0)
 			{
 				drawPosition = drawEnd;
@@ -44,8 +56,7 @@ public:
 		}
 		else
 		{
-			Vector2f drawPosition = start + offset;
-			Vector2s drawEnd = end + offset;
+			Vector2f drawPosition = drawStart;
 			if (delta.y < 0)
 			{
 				drawPosition = drawEnd;

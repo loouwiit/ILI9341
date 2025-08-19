@@ -20,7 +20,12 @@ public:
 
 	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
 	{
-		target[position + offset] = color;
+		Vector2s drawPosition = position + offset;
+		if (drawPosition.x < 0) return { 1,1 };
+		if (drawPosition.y < 0) return { 1,1 };
+		if (drawPosition.x >= Size.x) return { 1,1 };
+		if (drawPosition.y >= Size.y) return { 1,1 };
+		target[drawPosition] = color;
 		return { 1,1 };
 	}
 };

@@ -34,8 +34,19 @@ public:
 	{
 		Vector2s drawStart = start + offset;
 		Vector2s drawEnd = end + offset;
+
+		if (drawStart.x < 0) drawStart.x = 0;
+		if (drawStart.y < 0) drawStart.y = 0;
+		if (drawStart.x > Size.x) drawStart.x = Size.x;
+		if (drawStart.y > Size.y) drawStart.y = Size.y;
+
+		if (drawEnd.x < 0) drawEnd.x = 0;
+		if (drawEnd.y < 0) drawEnd.y = 0;
+		if (drawEnd.x > Size.x) drawEnd.x = Size.x;
+		if (drawEnd.y > Size.y) drawEnd.y = Size.y;
+
 		for (unsigned short y = drawStart.y; y < drawEnd.y; y++)
 			std::fill(&target[y][drawStart.x], &target[y][drawEnd.x], color);
-		return drawEnd - drawStart;
+		return end - start;
 	}
 };

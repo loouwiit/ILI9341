@@ -39,14 +39,41 @@ public:
 	{
 		if (text < 0x20) return { 0,0 };
 
-		Vector2s nowPosition = position + offset;
+		constexpr Vector2s fontSize = { 8,16 };
+		Vector2s modPositionStart = { 0,0 };
+		Vector2s modPositionEnd = fontSize;
+
+		Vector2s drawPosition = position + offset;
+		if (drawPosition.x < 0)
+		{
+			modPositionStart.x = ((-drawPosition.x) + scale - 1) / scale;
+			drawPosition.x = drawPosition.x % scale;
+			if (drawPosition.x < 0) drawPosition.x += scale;
+		}
+		if (drawPosition.y < 0)
+		{
+			modPositionStart.y = ((-drawPosition.y) + scale - 1) / scale;
+			drawPosition.y = drawPosition.y % scale;
+			if (drawPosition.y < 0) drawPosition.y += scale;
+		}
+		if (drawPosition.x >= Size.x - fontSize.x * scale)
+		{
+			auto overflowPosition = drawPosition.x + fontSize.x * scale - Size.x + 1;
+			modPositionEnd.x -= (overflowPosition + scale - 1) / scale;
+		}
+		if (drawPosition.y >= Size.y - fontSize.y * scale)
+		{
+			auto overflowPosition = drawPosition.y + fontSize.y * scale - Size.y + 1;
+			modPositionEnd.y -= (overflowPosition + scale - 1) / scale;
+		}
+		Vector2s nowPosition = drawPosition;
 		Vector2s repeatPosition = { 0,0 };
 		const unsigned char* font = fonts[(unsigned char)text - 0x20];
 
-		for (unsigned char y = 0; y < 16; y++)
+		for (unsigned char y = modPositionStart.y; y < modPositionEnd.y; y++)
 		{
 			const unsigned char& mod = font[y];
-			for (unsigned char x = 0; x < 8; x++)
+			for (unsigned char x = modPositionStart.x; x < modPositionEnd.x; x++)
 			{
 				bool draw = mod & ((1 << 7) >> x);
 				Color& color = draw ? textColor : backgroundColor;
@@ -55,7 +82,7 @@ public:
 					target[nowPosition + repeatPosition] = color;
 				nowPosition.x += scale;
 			}
-			nowPosition.x -= 8 * scale;
+			nowPosition.x = drawPosition.x;
 			nowPosition.y += scale;
 		}
 
