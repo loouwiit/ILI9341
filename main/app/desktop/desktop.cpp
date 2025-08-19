@@ -1,5 +1,7 @@
 #include "desktop.hpp"
 
+#include <esp_log.h>
+
 #include "clock/clock.hpp"
 #include "touch/touch.hpp"
 
@@ -7,18 +9,17 @@ constexpr char TAG[] = "AppDesktop";
 
 void AppDesktop::init()
 {
-	applications[0] = &applicationRectangle[0];
-	applications[1] = &applicationRectangle[1];
-	applications[2] = &applicationText[0];
-	applications[3] = &applicationText[1];
+	for (unsigned char i = 0; i < ApplicationSize; i++)
+	{
+		applicationRectangle[i] = { StaticOffset + Vector2s{(short)((BlockSize + GapSize) * i),0}, {BlockSize,BlockSize}, LCD::Color::White };
 
-	applicationText[0].computeSize();
-	applicationText[0].position.x -= applicationText[0].getSize().x / 2;
-	applicationText[0].computeSize();
+		applicationText[i] = { StaticOffset + Vector2s{(short)((BlockSize + GapSize) * i),0} + Vector2s{BlockSize / 2, BlockSize}, ApplicationName[i], TextSize };
+		applicationText[i].position.x -= applicationText[i].computeSize().x / 2;
+		applicationText[i].computeSize();
 
-	applicationText[1].computeSize();
-	applicationText[1].position.x -= applicationText[0].getSize().x / 2;
-	applicationText[1].computeSize();
+		applications[i] = &applicationRectangle[i];
+		applications[ApplicationSize + i] = &applicationText[i];
+	}
 }
 
 void AppDesktop::draw()
@@ -82,11 +83,27 @@ void AppDesktop::back()
 	fingerMoveTotol[1] = {};
 }
 
+App* AppDesktop::appFactory(unsigned char index)
+{
+	switch (index)
+	{
+	case 0:
+		return new AppTouch{ lcd, touch, exitCallback };
+	case 1:
+		return new AppClock{ lcd, touch, exitCallback };
+	case 2:
+		// return new AppSetting{ lcd, touch, exitCallback };
+	default:
+		ESP_LOGE(TAG, "failed to new app %s (case %d)", ApplicationName[index], index);
+		return nullptr;
+	}
+}
+
 void AppDesktop::click(Finger finger)
 {
 	finger.position.x -= offset;
 
-	if (applicationRectangle[0].isClicked(finger.position))
+	for (unsigned char i = 0; i < ApplicationSize;i++) if (applicationRectangle[i].isClicked(finger.position))
 	{
 		if (!clickMutex.try_lock())
 		{
@@ -94,19 +111,7 @@ void AppDesktop::click(Finger finger)
 			return;
 		}
 
-		ESP_LOGI(TAG, "change to Touch");
-		exitCallback(new AppTouch{ lcd, touch, exitCallback });
-	}
-
-	if (applicationRectangle[1].isClicked(finger.position))
-	{
-		if (!clickMutex.try_lock())
-		{
-			ESP_LOGI(TAG, "lock failed");
-			return;
-		}
-
-		ESP_LOGI(TAG, "change to Clock");
-		exitCallback(new AppClock{ lcd, touch, exitCallback });
+		ESP_LOGI(TAG, "change to %s", ApplicationName[i]);
+		exitCallback(appFactory(i));
 	}
 }
