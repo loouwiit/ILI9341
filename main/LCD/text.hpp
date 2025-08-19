@@ -141,7 +141,7 @@ public:
 
 		if (endPosition.x < nowPosition.x)
 			endPosition.x = nowPosition.x;
-		endPosition.y = nowPosition.y;
+		endPosition.y = nowPosition.y + 16 * scale;
 
 		return getSize();
 	}
