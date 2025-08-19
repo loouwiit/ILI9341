@@ -70,20 +70,7 @@ void AppDesktop::touchUpdate()
 		fingerMoveTotol[1] += movement;
 		offset += movement.x;
 		lastFingerPosition[1] = finger[1].position;
-
 	}
-
-	if (applicationRectangle[0].start.x + offset < 0)
-		applicationRectangle[0].color = LCD::Color::Red;
-	else if (applicationRectangle[0].start.x + offset > LCD::ScreenSize.x - BlockSize)
-		applicationRectangle[0].color = LCD::Color::Blue;
-	else applicationRectangle[0].color = LCD::Color::White;
-
-	if (applicationRectangle[1].start.x + offset < 0)
-		applicationRectangle[1].color = LCD::Color::Red;
-	else if (applicationRectangle[1].start.x + offset > LCD::ScreenSize.x - BlockSize)
-		applicationRectangle[1].color = LCD::Color::Blue;
-	else applicationRectangle[1].color = LCD::Color::White;
 }
 
 void AppDesktop::back()
