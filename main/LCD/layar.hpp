@@ -13,7 +13,7 @@ namespace LayarClassicSize
 };
 
 template <ColorTemplate Color, Vector2us Size, unsigned char elementMaxSize>
-class Layar : public Element<Color, Size>
+class Layar final : public Element<Color, Size>
 {
 public:
 	Vector2s start{};

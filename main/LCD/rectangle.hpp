@@ -5,7 +5,7 @@
 #include "element.hpp"
 
 template <ColorTemplate Color, Vector2us Size>
-class Rectangle : public Element<Color, Size>
+class Rectangle final : public Element<Color, Size>
 {
 public:
 	Vector2s start{};
@@ -30,7 +30,7 @@ public:
 			start.y <= point.y && point.y < end.y;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		Vector2s drawStart = start + offset;
 		Vector2s drawEnd = end + offset;

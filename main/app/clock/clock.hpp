@@ -7,11 +7,11 @@ class AppClock final : public App
 public:
 	AppClock(LCD& lcd, FT6X36& touch, ExitCallback_t exitCallback) : App(lcd, touch, exitCallback) {}
 
-	virtual void init() override;
-	virtual void deinit() override;
+	virtual void init() override final;
+	virtual void deinit() override final;
 
-	virtual void draw() override;
-	virtual void back() override;
+	virtual void draw() override final;
+	virtual void back() override final;
 
 private:
 	char dateBuffer[11] = "2000/01/01";

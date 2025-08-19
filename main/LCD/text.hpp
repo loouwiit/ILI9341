@@ -7,7 +7,7 @@
 #include "cmath"
 
 template<ColorTemplate Color, Vector2us Size>
-class Character : public Element<Color, Size>
+class Character final : public Element<Color, Size>
 {
 public:
 	Vector2s position{};
@@ -35,7 +35,7 @@ public:
 			sub.y < 16 * scale;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		if (text < 0x20) return { 0,0 };
 
@@ -91,7 +91,7 @@ public:
 };
 
 template<ColorTemplate Color, Vector2us Size>
-class Text : public Element<Color, Size>
+class Text final : public Element<Color, Size>
 {
 public:
 	Vector2s position{};
@@ -152,7 +152,7 @@ public:
 			position.y <= point.y && point.y < endPosition.y;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		Vector2s drawPosition = position + offset;
 		Character<Color, Size> tempCharacter{ drawPosition, '\0', textColor, backgroundColor,scale };
@@ -185,7 +185,7 @@ public:
 };
 
 template<ColorTemplate Color, Vector2us Size, class T>
-class Number : public Element<Color, Size>
+class Number final : public Element<Color, Size>
 {
 public:
 	Vector2s position{};
@@ -229,7 +229,7 @@ public:
 			position.y <= point.y && point.y < endPosition.y;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
+	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		Vector2s drawPosition = position;
 		Character<Color, Size> tempCharacter{ drawPosition, '0', textColor, backgroundColor, scale };
