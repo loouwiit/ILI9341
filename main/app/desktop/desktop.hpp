@@ -23,7 +23,7 @@ private:
 
 	constexpr static unsigned char ApplicationSize = 3;
 
-	constexpr const static char* ApplicationName[ApplicationSize] = { "touch","clock","setting" };
+	constexpr const static char* ApplicationName[ApplicationSize] = { "setting", "clock", "touch" };
 
 	LCD::Layar<LayarClassicSize::Middle> applications{ ApplicationSize * 2 };
 	LCD::Rectangle applicationRectangle[ApplicationSize]{};
