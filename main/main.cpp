@@ -162,6 +162,7 @@ void app_main(void)
 					while (!app->drawMutex.try_lock())
 						vTaskDelay(1);
 					lcd.waitForDisplay();
+					ESP_LOGI(TAG, "re-init");
 					lcd.init();
 					lcd.waitForDisplay();
 					app->drawMutex.unlock();
