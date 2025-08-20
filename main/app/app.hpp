@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mutex>
+#include "mutex.hpp"
 
 #include "frame.hpp"
 #include "ILI9341.hpp"
@@ -25,8 +25,8 @@ public:
 	bool isRunning() { return running; }
 	bool isDeleteAble() { return deleteAble; }
 
-	std::mutex drawMutex;
-	std::mutex touchMutex;
+	Mutex drawMutex;
+	Mutex touchMutex;
 
 protected:
 	LCD& lcd;

@@ -40,7 +40,7 @@ void AppTouch::draw()
 
 void AppTouch::touchUpdate()
 {
-	std::lock_guard lock{ drawMutex }; // 防止内存出现问题
+	Lock lock{ drawMutex }; // 防止内存出现问题
 
 	interruptCount.number++;
 

@@ -116,7 +116,14 @@ void AppSetting::click(Finger finger)
 
 	if (title.isClicked(finger.position))
 	{
-		clickMutex.lock(); // 只锁不放
+		exitMutex.lock();
+		if (exiting)
+		{
+			exitMutex.unlock();
+			return;
+		}
+		exiting = true;
+		exitMutex.unlock();
 		changeAppCallback(nullptr);
 		return;
 	}
@@ -124,7 +131,7 @@ void AppSetting::click(Finger finger)
 	for (unsigned char i = 0; i < SettingSize;i++) if (settings[i].isClicked(finger.position))
 	{
 		App* nextApp = appFactory(i);
-		if (nextApp != nullptr) newAppCallback(appFactory(i));
+		if (nextApp != nullptr) newAppCallback(nextApp);
 	}
 }
 

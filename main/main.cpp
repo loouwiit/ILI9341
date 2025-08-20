@@ -6,6 +6,8 @@
 #include "app.hpp"
 #include "desktop/desktop.hpp"
 
+#define ChangeAppLog false
+
 extern "C" void app_main(void);
 
 constexpr char TAG[] = "LCD";
@@ -22,7 +24,7 @@ static FT6X36 touch{};
 
 static App* app[10];
 static unsigned char appIndex = 0;
-static std::mutex changeMutex;
+static Mutex changeMutex;
 static bool changing = false;
 
 void drawThread(void*)
@@ -75,12 +77,19 @@ void touchThread(void*)
 
 void changeAppCallback(App* nextApp)
 {
+#if ChangeAppLog
+	constexpr static char TAG[] = "changeAppCallback";
+#endif
+
 	while (true)
 	{
 		changeMutex.lock();
 		if (changing)
 		{
 			changeMutex.unlock();
+#if ChangeAppLog
+			ESP_LOGI(TAG, "already in change");
+#endif
 			vTaskDelay(1);
 			continue;
 		}
@@ -92,8 +101,8 @@ void changeAppCallback(App* nextApp)
 	xTaskCreate([](void* param)
 		{
 			App* oldApp = app[appIndex];
-			oldApp->touchMutex.lock(); // 旧app要删除
-			oldApp->drawMutex.lock(); // 无需释放
+			oldApp->touchMutex.lock(); // POSIX标准锁的析构必须释放状态
+			oldApp->drawMutex.lock(); // 记得释放
 			lcd.clear();
 
 			App* nextApp = (App*)param;
@@ -107,11 +116,17 @@ void changeAppCallback(App* nextApp)
 					nextApp = new AppDesktop{ lcd, touch, changeAppCallback, newAppCallback };
 					nextApp->init();
 					app[appIndex] = nextApp;
+#if ChangeAppLog
+					ESP_LOGI(TAG, "no back app, new desktop @ %p", app[appIndex]);
+#endif
 				}
 				else
 				{
 					// back to last one
 					appIndex--;
+#if ChangeAppLog
+					ESP_LOGI(TAG, "back to last app @ %p", app[appIndex]);
+#endif
 				}
 			}
 			else
@@ -119,6 +134,9 @@ void changeAppCallback(App* nextApp)
 				// change to new app
 				nextApp->init();
 				app[appIndex] = nextApp;
+#if ChangeAppLog
+				ESP_LOGI(TAG, "change to app @ %p", app[appIndex]);
+#endif
 			}
 
 			// 删除旧app
@@ -126,6 +144,13 @@ void changeAppCallback(App* nextApp)
 			while (!oldApp->isDeleteAble())
 				vTaskDelay(1);
 
+			vTaskDelay(1);
+			oldApp->drawMutex.unlock();
+			oldApp->touchMutex.unlock();
+
+#if ChangeAppLog
+			ESP_LOGI(TAG, "delete old app @ %p", oldApp);
+#endif
 			delete oldApp;
 			changeMutex.lock();
 			changing = false;
@@ -137,6 +162,10 @@ void changeAppCallback(App* nextApp)
 
 void newAppCallback(App* nextApp)
 {
+#if ChangeAppLog
+	constexpr static char TAG[] = "newAppCallback";
+#endif
+
 	while (true)
 	{
 		changeMutex.lock();
@@ -162,7 +191,9 @@ void newAppCallback(App* nextApp)
 			if (nextApp == nullptr)
 			{
 				// new nullptr ???
+#if ChangeAppLog
 				ESP_LOGE(TAG, "new app with nullptr");
+#endif
 				oldApp->drawMutex.unlock();
 				oldApp->touchMutex.unlock();
 			}
@@ -172,6 +203,9 @@ void newAppCallback(App* nextApp)
 				nextApp->init();
 				app[appIndex + 1] = nextApp;
 				appIndex++;
+#if ChangeAppLog
+				ESP_LOGI(TAG, "new app @ %p", app[appIndex]);
+#endif
 			}
 
 			changeMutex.lock();

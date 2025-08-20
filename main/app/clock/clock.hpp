@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app.hpp"
+#include <ctime>
 
 class AppClock final : public App
 {
