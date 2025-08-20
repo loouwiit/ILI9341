@@ -10,6 +10,7 @@ namespace LayarClassicSize
 	constexpr unsigned char Pair = 2;
 	constexpr unsigned char Small = 5;
 	constexpr unsigned char Middle = 10;
+	constexpr unsigned char Large = 20;
 };
 
 template <ColorTemplate Color, Vector2us Size, unsigned char elementMaxSize>

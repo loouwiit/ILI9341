@@ -2,7 +2,7 @@
 
 #include <esp_log.h>
 
-// #include "wifiSetting.hpp"
+#include "wifiSetting.hpp"
 #include "systemInfo.hpp"
 
 constexpr static char TAG[] = "AppSetting";
@@ -100,8 +100,8 @@ App* AppSetting::appFactory(unsigned char index)
 {
 	switch (index)
 	{
-	// case 0:
-	// 	return new WifiSetting{ lcd, touch, exitCallback };
+	case 0:
+		return new WifiSetting{ lcd, touch, changeAppCallback, newAppCallback };
 	case 2:
 		return new SystemInfo{ lcd, touch, changeAppCallback, newAppCallback };
 	default:
