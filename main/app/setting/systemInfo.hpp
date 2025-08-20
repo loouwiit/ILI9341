@@ -24,7 +24,7 @@ private:
 	constexpr static short ContentXOffset = 20;
 	constexpr static LCD::Color BackgroundColor = { 8,8,8 };
 
-	constexpr static unsigned char SettingSize = 8;
+	constexpr static unsigned char SettingSize = 9;
 
 	constexpr static size_t TaskListBufferSize = 1024;
 
@@ -32,7 +32,7 @@ private:
 	char ramBuffer[19] = "ram:-1KB";
 	char psramBuffer[19] = "psram:-1KB";
 	char* taskListBuffer = nullptr;
-	const char* SettingName[SettingSize] = { socBuffer, "flash size:"   CONFIG_ESPTOOLPY_FLASHSIZE, ramBuffer, psramBuffer, "", "print to uart", "", nullptr };
+	const char* SettingName[SettingSize] = { socBuffer, "flash size:"   CONFIG_ESPTOOLPY_FLASHSIZE, ramBuffer, psramBuffer, "", "print to uart", "error in heap trace", "", taskListBuffer };
 
 	LCD::Layar<LayarClassicSize::Middle> contents{ 1 + SettingSize };
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, "system info", TitleSize };
@@ -47,6 +47,7 @@ private:
 
 	void click(Finger finger);
 	void releaseDetect();
+	static void updateHeapTraceText(LCD::Text& text);
 
 	static void printInfo();
 };

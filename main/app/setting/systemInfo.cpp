@@ -2,6 +2,11 @@
 
 #include "esp_chip_info.h"
 #include "esp_flash.h"
+#include <esp_heap_trace.h>
+
+constexpr static char TAG[] = "SystemInfo";
+
+static char traceInfoState = 'i';
 
 void SystemInfo::init()
 {
@@ -22,6 +27,7 @@ void SystemInfo::init()
 		settings[i].scale = TextSize;
 		contents[i] = &settings[i];
 	}
+	updateHeapTraceText(settings[SettingSize - 3]);
 	settings[SettingSize - 1].text = taskListBuffer;
 	settings[SettingSize - 1].scale = TaskTextSize;
 
@@ -36,7 +42,20 @@ void SystemInfo::init()
 
 	contents[SettingSize] = &title;
 
-	settings[SettingSize - 3].releaseCallback = [](Finger&, void*) { printInfo(); };
+	settings[SettingSize - 4].releaseCallback = [](Finger&, void*) { printInfo(); };
+	settings[SettingSize - 3].clickCallbackParam = &settings[SettingSize - 3];
+	settings[SettingSize - 3].releaseCallback = [](Finger&, void* param)
+		{
+			LCD::Text& self = *(LCD::Text*)param;
+			ESP_LOGI(TAG, "heap trace: %s", self.text);
+			switch (traceInfoState)
+			{
+			case 'i':heap_trace_init_tohost(); traceInfoState = 's'; break; // init
+			case 'r':heap_trace_stop(); traceInfoState = 's'; break; // running
+			case 's':heap_trace_start(HEAP_TRACE_LEAKS); traceInfoState = 'r'; break; // stop
+			}
+			updateHeapTraceText(self);
+		};
 
 	snprintf(socBuffer + 12, sizeof(socBuffer) - 12, "%dMHz", CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ);
 
@@ -46,8 +65,8 @@ void SystemInfo::init()
 
 			while (self.running)
 			{
-				snprintf(self.ramBuffer + 4, sizeof(self.psramBuffer) - 4, "%dKB", heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024);
-				snprintf(self.psramBuffer + 6, sizeof(self.psramBuffer) - 6, "%dKB", heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024);
+				snprintf(self.ramBuffer + 4, sizeof(self.psramBuffer) - 4, "%dB", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+				snprintf(self.psramBuffer + 6, sizeof(self.psramBuffer) - 6, "%dB", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 				vTaskList(self.taskListBuffer);
 				vTaskDelay(1000);
 			}
@@ -135,6 +154,16 @@ void SystemInfo::releaseDetect()
 	{
 		if (offset > 0)
 			offset = 0;
+	}
+}
+
+void SystemInfo::updateHeapTraceText(LCD::Text& text)
+{
+	switch (traceInfoState)
+	{
+	case 'i': text.text = "init heap trace"; break; // init
+	case 'r': text.text = "stop heap trace"; break; // running
+	case 's': text.text = "start heap trace"; break; // stop
 	}
 }
 

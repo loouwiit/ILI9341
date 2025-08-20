@@ -2,3 +2,4 @@ build
 *.log
 sdkconfig.old
 main/app/setting/wifi.inl
+trace
