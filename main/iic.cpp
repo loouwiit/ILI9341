@@ -35,7 +35,7 @@ IIC& IIC::operator=(IIC&& move)
 
 bool IIC::detect(uint16_t address)
 {
-	return ESP_OK == i2c_master_probe(busHandle, address, 1);
+	return ESP_OK == i2c_master_probe(busHandle, address, 2);
 }
 
 IICDevice::IICDevice(IIC& iic, uint16_t address, unsigned speed) :
@@ -85,12 +85,12 @@ bool IICDevice::transmit(const char data)
 bool IICDevice::transmit(const void* buffer, size_t size)
 {
 
-	return ESP_OK == i2c_master_transmit(deviceHandle, (const uint8_t*)buffer, size, 1);
+	return ESP_OK == i2c_master_transmit(deviceHandle, (const uint8_t*)buffer, size, 2);
 }
 
 bool IICDevice::receive(void* buffer, size_t size)
 {
-	return ESP_OK == i2c_master_receive(deviceHandle, (uint8_t*)buffer, size, 1);
+	return ESP_OK == i2c_master_receive(deviceHandle, (uint8_t*)buffer, size, 2);
 }
 
 uint8_t IICDevice::receive()
@@ -102,5 +102,5 @@ uint8_t IICDevice::receive()
 
 bool IICDevice::request(const void* write, size_t writeSize, void* read, size_t readSize)
 {
-	return ESP_OK == i2c_master_transmit_receive(deviceHandle, (const uint8_t*)write, writeSize, (uint8_t*)read, readSize, 1);
+	return ESP_OK == i2c_master_transmit_receive(deviceHandle, (const uint8_t*)write, writeSize, (uint8_t*)read, readSize, 2);
 }

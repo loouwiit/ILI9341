@@ -89,7 +89,7 @@
         "*.inc": "cpp"
     },
     "cmake.configureOnOpen": false,
-    "idf.espIdfPath": "/home/lo/File/Develop/ESP/v5.4/esp-idf",
+    "idf.espIdfPath": "/home/lo/Develop/ESP/v5.4.2/esp-idf",
     "idf.toolsPath": "/home/lo/.espressif/tools",
     "idf.pythonInstallPath": "/usr/bin/python3"
 }
