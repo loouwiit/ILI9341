@@ -1,5 +1,5 @@
-idf_component_register(SRCS "iic.cpp" "spi.cpp" "iic.cpp" "main.cpp"
-                        "LCD/color.cpp" "LCD/ILI9341.cpp" "LCD/FT6X36.cpp" "LCD/clickable.cpp"
+idf_component_register(SRCS "main.cpp"
+                        "LCD/spi.cpp" "LCD/color.cpp" "LCD/ILI9341.cpp" "LCD/iic.cpp" "LCD/FT6X36.cpp" "LCD/clickable.cpp"
                         "app/touch/touch.cpp"
                         "app/clock/clock.cpp"
                         "app/desktop/desktop.cpp"

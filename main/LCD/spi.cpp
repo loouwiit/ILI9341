@@ -5,7 +5,6 @@
 #include <string.h>
 #include <esp_log.h>
 #include <esp_task.h>
-#include "minmax.hpp"
 
 constexpr TickType_t dontWait = 0;
 
