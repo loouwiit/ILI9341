@@ -26,9 +26,9 @@ private:
 	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, "wifi setting", TitleSize };
 
-	constexpr static unsigned char SwitchSize = 2;
-	constexpr static const char* SwitchName[SwitchSize] = { "ap: state", "wifi: state" };
-	LCD::Layar<LayarClassicSize::Pair> switchLayar{ SwitchSize };
+	constexpr static unsigned char SwitchSize = 3;
+	constexpr static const char* SwitchName[SwitchSize] = { "wifi: inited" ,"ap: state", "wifi: state" };
+	LCD::Layar<LayarClassicSize::Small> switchLayar{ SwitchSize };
 	LCD::Text switchs[SwitchSize]{};
 
 	constexpr static unsigned char ApSettingSize = 3;
@@ -67,4 +67,8 @@ private:
 
 	QueueHandle_t coThreadQueue = nullptr;
 	static void coThread(void* param);
+	bool coThreadDeal(CoThreadFunction_t function);
+
+	static void scanWifi(WifiSetting& self);
+	static void tryInitWifi();
 };

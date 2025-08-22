@@ -29,8 +29,8 @@ bool wifiApStarted = false;
 bool wifiNatAutoStart = false;
 bool wifiNatStarted = false;
 
-esp_netif_t* wifiAp;
-esp_netif_t* wifiSta;
+esp_netif_t* wifiAp = nullptr;
+esp_netif_t* wifiSta = nullptr;
 
 bool wifiStationSetConfig(const char* ssid, const char* password);
 bool wifiNatAutoStartDetecte();
@@ -130,6 +130,10 @@ void wifiInit()
 void wifiDeinit()
 {
 	esp_wifi_deinit();
+	esp_netif_destroy_default_wifi(wifiSta);
+	wifiSta = nullptr;
+	esp_netif_destroy_default_wifi(wifiAp);
+	wifiAp = nullptr;
 	esp_netif_deinit();
 }
 

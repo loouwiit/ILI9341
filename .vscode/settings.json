@@ -91,5 +91,6 @@
     "cmake.configureOnOpen": false,
     "idf.espIdfPath": "/home/lo/Develop/ESP/v5.4.2/esp-idf",
     "idf.toolsPath": "/home/lo/.espressif/tools",
-    "idf.pythonInstallPath": "/usr/bin/python3"
+    "idf.pythonInstallPath": "/usr/bin/python3",
+    "terminal.integrated.scrollback": 5000
 }

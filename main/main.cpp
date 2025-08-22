@@ -1,5 +1,7 @@
 #include <iostream>
 #include <esp_log.h>
+#include <esp_event.h>
+#include "nvs.hpp"
 
 #include "ILI9341.hpp"
 #include "FT6X36.hpp"
@@ -225,6 +227,10 @@ void app_main(void)
 	spi = SPI{ SPI2_HOST, {GPIO_NUM_NC}, {GPIO_NUM_13}, {GPIO_NUM_14} };
 	lcd = LCD{ spi, {GPIO_NUM_21}, {GPIO_NUM_47}, {GPIO_NUM_48}, &screenBuffer };
 
+	ESP_ERROR_CHECK(esp_event_loop_create_default());
+	nvsInit();
+
+	vTaskDelay(1);
 	lcd.init();
 
 	GPIO::enableGlobalInterrupt();

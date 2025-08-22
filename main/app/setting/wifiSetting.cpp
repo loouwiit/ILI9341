@@ -4,6 +4,8 @@
 
 constexpr char TAG[] = "WifiSetting";
 
+static bool wifiInited = false;
+
 void WifiSetting::init()
 {
 	App::init();
@@ -43,6 +45,26 @@ void WifiSetting::init()
 		switchs[0].releaseCallback = [](Finger&, void* param)
 			{
 				WifiSetting& self = *(WifiSetting*)param;
+				if (wifiInited)
+				{
+					if (wifiIsStarted())
+						wifiStop();
+					wifiDeinit();
+					wifiInited = false;
+				}
+				else
+				{
+					wifiInit();
+					wifiInited = true;
+				}
+				self.updateSwitch();
+				self.updateLayar();
+			};
+
+		switchs[1].clickCallbackParam = this;
+		switchs[1].releaseCallback = [](Finger&, void* param)
+			{
+				WifiSetting& self = *(WifiSetting*)param;
 				if (wifiApIsStarted())
 				{
 					wifiApStop();
@@ -51,6 +73,7 @@ void WifiSetting::init()
 				}
 				else
 				{
+					tryInitWifi();
 					wifiApStart();
 					if (!wifiIsStarted())
 						wifiStart();
@@ -58,8 +81,8 @@ void WifiSetting::init()
 				self.updateSwitch();
 				self.updateLayar();
 			};
-		switchs[1].clickCallbackParam = this;
-		switchs[1].releaseCallback = [](Finger&, void* param)
+		switchs[2].clickCallbackParam = this;
+		switchs[2].releaseCallback = [](Finger&, void* param)
 			{
 				WifiSetting& self = *(WifiSetting*)param;
 				if (wifiStationIsStarted())
@@ -70,6 +93,7 @@ void WifiSetting::init()
 				}
 				else
 				{
+					tryInitWifi();
 					wifiStationStart();
 					if (!wifiIsStarted())
 						wifiStart();
@@ -129,7 +153,7 @@ void WifiSetting::init()
 
 		for (unsigned char i = 0; i < WifiListSize; i++)
 		{
-			wifiListText[i].text = "test wifi";
+			wifiListText[i].text = (const char*)wifiListBuffer[i].ssid;
 			wifiListText[i].textColor = LCD::Color::White;
 			wifiListText[i].backgroundColor = BackgroundColor;
 			wifiListText[i].scale = TextSize;
@@ -148,7 +172,13 @@ void WifiSetting::init()
 		wifiListLayar.start.y = wifiScanText.position.y + wifiScanText.computeSize().y + GapSize;
 		wifiListLayar.end.y = (short)32767;
 
-		wifiScanText.releaseCallback = [](Finger&, void* param) { ESP_LOGI(TAG, "wifi scan"); };
+		wifiScanText.clickCallbackParam = this;
+		wifiScanText.releaseCallback = [](Finger&, void* param)
+			{
+				WifiSetting& self = *(WifiSetting*)param;
+				ESP_LOGI(TAG, "wifi scan");
+				self.coThreadDeal(scanWifi);
+			};
 
 		for (unsigned char i = 0; i < WifiListSize; i++)
 		{
@@ -164,8 +194,14 @@ void WifiSetting::init()
 void WifiSetting::deinit()
 {
 	running = false;
-	TaskFunction_t buffer = nullptr;
-	while (xQueueSend(coThreadQueue, &buffer, portMAX_DELAY) != pdTRUE) {}
+
+	while (coThreadDeal(nullptr))
+		vTaskDelay(1);
+
+	while (!deleteAble)
+		vTaskDelay(1);
+
+	vQueueDelete(coThreadQueue);
 }
 
 void WifiSetting::draw()
@@ -276,8 +312,15 @@ void WifiSetting::updateLayar()
 
 void WifiSetting::updateSwitch()
 {
-	switchs[0].text = wifiApIsStarted() ? "ap: on" : "ap: off";
-	switchs[1].text = wifiStationIsStarted() ? (wifiIsConnect() ? "wifi: connected" : "wifi: disconnected") : "wifi: off";
+	switchs[0].text = wifiInited ? "deinit wifi" : "init wifi";
+	switchs[0].computeSize();
+	switchs[1].text = wifiApIsStarted() ? "ap: on" : "ap: off";
+	switchs[1].computeSize();
+	switchs[2].text = wifiStationIsStarted() ? (wifiIsConnect() ? "wifi: connected" : "wifi: disconnected") : "wifi: off";
+	switchs[2].computeSize();
+
+	switchLayar.elementCount = wifiInited ? SwitchSize : 1;
+	contents.elementCount = wifiInited ? ContensSize : 2;
 
 	apSettingLayar.elementCount = wifiApIsStarted() ? ApSettingSize : 0;
 	wifiSettingLayar.elementCount = wifiStationIsStarted() ? WifiSettingSize : 0;
@@ -299,4 +342,29 @@ void WifiSetting::coThread(void* param)
 
 	self.deleteAble = true;
 	vTaskDelete(nullptr);
+}
+
+bool WifiSetting::coThreadDeal(CoThreadFunction_t function)
+{
+	return pdTRUE == xQueueSend(coThreadQueue, &function, 0);
+}
+
+void WifiSetting::scanWifi(WifiSetting& self)
+{
+	unsigned char count = wifiStationScan(self.wifiListBuffer, WifiListSize);
+	count = std::min(count, WifiListSize);
+
+	for (unsigned char i = 0; i < count; i++)
+		self.wifiListText[i].computeSize();
+
+	self.wifiListLayar.elementCount = count;
+}
+
+void WifiSetting::tryInitWifi()
+{
+	if (!wifiInited)
+	{
+		wifiInited = true;
+		wifiInit();
+	}
 }
