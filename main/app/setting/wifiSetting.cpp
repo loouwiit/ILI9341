@@ -1,6 +1,7 @@
 #include "wifiSetting.hpp"
 
 #include "wifi.hpp"
+#include <cstring>
 
 constexpr char TAG[] = "WifiSetting";
 
@@ -134,6 +135,7 @@ void WifiSetting::init()
 			wifiSettings[i].scale = TextSize;
 			wifiSettingLayar[i] = &wifiSettings[i];
 		}
+		wifiSettings[1].text = wifiSettingSsidTextBuffer;
 
 		for (unsigned char i = 1; i < WifiSettingSize; i++)
 			wifiSettings[i].position.y = wifiSettings[i - 1].position.y + wifiSettings[i - 1].computeSize().y + GapSize;
@@ -182,8 +184,15 @@ void WifiSetting::init()
 
 		for (unsigned char i = 0; i < WifiListSize; i++)
 		{
-			wifiListText[i].clickCallbackParam = (void*)(int)i;
-			wifiListText[i].releaseCallback = [](Finger&, void* param) { ESP_LOGI(TAG, "wifi %d", (int)param); };
+			wifiListCallbackParam[i].self = this;
+			wifiListCallbackParam[i].index = i;
+			wifiListText[i].clickCallbackParam = &wifiListCallbackParam[i];
+			wifiListText[i].releaseCallback = [](Finger&, void* param)
+				{
+					WifiSetting& self = *((WifiListCallbackParam_t*)param)->self;
+					unsigned char& index = ((WifiListCallbackParam_t*)param)->index;
+					self.wifiListClickd(index);
+				};
 		}
 	}
 
@@ -314,17 +323,24 @@ void WifiSetting::updateSwitch()
 {
 	switchs[0].text = wifiInited ? "deinit wifi" : "init wifi";
 	switchs[0].computeSize();
-	switchs[1].text = wifiApIsStarted() ? "ap: on" : "ap: off";
+	switchs[1].text = wifiApIsStarted() ? "ap:on" : "ap:off";
 	switchs[1].computeSize();
-	switchs[2].text = wifiStationIsStarted() ? (wifiIsConnect() ? "wifi: connected" : "wifi: disconnected") : "wifi: off";
+	switchs[2].text = wifiStationIsStarted() ? (wifiIsConnect() ? "wifi:connected" : "wifi:disconnected") : "wifi:off";
 	switchs[2].computeSize();
 
 	switchLayar.elementCount = wifiInited ? SwitchSize : 1;
-	contents.elementCount = wifiInited ? ContensSize : 2;
 
 	apSettingLayar.elementCount = wifiApIsStarted() ? ApSettingSize : 0;
 	wifiSettingLayar.elementCount = wifiStationIsStarted() ? WifiSettingSize : 0;
 	wifiScanLayar.elementCount = wifiStationIsStarted() ? WifiScanSize : 0;
+}
+
+void WifiSetting::wifiListClickd(unsigned char index)
+{
+	ESP_LOGI(TAG, "list click at %d", index);
+	if (0 == strcmp(wifiSettingSsid, (const char*)wifiListBuffer[index].ssid))
+		offset = -(wifiSettingLayar.start.y + wifiSettings[0].position.y);
+	strcpy(wifiSettingSsid, (const char*)wifiListBuffer[index].ssid);
 }
 
 void WifiSetting::coThread(void* param)

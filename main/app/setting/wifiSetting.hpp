@@ -27,19 +27,21 @@ private:
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, "wifi setting", TitleSize };
 
 	constexpr static unsigned char SwitchSize = 3;
-	constexpr static const char* SwitchName[SwitchSize] = { "wifi: inited" ,"ap: state", "wifi: state" };
+	constexpr static const char* SwitchName[SwitchSize] = { "(de)init wifi" ,"ap:state", "wifi:state" };
 	LCD::Layar<LayarClassicSize::Small> switchLayar{ SwitchSize };
 	LCD::Text switchs[SwitchSize]{};
 
 	constexpr static unsigned char ApSettingSize = 3;
-	constexpr static const char* ApSettingName[ApSettingSize] = { "ap setting", "ssid:", "password:" };
+	constexpr static const char* ApSettingName[ApSettingSize] = { "ap setting", "ssid:not developed", "password:not developed" };
 	LCD::Layar<LayarClassicSize::Small> apSettingLayar{ ApSettingSize };
 	LCD::Text apSettings[ApSettingSize]{};
 
 	constexpr static unsigned char WifiSettingSize = 3;
-	constexpr static const char* WifiSettingName[WifiSettingSize] = { "wifi setting", "ssid:", "password:" };
+	constexpr static const char* WifiSettingName[WifiSettingSize] = { "wifi setting", "ssid:error", "password:not developed" };
 	LCD::Layar<LayarClassicSize::Small> wifiSettingLayar{ WifiSettingSize };
 	LCD::Text wifiSettings[WifiSettingSize]{};
+	char wifiSettingSsidTextBuffer[6 + 32] = "ssid:none ssid";
+	char* wifiSettingSsid = wifiSettingSsidTextBuffer + 5;
 
 	constexpr static unsigned char WifiScanSize = 2;
 	constexpr static unsigned char WifiListSize = 20;
@@ -48,6 +50,8 @@ private:
 	LCD::Layar<LayarClassicSize::Large> wifiListLayar{ WifiListSize };
 	LCD::Text wifiListText[WifiListSize]{};
 	wifi_ap_record_t wifiListBuffer[WifiListSize]{};
+	struct WifiListCallbackParam_t { WifiSetting* self; unsigned char index; };
+	WifiListCallbackParam_t wifiListCallbackParam[WifiListSize];
 
 	constexpr static float moveThreshold2 = 100.0f;
 
@@ -61,6 +65,7 @@ private:
 
 	void updateLayar();
 	void updateSwitch();
+	void wifiListClickd(unsigned char index);
 
 	using CoThreadFunction_t = void(*)(WifiSetting& self);
 	constexpr static size_t CoThreadQueueLength = 4;
