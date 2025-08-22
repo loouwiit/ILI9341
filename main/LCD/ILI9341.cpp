@@ -1,12 +1,13 @@
 #include "gpio.hpp"
 #include "esp_attr.h"
+#include "ILI9341.hpp"
 
-IRAM_ATTR void gpioClearCallback(void* param)
+ILI9341_IRAM void gpioClearCallback(void* param)
 {
 	*(GPIO*)param = false;
 }
 
-IRAM_ATTR void gpioSetCallback(void* param)
+ILI9341_IRAM void gpioSetCallback(void* param)
 {
 	*(GPIO*)param = true;
 }

@@ -212,7 +212,7 @@ void SPIDevice::waitForTransmition(waitFunction_t waitFunction)
 	while (transmitionCount != 0 && waitFunction()) {}
 }
 
-void IRAM_ATTR SPIDevice::spiDeviceStartCallback(spi_transaction_t* trans)
+void SPI_IRAM SPIDevice::spiDeviceStartCallback(spi_transaction_t* trans)
 {
 	auto& myTransmition = *(SPIDevice::Transmition*)trans->user;
 	auto& callBack = myTransmition.callbackBefore;
@@ -221,7 +221,7 @@ void IRAM_ATTR SPIDevice::spiDeviceStartCallback(spi_transaction_t* trans)
 	callBack(param);
 }
 
-void IRAM_ATTR SPIDevice::spiDeviceFinishCallback(spi_transaction_t* trans)
+void SPI_IRAM SPIDevice::spiDeviceFinishCallback(spi_transaction_t* trans)
 {
 	auto& myTransmition = *(SPIDevice::Transmition*)trans->user;
 	auto& callBack = myTransmition.callbackAfter;

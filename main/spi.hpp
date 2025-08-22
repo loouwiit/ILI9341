@@ -4,6 +4,13 @@
 #include <esp_task.h>
 #include "gpio.hpp"
 
+#define SPI_IRAM_ENABLE true
+#if SPI_IRAM_ENABLE
+#define SPI_IRAM IRAM_ATTR
+#else
+#define SPI_IRAM
+#endif
+
 // only for transmit
 
 // SPI
@@ -44,7 +51,7 @@ public:
 		char data[4];
 	};
 
-	static void IRAM_ATTR emptyCallback(void*) {};
+	static void SPI_IRAM emptyCallback(void*) {};
 
 	using waitFunction_t = bool (*)();
 	static bool defaultWait() { return true; }
@@ -84,8 +91,8 @@ protected:
 		operator bool() { return transmitting; }
 	};
 
-	static void IRAM_ATTR spiDeviceStartCallback(spi_transaction_t* trans);
-	static void IRAM_ATTR spiDeviceFinishCallback(spi_transaction_t* trans);
+	static void SPI_IRAM spiDeviceStartCallback(spi_transaction_t* trans);
+	static void SPI_IRAM spiDeviceFinishCallback(spi_transaction_t* trans);
 
 	spi_device_handle_t device = nullptr;
 

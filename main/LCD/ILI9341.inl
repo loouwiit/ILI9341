@@ -74,15 +74,15 @@ void ILI9341<Color>::init(Color color)
 template <ColorTemplate Color>
 bool ILI9341<Color>::command(unsigned char command)
 {
-	void IRAM_ATTR gpioClearCallback(void*);
+	void ILI9341_IRAM gpioClearCallback(void*);
 	return spi.transmit({ (char)command }, 8, gpioClearCallback, &dataCommandSelect);
 }
 
 template <ColorTemplate Color>
 bool ILI9341<Color>::command(unsigned char command, SPIDevice::SmallData_t data, int size)
 {
-	void IRAM_ATTR gpioClearCallback(void*);
-	void IRAM_ATTR gpioSetCallback(void*);
+	void ILI9341_IRAM gpioClearCallback(void*);
+	void ILI9341_IRAM gpioSetCallback(void*);
 	if (!spi.transmit({ (char)command }, 8, gpioClearCallback, &dataCommandSelect))
 		return false;
 	return spi.transmit(data, size * 8, gpioSetCallback, &dataCommandSelect);
@@ -91,14 +91,14 @@ bool ILI9341<Color>::command(unsigned char command, SPIDevice::SmallData_t data,
 template <ColorTemplate Color>
 bool ILI9341<Color>::data(SPIDevice::SmallData_t data, int size)
 {
-	void IRAM_ATTR gpioSetCallback(void*);
+	void ILI9341_IRAM gpioSetCallback(void*);
 	return spi.transmit(data, size * 8, gpioSetCallback, &dataCommandSelect);
 }
 
 template <ColorTemplate Color>
 bool ILI9341<Color>::data(char* data, size_t size)
 {
-	void IRAM_ATTR gpioSetCallback(void*);
+	void ILI9341_IRAM gpioSetCallback(void*);
 	return spi.transmit(data, size * 8, gpioSetCallback, &dataCommandSelect);
 }
 
@@ -130,12 +130,12 @@ void ILI9341<Color>::clear(Color color)
 template <ColorTemplate Color>
 void ILI9341<Color>::display(SPIDevice::function_t callBack, void* param)
 {
-	setAddressWindow({ 0,0 }, { 319,239 });
+	setAddressWindow({ 0,0 }, { ScreenSize.x - 1, ScreenSize.y - 1 });
 	drawModeStart();
 
 	constexpr size_t sendStep = ScreenTotolSize / (std::is_same<Color, Color565>::value ? 5 : 8);
 
-	void IRAM_ATTR gpioSetCallback(void*);
+	void ILI9341_IRAM gpioSetCallback(void*);
 	spi.transmit(&(*frame)[0][0] + sendStep * 0, sendStep * sizeof(Color) * 8, gpioSetCallback, &dataCommandSelect);
 	spi.transmit(&(*frame)[0][0] + sendStep * 1, sendStep * sizeof(Color) * 8);
 	spi.transmit(&(*frame)[0][0] + sendStep * 2, sendStep * sizeof(Color) * 8);

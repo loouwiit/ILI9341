@@ -15,6 +15,13 @@
 #include "rectangle.hpp"
 #include "text.hpp"
 
+#define ILI9341_IRAM_ENABLE true
+#if ILI9341_IRAM_ENABLE
+#define ILI9341_IRAM IRAM_ATTR
+#else
+#define ILI9341_IRAM
+#endif
+
 template <ColorTemplate Color_t>
 class ILI9341
 {
