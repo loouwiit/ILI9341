@@ -18,10 +18,13 @@ public:
 private:
 	char buffer[512] = "error in init";
 	constexpr static unsigned char textSize = 2;
-	LCD::Text text{ LCD::ScreenSize / 2, buffer, textSize };
+	LCD::Text text{ {}, buffer, textSize };
 
 	void update(const char* string);
-	void updatePosition();
+	
+	bool fingerActive[2]{};
+	Vector2s lastFingerPosition[2]{};
+	
 	void dealSocket(IOSocketStream& socketStream);
 
 	constexpr static unsigned short Port = 467;

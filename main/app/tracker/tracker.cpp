@@ -9,7 +9,6 @@ constexpr static char TAG[] = "tracker";
 void AppTracker::init()
 {
 	App::init();
-	updatePosition();
 	xTaskCreate(serverThread, "appTracker", 4096, this, 2, nullptr);
 }
 
@@ -30,6 +29,33 @@ void AppTracker::touchUpdate()
 		(touch[1].state == Finger::State::Press && touch[0].state == Finger::State::Contact) ||
 		(touch[0].state == Finger::State::Contact && touch[1].state == Finger::State::Contact))
 		changeAppCallback(nullptr);
+
+	if (touch[0].state == Finger::State::Press)
+	{
+		fingerActive[0] = true;
+		lastFingerPosition[0] = touch[0].position;
+	}
+	else if (touch[0].state == Finger::State::Realease)
+		fingerActive[0] = false;
+
+	if (touch[1].state == Finger::State::Press)
+	{
+		fingerActive[1] = true;
+		lastFingerPosition[1] = touch[1].position;
+	}
+	else if (touch[1].state == Finger::State::Realease)
+		fingerActive[1] = false;
+
+	if (fingerActive[0])
+	{
+		text.position += touch[0].position - lastFingerPosition[0];
+		lastFingerPosition[0] = touch[0].position;
+	}
+	if (fingerActive[1])
+	{
+		text.position += touch[1].position - lastFingerPosition[1];
+		lastFingerPosition[1] = touch[1].position;
+	}
 }
 
 void AppTracker::back()
@@ -40,12 +66,6 @@ void AppTracker::back()
 void AppTracker::update(const char* string)
 {
 	strcpy(buffer, string);
-	updatePosition();
-}
-
-void AppTracker::updatePosition()
-{
-	text.position = LCD::ScreenSize / 2 - text.computeSize() / 2;
 }
 
 void AppTracker::dealSocket(IOSocketStream& socketStream)
@@ -64,7 +84,6 @@ void AppTracker::dealSocket(IOSocketStream& socketStream)
 		for (; dealIndex < recieveIndex; dealIndex++) if (netBuffer[dealIndex] == '\0')
 		{
 			strcpy(buffer, netBuffer);
-			updatePosition();
 			dealIndex++; // skip for '\0'
 			memcpy(netBuffer, netBuffer + dealIndex, recieveIndex - dealIndex);
 			recieveIndex -= dealIndex;
