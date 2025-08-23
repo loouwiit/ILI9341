@@ -135,7 +135,22 @@ void WifiSetting::init()
 		apSettingLayar.start.x = ContentXOffset;
 		apSettingLayar.end.x = LCD::ScreenSize.x;
 
-		apSettings[0].releaseCallback = [](Finger&, void*) { ESP_LOGI(TAG, "ap"); };
+		apSettings[0].clickCallbackParam = this;
+		apSettings[0].releaseCallback = [](Finger&, void* param)
+			{
+				WifiSetting& self = *(WifiSetting*)param;
+				self.coThreadDeal([](WifiSetting& self)
+					{
+						wifiApSet(apSettingSsid, apSettingPassword);
+						if (wifiApIsStarted())
+							wifiApStop();
+						wifiApStart();
+						self.updateSwitch();
+						while (wifiIsWantConnect() && !wifiIsConnect())
+							vTaskDelay(100);
+						self.updateSwitch();
+					});
+			};
 		apSettings[1].clickCallbackParam = this;
 		apSettings[1].releaseCallback = [](Finger&, void* param)
 			{
@@ -179,7 +194,19 @@ void WifiSetting::init()
 		wifiSettingLayar.start.x = ContentXOffset;
 		wifiSettingLayar.end.x = LCD::ScreenSize.x;
 
-		wifiSettings[0].releaseCallback = [](Finger&, void*) { ESP_LOGI(TAG, "wifi connect"); };
+		wifiSettings[0].clickCallbackParam = this;
+		wifiSettings[0].releaseCallback = [](Finger&, void* param)
+			{
+				WifiSetting& self = *(WifiSetting*)param;
+				self.coThreadDeal([](WifiSetting& self)
+					{
+						wifiConnect(wifiSettingSsid, wifiSettingPassword);
+						self.updateSwitch();
+						while (wifiIsWantConnect() && !wifiIsConnect())
+							vTaskDelay(100);
+						self.updateSwitch();
+					});
+			};
 		wifiSettings[1].clickCallbackParam = this;
 		wifiSettings[1].releaseCallback = [](Finger&, void* param)
 			{
@@ -380,7 +407,7 @@ void WifiSetting::updateSwitch()
 	switchs[0].computeSize();
 	switchs[1].text = wifiApIsStarted() ? "ap:on" : "ap:off";
 	switchs[1].computeSize();
-	switchs[2].text = wifiStationIsStarted() ? (wifiIsConnect() ? "wifi:connected" : "wifi:disconnected") : "wifi:off";
+	switchs[2].text = wifiStationIsStarted() ? (wifiIsConnect() ? "wifi:connected" : (wifiIsWantConnect() ? "wifi:connecting" : "wifi:disconnected")) : "wifi:off"; // 好屎💩
 	switchs[2].computeSize();
 
 	switchLayar.elementCount = wifiInited ? SwitchSize : 1;
