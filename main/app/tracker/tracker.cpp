@@ -72,6 +72,8 @@ void AppTracker::dealSocket(IOSocketStream& socketStream)
 			break;
 		}
 	}
+	free(netBuffer);
+	netBuffer = nullptr;
 	socketStream.close();
 }
 
