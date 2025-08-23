@@ -4,5 +4,6 @@ idf_component_register(SRCS "main.cpp" "wifi.cpp"
                         "app/desktop/desktop.cpp"
                         "app/setting/setting.cpp" "app/setting/wifiSetting.cpp" "app/setting/timeSetting.cpp" "app/setting/systemInfo.cpp" "app/setting/touchTest.cpp"
                         "app/input/input.cpp"
+                        "app/tracker/tracker.cpp" "app/tracker/socketStream.cpp"
                     INCLUDE_DIRS "LCD" "app" "."
                     PRIV_REQUIRES esp_driver_gpio esp_driver_spi esp_driver_i2c nvs_flash esp_wifi spi_flash)
