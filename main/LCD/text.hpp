@@ -70,10 +70,10 @@ public:
 		Vector2s repeatPosition = { 0,0 };
 		const unsigned char* font = fonts[(unsigned char)text - 0x20];
 
-		for (unsigned char y = modPositionStart.y; y < modPositionEnd.y; y++)
+		for (auto y = modPositionStart.y; y < modPositionEnd.y; y++)
 		{
 			const unsigned char& mod = font[y];
-			for (unsigned char x = modPositionStart.x; x < modPositionEnd.x; x++)
+			for (auto x = modPositionStart.x; x < modPositionEnd.x; x++)
 			{
 				bool draw = mod & ((1 << 7) >> x);
 				Color& color = draw ? textColor : backgroundColor;
