@@ -152,7 +152,7 @@ void AppInput::touchUpdate()
 			lastFingerPosition[1] = finger[1].position;
 			fingerMoveTotol[1] = {};
 		}
-		else fingerActiveToType[0] = true;
+		else fingerActiveToType[1] = true;
 	}
 
 	if (finger[0].state != Finger::State::None && fingerActiveToType[0])
