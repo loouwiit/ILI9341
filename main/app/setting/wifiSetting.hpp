@@ -77,4 +77,6 @@ private:
 
 	static bool ssidInputChecker(char* ssid);
 	static bool passwordInputChecker(char* password);
+
+	static void textComputeSizer(void* param);
 };

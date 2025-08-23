@@ -143,6 +143,8 @@ void WifiSetting::init()
 				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
 				input->setInputBuffer(apSettingSsid);
 				input->checker = ssidInputChecker;
+				input->finishCallbackParam = &self.apSettings[1];
+				input->finishCallback = textComputeSizer;
 				self.newAppCallback(input);
 			};
 		apSettings[2].clickCallbackParam = this;
@@ -152,6 +154,8 @@ void WifiSetting::init()
 				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
 				input->setInputBuffer(apSettingPassword);
 				input->checker = passwordInputChecker;
+				input->finishCallbackParam = &self.apSettings[2];
+				input->finishCallback = textComputeSizer;
 				self.newAppCallback(input);
 			};
 	}
@@ -183,6 +187,8 @@ void WifiSetting::init()
 				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
 				input->setInputBuffer(wifiSettingSsid);
 				input->checker = ssidInputChecker;
+				input->finishCallbackParam = &self.wifiSettings[1];
+				input->finishCallback = textComputeSizer;
 				self.newAppCallback(input);
 			};
 		wifiSettings[2].clickCallbackParam = this;
@@ -192,6 +198,8 @@ void WifiSetting::init()
 				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
 				input->setInputBuffer(wifiSettingPassword);
 				input->checker = passwordInputChecker;
+				input->finishCallbackParam = &self.wifiSettings[2];
+				input->finishCallback = textComputeSizer;
 				self.newAppCallback(input);
 			};
 	}
@@ -440,4 +448,10 @@ bool WifiSetting::ssidInputChecker(char* ssid)
 bool WifiSetting::passwordInputChecker(char* password)
 {
 	return password[64] == '\0';
+}
+
+void WifiSetting::textComputeSizer(void* param)
+{
+	LCD::Text& text = *(LCD::Text*)param;
+	text.computeSize();
 }
