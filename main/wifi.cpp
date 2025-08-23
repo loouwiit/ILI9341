@@ -20,6 +20,7 @@ const char* TAG = "wifi";
 
 unsigned char wifiRetryCount = 0;
 
+bool wifiInited = false;
 bool wifiStarted = false;
 bool wifiStationStarted = false;
 bool wifiStationWantConnect = false;
@@ -106,8 +107,20 @@ void event_handler(void* arg, esp_event_base_t eventBase, int32_t eventId, void*
 	}
 }
 
+bool wifiIsInited()
+{
+	return wifiInited;
+}
+
 void wifiInit()
 {
+	if (wifiInited)
+	{
+		ESP_LOGW(TAG, "inited already");
+		return;
+	}
+	wifiInited = true;
+
 	ESP_LOGI(TAG, "init");
 
 	ESP_ERROR_CHECK(esp_netif_init());
@@ -129,6 +142,13 @@ void wifiInit()
 
 void wifiDeinit()
 {
+	if (!wifiInited)
+	{
+		ESP_LOGW(TAG, "not inited, no need to deinit");
+		return;
+	}
+	wifiInited = false;
+
 	esp_wifi_deinit();
 	esp_netif_destroy_default_wifi(wifiSta);
 	wifiSta = nullptr;

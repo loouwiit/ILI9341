@@ -1,5 +1,6 @@
 #include <esp_wifi_types_generic.h>
 
+bool wifiIsInited();
 void wifiInit();
 void wifiDeinit();
 

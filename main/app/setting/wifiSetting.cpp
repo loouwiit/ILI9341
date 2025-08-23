@@ -7,8 +7,6 @@
 
 constexpr char TAG[] = "WifiSetting";
 
-static bool wifiInited = false;
-
 static char apSettingSsidTextBuffer[6 + 32 + 1] = "ssid:";
 static char* apSettingSsid = apSettingSsidTextBuffer + 5;
 static char apSettingPasswordTextBuffer[10 + 64 + 1] = "password:";
@@ -58,18 +56,16 @@ void WifiSetting::init()
 		switchs[0].releaseCallback = [](Finger&, void* param)
 			{
 				WifiSetting& self = *(WifiSetting*)param;
-				if (wifiInited)
+				if (wifiIsInited())
 				{
 					if (wifiIsStarted())
 						wifiStop();
 					wifiDeinit();
-					wifiInited = false;
 				}
 				else
 				{
 					wifiInit();
 					wifiNatSetAutoStart();
-					wifiInited = true;
 				}
 				self.updateSwitch();
 				self.updateLayar();
@@ -405,14 +401,14 @@ void WifiSetting::updateLayar()
 
 void WifiSetting::updateSwitch()
 {
-	switchs[0].text = wifiInited ? "deinit wifi" : "init wifi";
+	switchs[0].text = wifiIsInited() ? "deinit wifi" : "init wifi";
 	switchs[0].computeSize();
 	switchs[1].text = wifiApIsStarted() ? "ap:on" : "ap:off";
 	switchs[1].computeSize();
 	switchs[2].text = wifiStationIsStarted() ? (wifiIsConnect() ? "wifi:connected" : (wifiIsWantConnect() ? "wifi:connecting" : "wifi:disconnected")) : "wifi:off"; // 好屎💩
 	switchs[2].computeSize();
 
-	switchLayar.elementCount = wifiInited ? SwitchSize : 1;
+	switchLayar.elementCount = wifiIsInited() ? SwitchSize : 1;
 
 	apSettingLayar.elementCount = wifiApIsStarted() ? ApSettingSize : 0;
 	wifiSettingLayar.elementCount = wifiStationIsStarted() ? WifiSettingSize : 0;
@@ -462,11 +458,8 @@ void WifiSetting::scanWifi(WifiSetting& self)
 
 void WifiSetting::tryInitWifi()
 {
-	if (!wifiInited)
-	{
-		wifiInited = true;
+	if (!wifiIsInited())
 		wifiInit();
-	}
 }
 
 bool WifiSetting::ssidInputChecker(char* ssid)
