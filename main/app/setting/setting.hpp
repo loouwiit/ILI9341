@@ -20,8 +20,8 @@ private:
 	constexpr static short ContentXOffset = 20;
 	constexpr static LCD::Color BackgroundColor = { 8,8,8 };
 
-	constexpr static unsigned char SettingSize = 9;
-	constexpr static const char* SettingName[SettingSize] = { "wifi setting","time setting", "system info", "touch test", "", "--debug--", "just a very \nlong setting", "nop1", "nop2"};
+	constexpr static unsigned char SettingSize = 4;
+	constexpr static const char* SettingName[SettingSize] = { "wifi setting","time setting", "system info", "touch test"};
 
 	LCD::Layar<LayarClassicSize::Middle> contents{ 1 + SettingSize };
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, "setting", TitleSize };
