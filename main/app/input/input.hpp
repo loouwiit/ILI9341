@@ -16,13 +16,13 @@ public:
 	virtual void back() override final;
 
 	static bool defaultChecker(char*) { return true; }
-	static void defaultCallback(char*) {}
+	static void defaultCallback(void*) {}
 
 	void setInputBuffer(char* inputBuffer);
 
-	const char* description = "description";
 	bool (*checker)(char*) = defaultChecker;
-	void (*finishCallback)(char*) = defaultCallback;
+	void* finishCallbackParam = nullptr;
+	void (*finishCallback)(void*) = defaultCallback;
 
 private:
 	constexpr static unsigned char InputSize = 2;

@@ -198,7 +198,7 @@ void AppInput::touchUpdate()
 
 void AppInput::back()
 {
-	finishCallback(inputBuffer);
+	finishCallback(finishCallbackParam);
 	changeAppCallback(nullptr);
 }
 
