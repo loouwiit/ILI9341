@@ -200,6 +200,7 @@ void WifiSetting::init()
 				WifiSetting& self = *(WifiSetting*)param;
 				self.coThreadDeal([](WifiSetting& self)
 					{
+						self.switchs[2].text = "wifi:setting";
 						wifiConnect(wifiSettingSsid, wifiSettingPassword);
 						self.updateSwitch();
 						while (wifiIsWantConnect() && !wifiIsConnect())
