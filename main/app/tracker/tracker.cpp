@@ -2,7 +2,7 @@
 
 #include <lwip/sockets.h>
 
-#include "wifi.hpp"
+#include "wifi/wifi.hpp"
 
 constexpr static char TAG[] = "tracker";
 

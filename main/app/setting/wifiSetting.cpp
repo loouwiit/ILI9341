@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-#include "wifi.hpp"
+#include "wifi/wifi.hpp"
 #include "input/input.hpp"
 
 constexpr char TAG[] = "WifiSetting";

@@ -89,4 +89,4 @@ protected:
 	GPIO resetGpio{};
 };
 
-#include <ILI9341.inl>
+#include "ILI9341.inl"

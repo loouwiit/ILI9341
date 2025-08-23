@@ -2,9 +2,8 @@
 
 #include "mutex.hpp"
 
-#include "frame.hpp"
-#include "ILI9341.hpp"
-#include "FT6X36.hpp"
+#include "LCD/ILI9341.hpp"
+#include "LCD/FT6X36.hpp"
 
 class App
 {

@@ -1,10 +1,10 @@
 #include <iostream>
 #include <esp_log.h>
 #include <esp_event.h>
-#include "nvs.hpp"
+#include "wifi/nvs.hpp"
 
-#include "ILI9341.hpp"
-#include "FT6X36.hpp"
+#include "LCD/ILI9341.hpp"
+#include "LCD/FT6X36.hpp"
 #include "app.hpp"
 #include "desktop/desktop.hpp"
 
