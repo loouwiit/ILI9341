@@ -143,10 +143,6 @@ void WifiSetting::init()
 				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
 				input->setInputBuffer(apSettingSsid);
 				input->checker = ssidInputChecker;
-				input->finishCallback = [](char* param)
-					{
-						self.
-					};
 				self.newAppCallback(input);
 			};
 		apSettings[2].clickCallbackParam = this;
