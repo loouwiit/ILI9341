@@ -119,12 +119,12 @@ bool SPIDevice::transmit(const void* data, size_t sizeInBit, function_t callback
 
 	if (nowTransmition.transmitting) [[unlikely]]
 	{
-		ESP_LOGW("SPIDevice", "transmition all unaviliable!");
+		ESP_LOGW("SPIDevice", "transmition all unaviliable! transmiting count = %d", transmitionCount);
 		return false;
 	}
 
 	transmitionIndex++;
-	if (transmitionIndex > transmitionCount)
+	if (transmitionIndex >= transmitionSize)
 		transmitionIndex = 0;
 
 	nowTransmition.callbackBefore = callbackBefore;
