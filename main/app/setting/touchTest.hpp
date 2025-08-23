@@ -2,10 +2,10 @@
 
 #include "app.hpp"
 
-class AppTouch final : public App
+class TouchTest final : public App
 {
 public:
-	AppTouch(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, newAppCallback) {}
+	TouchTest(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, newAppCallback) {}
 
 	virtual void init() override final;
 

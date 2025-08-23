@@ -2,9 +2,8 @@
 
 #include <esp_log.h>
 
-#include "clock/clock.hpp"
-#include "touch/touch.hpp"
 #include "setting/setting.hpp"
+#include "clock/clock.hpp"
 
 constexpr char TAG[] = "AppDesktop";
 
@@ -92,8 +91,6 @@ App* AppDesktop::appFactory(unsigned char index)
 		return new AppSetting{ lcd, touch, changeAppCallback, newAppCallback };
 	case 1:
 		return new AppClock{ lcd, touch, changeAppCallback, newAppCallback };
-	case 2:
-		return new AppTouch{ lcd, touch, changeAppCallback, newAppCallback };
 	default:
 		ESP_LOGE(TAG, "failed to new app %s (case %d)", ApplicationName[index], index);
 		return nullptr;

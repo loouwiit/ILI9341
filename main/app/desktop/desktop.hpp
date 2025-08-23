@@ -21,9 +21,9 @@ private:
 
 	constexpr static float moveThreshold2 = 100.0f;
 
-	constexpr static unsigned char ApplicationSize = 3;
+	constexpr static unsigned char ApplicationSize = 2;
 
-	constexpr const static char* ApplicationName[ApplicationSize] = { "setting", "clock", "touch" };
+	constexpr const static char* ApplicationName[ApplicationSize] = { "setting", "clock" };
 
 	LCD::Layar<LayarClassicSize::Middle> applications{ ApplicationSize * 2 };
 	LCD::Rectangle applicationRectangle[ApplicationSize]{};

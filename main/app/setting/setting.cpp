@@ -5,6 +5,7 @@
 #include "wifiSetting.hpp"
 #include "timeSetting.hpp"
 #include "systemInfo.hpp"
+#include "touchTest.hpp"
 
 constexpr static char TAG[] = "AppSetting";
 
@@ -107,6 +108,8 @@ App* AppSetting::appFactory(unsigned char index)
 		return new TimeSetting{ lcd, touch, changeAppCallback, newAppCallback };
 	case 2:
 		return new SystemInfo{ lcd, touch, changeAppCallback, newAppCallback };
+	case 3:
+		return new TouchTest{ lcd, touch, changeAppCallback, newAppCallback };
 	default:
 		ESP_LOGW(TAG, "failed to new setting %s (case %d)", SettingName[index], index);
 		return nullptr;

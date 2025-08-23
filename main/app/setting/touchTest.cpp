@@ -1,6 +1,6 @@
-#include "touch.hpp"
+#include "touchTest.hpp"
 
-void AppTouch::init()
+void TouchTest::init()
 {
 	App::init();
 
@@ -20,7 +20,7 @@ void AppTouch::init()
 	line2[1] = &line2Y;
 }
 
-void AppTouch::draw()
+void TouchTest::draw()
 {
 	lcd.draw(count);
 	lcd.draw(state[0]);
@@ -38,7 +38,7 @@ void AppTouch::draw()
 	line2YClear.end.x = (line2YClear.start.x = line2Y.start.x) + 1;
 }
 
-void AppTouch::touchUpdate()
+void TouchTest::touchUpdate()
 {
 	Lock lock{ drawMutex }; // 防止内存出现问题
 
@@ -56,7 +56,7 @@ void AppTouch::touchUpdate()
 	if (state[1].number < (unsigned)Finger::State::None) eventCount[state[1].number].number++;
 }
 
-void AppTouch::back()
+void TouchTest::back()
 {
 	changeAppCallback(nullptr);
 }
