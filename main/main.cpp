@@ -252,7 +252,7 @@ void app_main(void)
 
 	GPIO{ GPIO_NUM_0, GPIO::Mode::GPIO_MODE_INPUT, GPIO::Pull::GPIO_PULLUP_ONLY, GPIO::Interrupt::GPIO_INTR_ANYEDGE, [](void*)
 		{
-			constexpr clock_t LongPressClock = 3000;
+			constexpr clock_t LongPressClock = 1000;
 			static auto pressTime = clock();
 			if ((bool)GPIO { GPIO_NUM_0 } == false)
 			{
@@ -273,6 +273,7 @@ void app_main(void)
 						vTaskDelay(1);
 					lcd.waitForDisplay();
 					ESP_LOGI(TAG, "re-init");
+					touch.restart();
 					lcd.init();
 					lcd.waitForDisplay();
 					app[appIndex]->drawMutex.unlock();

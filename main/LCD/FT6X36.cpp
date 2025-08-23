@@ -32,10 +32,7 @@ FT6X36::~FT6X36()
 
 void FT6X36::init()
 {
-	reset = false;
-	vTaskDelay(1);
-	reset = true;
-
+	restart();
 	interrupt.setInterrupt(GPIO::Interrupt::GPIO_INTR_NEGEDGE,
 		[](void* param)
 		{
@@ -43,6 +40,13 @@ void FT6X36::init()
 			needUpdate = true;
 		},
 		&needUpdate);
+}
+
+void FT6X36::restart()
+{
+	reset = false;
+	vTaskDelay(1);
+	reset = true;
 }
 
 bool FT6X36::detectSelf()

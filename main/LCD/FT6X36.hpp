@@ -17,6 +17,7 @@ public:
 	FT6X36& operator=(FT6X36&& move);
 	~FT6X36();
 
+	void restart();
 	void init();
 
 	bool detectSelf();
