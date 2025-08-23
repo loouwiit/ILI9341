@@ -229,6 +229,7 @@ void app_main(void)
 
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	nvsInit();
+	setenv("TZ", "CST-8", 1);
 
 	vTaskDelay(1);
 	lcd.init();
