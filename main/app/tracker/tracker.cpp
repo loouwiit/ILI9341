@@ -74,10 +74,21 @@ void AppTracker::dealSocket(IOSocketStream& socketStream)
 	unsigned recieveIndex = 0;
 	char* netBuffer = (char*)heap_caps_malloc(1024, MALLOC_CAP_SPIRAM);
 
+	constexpr static clock_t TimeOut = 5000;
+	clock_t nextTime = TimeOut + clock();
+
 	while (running && socketStream.isGood())
 	{
-		while (!socketStream.check())
+		while (!socketStream.check() && socketStream.isGood())
+		{
+			if (nextTime < clock())
+			{
+				socketStream.close();
+				break;
+			}
 			vTaskDelay(1);
+		}
+		nextTime = TimeOut + clock();
 
 		recieveIndex += socketStream.readByte(netBuffer + recieveIndex, sizeof(buffer) - recieveIndex);
 
