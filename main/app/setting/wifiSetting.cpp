@@ -1,11 +1,23 @@
 #include "wifiSetting.hpp"
 
-#include "wifi.hpp"
 #include <cstring>
+
+#include "wifi.hpp"
+#include "input/input.hpp"
 
 constexpr char TAG[] = "WifiSetting";
 
 static bool wifiInited = false;
+
+static char apSettingSsidTextBuffer[6 + 32 + 1] = "ssid:";
+static char* apSettingSsid = apSettingSsidTextBuffer + 5;
+static char apSettingPasswordTextBuffer[10 + 64 + 1] = "password:";
+static char* apSettingPassword = apSettingPasswordTextBuffer + 9;
+
+static char wifiSettingSsidTextBuffer[6 + 32 + 1] = "ssid:";
+static char* wifiSettingSsid = wifiSettingSsidTextBuffer + 5;
+static char wifiSettingPasswordTextBuffer[10 + 64 + 1] = "password:";
+static char* wifiSettingPassword = wifiSettingPasswordTextBuffer + 9;
 
 void WifiSetting::init()
 {
@@ -113,6 +125,8 @@ void WifiSetting::init()
 			apSettings[i].scale = TextSize;
 			apSettingLayar[i] = &apSettings[i];
 		}
+		apSettings[1].text = apSettingSsidTextBuffer;
+		apSettings[2].text = apSettingPasswordTextBuffer;
 
 		for (unsigned char i = 1; i < ApSettingSize; i++)
 			apSettings[i].position.y = apSettings[i - 1].position.y + apSettings[i - 1].computeSize().y + GapSize;
@@ -121,9 +135,29 @@ void WifiSetting::init()
 		apSettingLayar.start.x = ContentXOffset;
 		apSettingLayar.end.x = LCD::ScreenSize.x;
 
-		apSettings[0].releaseCallback = [](Finger&, void*) { ESP_LOGI(TAG, "ap setting"); };
-		apSettings[1].releaseCallback = [](Finger&, void*) { ESP_LOGI(TAG, "ap ssid"); };
-		apSettings[2].releaseCallback = [](Finger&, void*) { ESP_LOGI(TAG, "ap password"); };
+		apSettings[0].releaseCallback = [](Finger&, void*) { ESP_LOGI(TAG, "ap"); };
+		apSettings[1].clickCallbackParam = this;
+		apSettings[1].releaseCallback = [](Finger&, void* param)
+			{
+				WifiSetting& self = *(WifiSetting*)param;
+				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				input->setInputBuffer(apSettingSsid);
+				input->checker = ssidInputChecker;
+				input->finishCallback = [](char* param)
+					{
+						self.
+					};
+				self.newAppCallback(input);
+			};
+		apSettings[2].clickCallbackParam = this;
+		apSettings[2].releaseCallback = [](Finger&, void* param)
+			{
+				WifiSetting& self = *(WifiSetting*)param;
+				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				input->setInputBuffer(apSettingPassword);
+				input->checker = passwordInputChecker;
+				self.newAppCallback(input);
+			};
 	}
 
 	{
@@ -136,6 +170,7 @@ void WifiSetting::init()
 			wifiSettingLayar[i] = &wifiSettings[i];
 		}
 		wifiSettings[1].text = wifiSettingSsidTextBuffer;
+		wifiSettings[2].text = wifiSettingPasswordTextBuffer;
 
 		for (unsigned char i = 1; i < WifiSettingSize; i++)
 			wifiSettings[i].position.y = wifiSettings[i - 1].position.y + wifiSettings[i - 1].computeSize().y + GapSize;
@@ -144,9 +179,25 @@ void WifiSetting::init()
 		wifiSettingLayar.start.x = ContentXOffset;
 		wifiSettingLayar.end.x = LCD::ScreenSize.x;
 
-		wifiSettings[0].releaseCallback = [](Finger&, void*) { ESP_LOGI(TAG, "wifi setting"); };
-		wifiSettings[1].releaseCallback = [](Finger&, void*) { ESP_LOGI(TAG, "wifi ssid"); };
-		wifiSettings[2].releaseCallback = [](Finger&, void*) { ESP_LOGI(TAG, "wifi password"); };
+		wifiSettings[0].releaseCallback = [](Finger&, void*) { ESP_LOGI(TAG, "wifi connect"); };
+		wifiSettings[1].clickCallbackParam = this;
+		wifiSettings[1].releaseCallback = [](Finger&, void* param)
+			{
+				WifiSetting& self = *(WifiSetting*)param;
+				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				input->setInputBuffer(wifiSettingSsid);
+				input->checker = ssidInputChecker;
+				self.newAppCallback(input);
+			};
+		wifiSettings[2].clickCallbackParam = this;
+		wifiSettings[2].releaseCallback = [](Finger&, void* param)
+			{
+				WifiSetting& self = *(WifiSetting*)param;
+				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				input->setInputBuffer(wifiSettingPassword);
+				input->checker = passwordInputChecker;
+				self.newAppCallback(input);
+			};
 	}
 
 	{
@@ -383,4 +434,14 @@ void WifiSetting::tryInitWifi()
 		wifiInited = true;
 		wifiInit();
 	}
+}
+
+bool WifiSetting::ssidInputChecker(char* ssid)
+{
+	return ssid[32] == '\0';
+}
+
+bool WifiSetting::passwordInputChecker(char* password)
+{
+	return password[64] == '\0';
 }

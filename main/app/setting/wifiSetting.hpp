@@ -32,16 +32,14 @@ private:
 	LCD::Text switchs[SwitchSize]{};
 
 	constexpr static unsigned char ApSettingSize = 3;
-	constexpr static const char* ApSettingName[ApSettingSize] = { "ap setting", "ssid:not developed", "password:not developed" };
+	constexpr static const char* ApSettingName[ApSettingSize] = { "access point", "ssid:error", "password:error" };
 	LCD::Layar<LayarClassicSize::Small> apSettingLayar{ ApSettingSize };
 	LCD::Text apSettings[ApSettingSize]{};
 
 	constexpr static unsigned char WifiSettingSize = 3;
-	constexpr static const char* WifiSettingName[WifiSettingSize] = { "wifi setting", "ssid:error", "password:not developed" };
+	constexpr static const char* WifiSettingName[WifiSettingSize] = { "wifi connect", "ssid:error", "password:error" };
 	LCD::Layar<LayarClassicSize::Small> wifiSettingLayar{ WifiSettingSize };
 	LCD::Text wifiSettings[WifiSettingSize]{};
-	char wifiSettingSsidTextBuffer[6 + 32] = "ssid:none ssid";
-	char* wifiSettingSsid = wifiSettingSsidTextBuffer + 5;
 
 	constexpr static unsigned char WifiScanSize = 2;
 	constexpr static unsigned char WifiListSize = 20;
@@ -76,4 +74,7 @@ private:
 
 	static void scanWifi(WifiSetting& self);
 	static void tryInitWifi();
+
+	static bool ssidInputChecker(char* ssid);
+	static bool passwordInputChecker(char* password);
 };
