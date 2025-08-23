@@ -68,6 +68,7 @@ void WifiSetting::init()
 				else
 				{
 					wifiInit();
+					wifiNatSetAutoStart();
 					wifiInited = true;
 				}
 				self.updateSwitch();
