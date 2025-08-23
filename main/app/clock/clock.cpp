@@ -46,6 +46,14 @@ void AppClock::draw()
 	lcd.draw(timeText);
 }
 
+void AppClock::touchUpdate()
+{
+	if ((touch[0].state == Finger::State::Press && touch[1].state == Finger::State::Contact) ||
+		(touch[1].state == Finger::State::Press && touch[0].state == Finger::State::Contact) ||
+		(touch[0].state == Finger::State::Contact && touch[1].state == Finger::State::Contact))
+		changeAppCallback(nullptr);
+}
+
 void AppClock::back()
 {
 	changeAppCallback(nullptr);
