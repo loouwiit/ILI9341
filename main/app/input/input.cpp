@@ -1,5 +1,6 @@
 #include "input.hpp"
 #include <esp_log.h>
+#include <cstring>
 
 constexpr static char TAG[] = "AppInput";
 
@@ -94,10 +95,17 @@ void AppInput::init()
 			AppInput& self = *(AppInput*)param;
 			if (self.inputIndex == 0) return;
 			self.inputIndex--;
+			char old = self.inputBuffer[self.inputIndex];
 			self.inputBuffer[self.inputIndex] = '\0';
 
-			bool continueToRun = self.checker(self.inputBuffer);
-			if (!continueToRun) self.back();
+			bool vailed = self.checker(self.inputBuffer);
+			if (!vailed)
+			{
+				// roll back
+				self.inputBuffer[self.inputIndex + 1] = '\0';
+				self.inputBuffer[self.inputIndex] = old;
+				self.inputIndex++;
+			}
 			self.focus();
 		};
 
@@ -194,6 +202,13 @@ void AppInput::back()
 	changeAppCallback(nullptr);
 }
 
+void AppInput::setInputBuffer(char* inputBuffer)
+{
+	this->inputBuffer = inputBuffer;
+	inputText.text = inputBuffer;
+	inputIndex = strlen(inputBuffer);
+}
+
 void AppInput::updateKeyBoardShift(AppInput& self)
 {
 	auto& Keys = KeyBoardKey[(unsigned char)self.keyBoardState];
@@ -215,8 +230,12 @@ void AppInput::keyBoardInput(Finger&, void* param)
 	self.inputIndex++;
 	self.inputBuffer[self.inputIndex] = '\0';
 	self.inputBuffer[self.inputIndex - 1] = *text.text;
-	bool continueToRun = self.checker(self.inputBuffer);
-	if (!continueToRun) self.back();
+	bool vailed = self.checker(self.inputBuffer);
+	if (!vailed)
+	{
+		self.inputIndex--;
+		self.inputBuffer[self.inputIndex] = '\0';
+	}
 	self.focus();
 }
 

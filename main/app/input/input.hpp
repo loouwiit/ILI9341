@@ -7,7 +7,6 @@ class AppInput final : public App
 {
 public:
 	AppInput(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, newAppCallback) {}
-	AppInput(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback, char* inputBuffer) : App(lcd, touch, changeAppCallback, newAppCallback), inputBuffer{ inputBuffer } {}
 
 	virtual void init() override final;
 	// virtual void deinit() override final;
@@ -19,9 +18,9 @@ public:
 	static bool defaultChecker(char*) { return true; }
 	static void defaultCallback(char*) {}
 
+	void setInputBuffer(char* inputBuffer);
+
 	const char* description = "description";
-	char* inputBuffer = nullptr;
-	unsigned short inputIndex = 0;
 	bool (*checker)(char*) = defaultChecker;
 	void (*finishCallback)(char*) = defaultCallback;
 
@@ -34,6 +33,8 @@ private:
 	constexpr static short FoucsLeftSpareSize = 64;
 	constexpr static LCD::Color BackgroundColor = { 8,8,8 };
 
+	char* inputBuffer = nullptr;
+	unsigned short inputIndex = 0;
 	LCD::Text inputText{ {0, 0}, inputBuffer, InputSize, LCD::Color::White, BackgroundColor };
 
 	constexpr static clock_t InfinityClock = -1;
