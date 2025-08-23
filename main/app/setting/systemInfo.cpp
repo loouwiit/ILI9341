@@ -27,7 +27,7 @@ void SystemInfo::init()
 		settings[i].scale = TextSize;
 		contents[i] = &settings[i];
 	}
-	updateHeapTraceText(settings[SettingSize - 3]);
+	updateHeapTraceText(settings[6]);
 	settings[SettingSize - 1].text = taskListBuffer;
 	settings[SettingSize - 1].scale = TaskTextSize;
 
@@ -42,9 +42,9 @@ void SystemInfo::init()
 
 	contents[SettingSize] = &title;
 
-	settings[SettingSize - 4].releaseCallback = [](Finger&, void*) { printInfo(); };
-	settings[SettingSize - 3].clickCallbackParam = &settings[SettingSize - 3];
-	settings[SettingSize - 3].releaseCallback = [](Finger&, void* param)
+	settings[5].releaseCallback = [](Finger&, void*) { printInfo(); };
+	settings[6].clickCallbackParam = &settings[6];
+	settings[6].releaseCallback = [](Finger&, void* param)
 		{
 			LCD::Text& self = *(LCD::Text*)param;
 			ESP_LOGI(TAG, "heap trace: %s", self.text);
@@ -55,6 +55,10 @@ void SystemInfo::init()
 			case 's':heap_trace_start(HEAP_TRACE_LEAKS); traceInfoState = 'r'; break; // stop
 			}
 			updateHeapTraceText(self);
+		};
+	settings[7].releaseCallback = [](Finger&, void*)
+		{
+			esp_restart();
 		};
 
 	snprintf(socBuffer + 12, sizeof(socBuffer) - 12, "%dMHz", CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ);
