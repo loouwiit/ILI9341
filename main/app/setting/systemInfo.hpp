@@ -47,6 +47,9 @@ private:
 
 	void click(Finger finger);
 	void releaseDetect();
+
+	void updateRam();
+
 	static void updateHeapTraceText(LCD::Text& text);
 
 	static void printInfo();

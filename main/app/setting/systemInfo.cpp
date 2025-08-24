@@ -42,6 +42,8 @@ void SystemInfo::init()
 
 	contents[SettingSize] = &title;
 
+	settings[2].clickCallbackParam = this;
+	settings[2].releaseCallback = [](Finger&, void* param) { ((SystemInfo*)param)->updateRam(); };
 	settings[5].releaseCallback = [](Finger&, void*) { printInfo(); };
 	settings[6].clickCallbackParam = &settings[6];
 	settings[6].releaseCallback = [](Finger&, void* param)
@@ -63,14 +65,15 @@ void SystemInfo::init()
 
 	snprintf(socBuffer + 12, sizeof(socBuffer) - 12, "%dMHz", CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ);
 
-	xTaskCreate([](void* param)
+	updateRam();
+
+	if (pdTRUE != xTaskCreate([](void* param)
 		{
 			SystemInfo& self = *(SystemInfo*)param;
 
 			while (self.running)
 			{
-				snprintf(self.ramBuffer + 4, sizeof(self.psramBuffer) - 4, "%dB", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
-				snprintf(self.psramBuffer + 6, sizeof(self.psramBuffer) - 6, "%dB", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+				self.updateRam();
 				vTaskList(self.taskListBuffer);
 				vTaskDelay(1000);
 			}
@@ -80,7 +83,13 @@ void SystemInfo::init()
 			self.deleteAble = true;
 			vTaskDelete(nullptr);
 		}
-	, "systemInfo", 4096, this, 2, nullptr);
+		, "systemInfo", 4096, this, 2, nullptr))
+	{
+		delete[] taskListBuffer;
+		taskListBuffer = nullptr;
+		settings[SettingSize - 1].text = "error:out of memory";
+		deleteAble = true;
+	};
 }
 
 void SystemInfo::deinit()
@@ -159,6 +168,12 @@ void SystemInfo::releaseDetect()
 		if (offset > 0)
 			offset = 0;
 	}
+}
+
+void SystemInfo::updateRam()
+{
+	snprintf(ramBuffer + 4, sizeof(psramBuffer) - 4, "%dB", heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
+	snprintf(psramBuffer + 6, sizeof(psramBuffer) - 6, "%dB", heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 }
 
 void SystemInfo::updateHeapTraceText(LCD::Text& text)
