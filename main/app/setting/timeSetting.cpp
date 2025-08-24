@@ -64,7 +64,7 @@ void TimeSetting::init()
 				}, "ntp", 4096, param, 2, nullptr);
 		};
 
-	xTaskCreate(
+	if (xTaskCreate(
 		[](void* param)
 		{
 			TimeSetting& timeSetting = *(TimeSetting*)param;
@@ -83,7 +83,12 @@ void TimeSetting::init()
 			timeSetting.deleteAble = true;
 			vTaskDelete(nullptr);
 		}
-	, "timeSetting", 4096, this, 1, nullptr);
+		, "timeSetting", 4096, this, 1, nullptr) != pdTRUE)
+	{
+		nowDate.text = "error:out of memory";
+		nowTime.text = "error:out of memory";
+		deleteAble = true;
+	}
 }
 
 void TimeSetting::deinit()

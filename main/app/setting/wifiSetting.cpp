@@ -23,7 +23,11 @@ void WifiSetting::init()
 	App::init();
 
 	coThreadQueue = xQueueCreate(CoThreadQueueLength, sizeof(CoThreadFunction_t));
-	xTaskCreate(coThread, "wifiSettingCothread", 4096, this, 2, nullptr);
+	if (xTaskCreate(coThread, "wifiSettingCothread", 4096, this, 2, nullptr) != pdTRUE)
+	{
+		wifiScanText.text = "error:out of memory";
+		deleteAble = true;
+	}
 
 	title.position.x -= title.computeSize().x / 2;
 	title.computeSize();

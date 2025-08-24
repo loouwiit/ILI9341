@@ -12,7 +12,7 @@ void AppClock::init()
 
 	App::init();
 
-	xTaskCreate(
+	if (xTaskCreate(
 		[](void* param)
 		{
 			AppClock& appClock = *(AppClock*)param;
@@ -32,7 +32,12 @@ void AppClock::init()
 			ESP_LOGI(TAG, "deinit at %s", asctime(localtime(&nowTime)));
 			vTaskDelete(nullptr);
 		}
-	, "appClock", 4096, this, 1, nullptr);
+	, "appClock", 4096, this, 1, nullptr) != pdTRUE)
+	{
+		dateText.text = "error:out of memory";
+		timeText.text = "error:out of memory";
+		deleteAble = true;
+	}
 }
 
 void AppClock::deinit()
