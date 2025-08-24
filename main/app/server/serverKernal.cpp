@@ -25,7 +25,7 @@ constexpr size_t PutMaxSize = 1024 * 1024; //1M
 constexpr size_t PutBufferSize = 512;
 
 constexpr size_t socketStreamWindowNumber = 16;
-constexpr size_t coworkerNumber = 3;
+constexpr size_t coworkerNumber = 1;
 
 constexpr size_t wifiApRecordSize = 50;
 
@@ -57,11 +57,13 @@ void serverStart(unsigned char maxAutoRestartTimes)
 	serverRunning = true;
 	xTaskCreate(server, "server", 4096, nullptr, 2, NULL);
 	char serverCoTaskName[13] = "coServer00";
+	size_t startedCoTask = 0;
 	for (size_t i = 0;i < coworkerNumber;i++)
 	{
 		sprintf(serverCoTaskName, "coServer%02d", i);
-		xTaskCreate(serverCoworker, serverCoTaskName, 4096, (void*)i, 3, NULL);
+		startedCoTask += pdTRUE == xTaskCreate(serverCoworker, serverCoTaskName, 4096, (void*)i, 3, NULL);
 	}
+	serverRunning = startedCoTask > 0;
 }
 
 void serverStop()
