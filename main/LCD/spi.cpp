@@ -58,6 +58,7 @@ SPIDevice::SPIDevice(SPI& host, GPIO CS, unsigned char transmitionSize, int spee
 		transmition[i].callbackBefore = emptyCallback;
 		transmition[i].callbackBeforeData = nullptr;
 	}
+	transmitionCount = xSemaphoreCreateCounting(transmitionSize, transmitionSize);
 
 	spi_device_interface_config_t devcfg = {};
 	devcfg.clock_speed_hz = speed;
@@ -79,11 +80,7 @@ SPIDevice::SPIDevice(SPIDevice&& move)
 	swap(move.transmition, transmition);
 	swap(move.transmitionSize, transmitionSize);
 	swap(move.transmitionIndex, transmitionIndex);
-	move.transmitionCountMutex.lock();
-	transmitionCountMutex.lock();
 	swap(move.transmitionCount, transmitionCount);
-	transmitionCountMutex.unlock();
-	move.transmitionCountMutex.unlock();
 }
 
 SPIDevice& SPIDevice::operator=(SPIDevice&& move)
@@ -93,11 +90,7 @@ SPIDevice& SPIDevice::operator=(SPIDevice&& move)
 	swap(move.transmition, transmition);
 	swap(move.transmitionSize, transmitionSize);
 	swap(move.transmitionIndex, transmitionIndex);
-	move.transmitionCountMutex.lock();
-	transmitionCountMutex.lock();
 	swap(move.transmitionCount, transmitionCount);
-	transmitionCountMutex.unlock();
-	move.transmitionCountMutex.unlock();
 
 	for (unsigned char i = 0; i < transmitionSize; i++)
 		transmition[i].spiDevice = this;
@@ -118,7 +111,11 @@ SPIDevice::~SPIDevice()
 	delete[] transmition;
 	transmitionSize = 0;
 	transmitionIndex = 0;
-	transmitionCount = 0;
+	if (transmitionCount != nullptr)
+	{
+		vSemaphoreDelete(transmitionCount);
+		transmitionCount = nullptr;
+	}
 }
 
 bool SPIDevice::transmit(const void* data, size_t sizeInBit, function_t callbackBefore, void* callbackBeforeData, function_t callbackAfter, void* callbackAfterData)
@@ -127,7 +124,7 @@ bool SPIDevice::transmit(const void* data, size_t sizeInBit, function_t callback
 
 	if (nowTransmition.transmitting) [[unlikely]]
 	{
-		ESP_LOGW("SPIDevice", "transmition all unaviliable! transmiting count = %d", transmitionCount);
+		ESP_LOGW("SPIDevice", "transmition all unaviliable! transmiting count = %d", uxSemaphoreGetCount(transmitionCount));
 		return false;
 	}
 
@@ -143,10 +140,8 @@ bool SPIDevice::transmit(const void* data, size_t sizeInBit, function_t callback
 	auto& transmitting = nowTransmition.transmitting;
 	auto& espTransmition = nowTransmition.transmition;
 
-	transmitting = true;	
-	transmitionCountMutex.lock();
-	transmitionCount++;
-	transmitionCountMutex.unlock();
+	transmitting = true;
+	xSemaphoreTake(transmitionCount, portMAX_DELAY);
 
 	espTransmition.length = sizeInBit;
 	espTransmition.rxlength = 0;
@@ -159,9 +154,7 @@ bool SPIDevice::transmit(const void* data, size_t sizeInBit, function_t callback
 
 	// failed
 	transmitting = false;
-	transmitionCountMutex.lock();
-	transmitionCount--;
-	transmitionCountMutex.unlock();
+	xSemaphoreGive(transmitionCount);
 	return false;
 }
 
@@ -188,9 +181,7 @@ bool SPIDevice::transmit(SmallData_t data, size_t sizeInBit, function_t callback
 	auto& espTransmition = nowTransmition.transmition;
 
 	transmitting = true;
-	transmitionCountMutex.lock();
-	transmitionCount++;
-	transmitionCountMutex.unlock();
+	xSemaphoreTake(transmitionCount, portMAX_DELAY);
 
 	espTransmition.length = sizeInBit;
 	espTransmition.rxlength = 0;
@@ -211,20 +202,18 @@ bool SPIDevice::transmit(SmallData_t data, size_t sizeInBit, function_t callback
 
 	// failed
 	transmitting = false;
-	transmitionCountMutex.lock();
-	transmitionCount--;
-	transmitionCountMutex.unlock();
+	xSemaphoreGive(transmitionCount);
 	return false;
 }
 
 unsigned char SPIDevice::getTransmittingCount()
 {
-	return transmitionCount;
+	return transmitionSize - uxSemaphoreGetCount(transmitionCount);
 }
 
 void SPIDevice::waitForTransmition(waitFunction_t waitFunction)
 {
-	while (transmitionCount != 0 && waitFunction()) {}
+	while (getTransmittingCount() != 0 && waitFunction()) {}
 }
 
 void SPI_IRAM SPIDevice::spiDeviceStartCallback(spi_transaction_t* trans)
@@ -243,8 +232,6 @@ void SPI_IRAM SPIDevice::spiDeviceFinishCallback(spi_transaction_t* trans)
 	auto& param = myTransmition.callbackAfterData;
 
 	myTransmition.transmitting = false;
-	myTransmition.spiDevice->transmitionCountMutex.lock();
-	myTransmition.spiDevice->transmitionCount--;
-	myTransmition.spiDevice->transmitionCountMutex.unlock();
+	xSemaphoreGiveFromISR(myTransmition.spiDevice->transmitionCount, nullptr);
 	callBack(param);
 }

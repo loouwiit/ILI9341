@@ -105,6 +105,5 @@ protected:
 	Transmition* transmition = nullptr;
 	unsigned char transmitionSize = 0;
 	unsigned char transmitionIndex = 0;
-	unsigned char transmitionCount = 0;
-	Mutex transmitionCountMutex{};
+	SemaphoreHandle_t transmitionCount = nullptr;
 };
