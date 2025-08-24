@@ -3,3 +3,4 @@ build
 sdkconfig.old
 main/app/setting/wifi.inl
 trace
+managed_components

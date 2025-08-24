@@ -1,5 +1,5 @@
 idf_component_register(SRCS "main.cpp"
-                        "wifi/wifi.cpp" "wifi/socketStream.cpp"
+                        "wifi/wifi.cpp" "wifi/socketStream.cpp" "wifi/mdns.cpp"
                         "LCD/spi.cpp" "LCD/color.cpp" "LCD/ILI9341.cpp" "LCD/iic.cpp" "LCD/FT6X36.cpp" "LCD/clickable.cpp"
                         "app/clock/clock.cpp"
                         "app/desktop/desktop.cpp"
