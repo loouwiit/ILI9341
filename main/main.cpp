@@ -8,6 +8,9 @@
 #include "app.hpp"
 #include "desktop/desktop.hpp"
 
+#include "storge/fat.hpp"
+#include "storge/mem.hpp"
+
 #define ChangeAppLog false
 
 extern "C" void app_main(void);
@@ -230,6 +233,9 @@ void app_main(void)
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	nvsInit();
 	setenv("TZ", "CST-8", 1);
+
+	mountFlash();
+	mountMem();
 
 	vTaskDelay(1);
 	lcd.init();
