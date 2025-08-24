@@ -3,6 +3,7 @@
 #include <driver/spi_master.h>
 #include <esp_task.h>
 #include "gpio.hpp"
+#include "mutex.hpp"
 
 #define SPI_IRAM_ENABLE true
 #if SPI_IRAM_ENABLE
@@ -77,6 +78,11 @@ protected:
 	class Transmition
 	{
 	public:
+		void* operator new(size_t size) { return heap_caps_malloc(size, MALLOC_CAP_DMA); }
+		void operator delete(void* pointer) { heap_caps_free(pointer); }
+		void* operator new[](size_t size) { return heap_caps_malloc(size, MALLOC_CAP_DMA); }
+		void operator delete[](void* pointer) { heap_caps_free(pointer); }
+
 		spi_transaction_t transmition{};
 		bool transmitting = false;
 
@@ -100,4 +106,5 @@ protected:
 	unsigned char transmitionSize = 0;
 	unsigned char transmitionIndex = 0;
 	unsigned char transmitionCount = 0;
+	Mutex transmitionCountMutex{};
 };

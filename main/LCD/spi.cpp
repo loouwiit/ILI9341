@@ -79,7 +79,11 @@ SPIDevice::SPIDevice(SPIDevice&& move)
 	swap(move.transmition, transmition);
 	swap(move.transmitionSize, transmitionSize);
 	swap(move.transmitionIndex, transmitionIndex);
+	move.transmitionCountMutex.lock();
+	transmitionCountMutex.lock();
 	swap(move.transmitionCount, transmitionCount);
+	transmitionCountMutex.unlock();
+	move.transmitionCountMutex.unlock();
 }
 
 SPIDevice& SPIDevice::operator=(SPIDevice&& move)
@@ -89,7 +93,11 @@ SPIDevice& SPIDevice::operator=(SPIDevice&& move)
 	swap(move.transmition, transmition);
 	swap(move.transmitionSize, transmitionSize);
 	swap(move.transmitionIndex, transmitionIndex);
+	move.transmitionCountMutex.lock();
+	transmitionCountMutex.lock();
 	swap(move.transmitionCount, transmitionCount);
+	transmitionCountMutex.unlock();
+	move.transmitionCountMutex.unlock();
 
 	for (unsigned char i = 0; i < transmitionSize; i++)
 		transmition[i].spiDevice = this;
@@ -135,8 +143,10 @@ bool SPIDevice::transmit(const void* data, size_t sizeInBit, function_t callback
 	auto& transmitting = nowTransmition.transmitting;
 	auto& espTransmition = nowTransmition.transmition;
 
-	transmitting = true;
+	transmitting = true;	
+	transmitionCountMutex.lock();
 	transmitionCount++;
+	transmitionCountMutex.unlock();
 
 	espTransmition.length = sizeInBit;
 	espTransmition.rxlength = 0;
@@ -149,7 +159,9 @@ bool SPIDevice::transmit(const void* data, size_t sizeInBit, function_t callback
 
 	// failed
 	transmitting = false;
+	transmitionCountMutex.lock();
 	transmitionCount--;
+	transmitionCountMutex.unlock();
 	return false;
 }
 
@@ -176,7 +188,9 @@ bool SPIDevice::transmit(SmallData_t data, size_t sizeInBit, function_t callback
 	auto& espTransmition = nowTransmition.transmition;
 
 	transmitting = true;
+	transmitionCountMutex.lock();
 	transmitionCount++;
+	transmitionCountMutex.unlock();
 
 	espTransmition.length = sizeInBit;
 	espTransmition.rxlength = 0;
@@ -197,7 +211,9 @@ bool SPIDevice::transmit(SmallData_t data, size_t sizeInBit, function_t callback
 
 	// failed
 	transmitting = false;
+	transmitionCountMutex.lock();
 	transmitionCount--;
+	transmitionCountMutex.unlock();
 	return false;
 }
 
@@ -227,6 +243,8 @@ void SPI_IRAM SPIDevice::spiDeviceFinishCallback(spi_transaction_t* trans)
 	auto& param = myTransmition.callbackAfterData;
 
 	myTransmition.transmitting = false;
+	myTransmition.spiDevice->transmitionCountMutex.lock();
 	myTransmition.spiDevice->transmitionCount--;
+	myTransmition.spiDevice->transmitionCountMutex.unlock();
 	callBack(param);
 }
