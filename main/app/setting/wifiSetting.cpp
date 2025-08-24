@@ -3,6 +3,7 @@
 #include <cstring>
 
 #include "wifi/wifi.hpp"
+#include "wifi/mdns.hpp"
 #include "input/input.hpp"
 
 constexpr char TAG[] = "WifiSetting";
@@ -58,13 +59,16 @@ void WifiSetting::init()
 				WifiSetting& self = *(WifiSetting*)param;
 				if (wifiIsInited())
 				{
-					if (wifiIsStarted())
-						wifiStop();
-					wifiDeinit();
+					if (!wifiIsStarted())
+					{
+						mdnsStop();
+						wifiDeinit();
+					}
 				}
 				else
 				{
 					wifiInit();
+					mdnsStart();
 					wifiNatSetAutoStart();
 				}
 				self.updateSwitch();
@@ -83,7 +87,6 @@ void WifiSetting::init()
 				}
 				else
 				{
-					tryInitWifi();
 					wifiApStart();
 					if (!wifiIsStarted())
 						wifiStart();
@@ -103,7 +106,6 @@ void WifiSetting::init()
 				}
 				else
 				{
-					tryInitWifi();
 					wifiStationStart();
 					if (!wifiIsStarted())
 						wifiStart();
@@ -454,12 +456,6 @@ void WifiSetting::scanWifi(WifiSetting& self)
 		self.wifiListText[i].computeSize();
 
 	self.wifiListLayar.elementCount = count;
-}
-
-void WifiSetting::tryInitWifi()
-{
-	if (!wifiIsInited())
-		wifiInit();
 }
 
 bool WifiSetting::ssidInputChecker(char* ssid)
