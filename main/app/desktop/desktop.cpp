@@ -5,6 +5,7 @@
 #include "setting/setting.hpp"
 #include "clock/clock.hpp"
 #include "tracker/tracker.hpp"
+#include "server/server.hpp"
 
 constexpr char TAG[] = "AppDesktop";
 
@@ -94,6 +95,8 @@ App* AppDesktop::appFactory(unsigned char index)
 		return new AppClock{ lcd, touch, changeAppCallback, newAppCallback };
 	case 2:
 		return new AppTracker{ lcd, touch, changeAppCallback, newAppCallback };
+	case 3:
+		return new AppServer{ lcd, touch, changeAppCallback, newAppCallback };
 	default:
 		ESP_LOGE(TAG, "failed to new app %s (case %d)", ApplicationName[index], index);
 		return nullptr;

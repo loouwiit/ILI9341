@@ -1,10 +1,12 @@
-idf_component_register(SRCS "main.cpp"
-                        "wifi/wifi.cpp" "wifi/socketStream.cpp" "wifi/mdns.cpp"
+idf_component_register(SRCS "main.cpp" "stringCompare.cpp"
+                        "wifi/wifi.cpp" "wifi/socketStream.cpp" "wifi/socketStreamWindow.cpp" "wifi/http.cpp" "wifi/mdns.cpp"
                         "LCD/spi.cpp" "LCD/color.cpp" "LCD/ILI9341.cpp" "LCD/iic.cpp" "LCD/FT6X36.cpp" "LCD/clickable.cpp"
+                        "storge/fat.cpp" "storge/mem.cpp"
                         "app/clock/clock.cpp"
                         "app/desktop/desktop.cpp"
                         "app/setting/setting.cpp" "app/setting/wifiSetting.cpp" "app/setting/timeSetting.cpp" "app/setting/systemInfo.cpp" "app/setting/touchTest.cpp"
                         "app/input/input.cpp"
                         "app/tracker/tracker.cpp"
+                        "app/server/server.cpp" "app/server/serverKernal.cpp" "app/server/tempture.cpp"
                     INCLUDE_DIRS "app" "."
-                    PRIV_REQUIRES esp_driver_gpio esp_driver_spi esp_driver_i2c nvs_flash esp_wifi spi_flash)
+                    PRIV_REQUIRES esp_driver_gpio esp_driver_spi esp_driver_i2c nvs_flash esp_wifi spi_flash fatfs esp_driver_tsens)
