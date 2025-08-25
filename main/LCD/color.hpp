@@ -26,6 +26,9 @@ public:
 		R{ R }, G{ G }, B{ B }
 	{}
 
+	bool operator==(Color666 o) { return R == o.R && G == o.G && B == o.B; }
+	bool operator!=(Color666 o) { return R != o.R || G != o.G || B != o.B; }
+
 	const static Color666 White;
 	const static Color666 Black;
 	const static Color666 Red;
@@ -69,6 +72,9 @@ public:
 
 	operator Color666() { return { (uint8_t)(R << 1), (uint8_t)((GH << 3) + GL), (uint8_t)(B << 1) }; }
 	operator uint16_t() { return (R << 11) + (GH << 8) + (GL << 5) + B; }
+
+	bool operator ==(Color565 o) { return GH == o.GH && R == o.R && B == o.B && GL == o.GL; }
+	bool operator !=(Color565 o) { return GH != o.GH || R != o.R || B != o.B || GL != o.GL; }
 
 	const static Color565 White;
 	const static Color565 Black;
