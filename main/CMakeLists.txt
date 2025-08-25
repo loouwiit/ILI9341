@@ -8,5 +8,6 @@ idf_component_register(SRCS "main.cpp" "stringCompare.cpp"
                         "app/input/input.cpp"
                         "app/tracker/tracker.cpp"
                         "app/server/server.cpp" "app/server/serverKernal.cpp" "app/server/tempture.cpp"
+                        "app/explorer/explorer.cpp"
                     INCLUDE_DIRS "app" "."
                     PRIV_REQUIRES esp_driver_gpio esp_driver_spi esp_driver_i2c nvs_flash esp_wifi spi_flash fatfs esp_driver_tsens)
