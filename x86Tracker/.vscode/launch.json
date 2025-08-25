@@ -10,7 +10,7 @@
 			"request": "launch",
 			"program": "${workspaceFolder}/build/tracker",
 			"args": [
-				"192.168.195.105",
+				"192.168.97.105",
 				"0"
 			],
 			"stopAtEntry": false,

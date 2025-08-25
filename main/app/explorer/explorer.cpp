@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include "textEditor/textEditor.hpp"
+
 void AppExplorer::init()
 {
 	App::init();
@@ -181,8 +183,16 @@ void AppExplorer::floorBack()
 void AppExplorer::clickCallback(unsigned char index)
 {
 	if (files[index].textColor != FloorColor)
+	{
+		// file
+		AppTextEditor* editor = new AppTextEditor{ lcd,touch, changeAppCallback, newAppCallback };
+		floor.openFile(fileName[index], strlen(fileName[index]), editor->file);
+		editor->fileName = fileName[index]; // 生命周期安全，newApp不会析构过去的app
+		newAppCallback(editor);
 		return;
+	}
 
+	// floor
 	auto length = strlen(fileName[index]);
 	strcpy(nowFloorPath + nowFloorPointer, fileName[index]);
 	nowFloorPointer += length;
