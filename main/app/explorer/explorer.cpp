@@ -23,7 +23,7 @@ void AppExplorer::init()
 	fileLayar.start.x = ContentXOffset;
 	fileLayar.start.y = 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 1;
 
-	for (unsigned char i = 0; i < LayarClassicSize::Large; i++)
+	for (unsigned char i = 0; i < FileLayarSize; i++)
 	{
 		clickCallbackParam[i].self = this;
 		clickCallbackParam[i].index = i;
@@ -50,7 +50,7 @@ void AppExplorer::init()
 void AppExplorer::deinit()
 {
 	running = false;
-	for (unsigned char i = 0; i < LayarClassicSize::Large; i++)
+	for (unsigned char i = 0; i < FileLayarSize; i++)
 	{
 		delete[] fileName[i];
 		files[i].text = fileName[i] = nullptr;
