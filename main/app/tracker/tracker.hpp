@@ -21,12 +21,13 @@ private:
 	LCD::Text text{ {}, buffer, textSize };
 
 	void update(const char* string);
-	
+
 	bool fingerActive[2]{};
 	Vector2s lastFingerPosition[2]{};
-	
+
 	void dealSocket(IOSocketStream& socketStream);
 
 	constexpr static unsigned short Port = 467;
 	static void serverThread(void* param);
+	Socket listenSocket{};
 };

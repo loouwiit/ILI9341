@@ -15,6 +15,7 @@ void AppTracker::init()
 void AppTracker::deinit()
 {
 	running = false;
+	close(listenSocket);
 }
 
 void AppTracker::draw()
@@ -160,6 +161,8 @@ void AppTracker::serverThread(void* param)
 		vTaskDelete(nullptr);
 		return;
 	}
+
+	self.listenSocket = listen_sock;
 
 	while (self.running)
 	{
