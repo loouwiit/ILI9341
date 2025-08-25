@@ -14,7 +14,7 @@ namespace MemFileSystemError
 
 constexpr size_t MaxMemFileDescriptionCount = 16;
 constexpr size_t MemFileBlockTotolSize = 512;
-constexpr size_t MemFileMaxSize = 1024 * 1024; // 1MB
+constexpr size_t MemFileMaxSize = 6 * 1024 * 1024; // 6MB
 
 bool mountMem();
 // void testMem();

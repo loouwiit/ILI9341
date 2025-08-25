@@ -21,7 +21,7 @@ constexpr char TAG[] = "server";
 
 constexpr char ServerPath[] = "/server";
 constexpr char formatingPassword[] = "I know exactly what I'm doing";
-constexpr size_t PutMaxSize = 1024 * 1024; //1M
+constexpr size_t PutMaxSize = 6 * 1024 * 1024; //6M
 constexpr size_t PutBufferSize = 512;
 
 constexpr size_t socketStreamWindowNumber = 16;

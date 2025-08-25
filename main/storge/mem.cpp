@@ -6,7 +6,7 @@
 #include "fat.hpp"
 #include <algorithm>
 
-#define MemDebug true
+#define MemDebug false
 #define MemUsageDebug true
 #define MemProcessDebug false
 
