@@ -29,6 +29,7 @@ constexpr size_t coworkerNumber = 1;
 
 constexpr size_t wifiApRecordSize = 50;
 
+EXT_RAM_BSS_ATTR Socket serverListenSocket{};
 EXT_RAM_BSS_ATTR bool serverRunning = false;
 EXT_RAM_BSS_ATTR SocketStreamWindow socketStreamWindows[socketStreamWindowNumber]{};
 
@@ -63,26 +64,28 @@ void serverStart(unsigned char maxAutoRestartTimes)
 		sprintf(serverCoTaskName, "coServer%02d", i);
 		startedCoTask += pdTRUE == xTaskCreate(serverCoworker, serverCoTaskName, 4096, (void*)i, 3, NULL);
 	}
-	serverRunning = startedCoTask > 0;
+	if (startedCoTask == 0)
+		serverStop();
 }
 
 void serverStop()
 {
 	serverRunning = false;
+	close(serverListenSocket);
 }
 
 void server(void*)
 {
-	int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-	if (listen_sock < 0)
+	serverListenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+	if (serverListenSocket < 0)
 	{
-		printf("server:socket creat failed: error %d\n", listen_sock);
+		printf("server:socket creat failed: error %d\n", serverListenSocket);
 		serverRunning = false;
 		vTaskDelete(nullptr);
 	}
 
 	int opt = 1;
-	setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	setsockopt(serverListenSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
 	printf("socket created\n");
 
@@ -95,7 +98,7 @@ void server(void*)
 	}
 
 	int err;
-	err = bind(listen_sock, (struct sockaddr*)&addr, sizeof(addr));
+	err = bind(serverListenSocket, (struct sockaddr*)&addr, sizeof(addr));
 	if (err != 0)
 	{
 		printf("server: socket bind failed: errno %d\n", errno);
@@ -104,7 +107,7 @@ void server(void*)
 	}
 	printf("server:socket bound, port 80\n");
 
-	err = listen(listen_sock, 1);
+	err = listen(serverListenSocket, 1);
 	if (err != 0)
 	{
 		printf("server: socket listen failed: errno %d\n", errno);
@@ -118,7 +121,7 @@ void server(void*)
 
 		struct sockaddr_storage source_addr; // Large enough for both IPv4 or IPv6
 		socklen_t addr_len = sizeof(source_addr);
-		int sock = accept(listen_sock, (struct sockaddr*)&source_addr, &addr_len);
+		int sock = accept(serverListenSocket, (struct sockaddr*)&source_addr, &addr_len);
 		if (sock < 0)
 		{
 			printf("server: Unable to accept connection: errno %d\n", errno);
@@ -160,7 +163,7 @@ void server(void*)
 		vTaskDelay(1);
 	}
 
-	close(listen_sock);
+	close(serverListenSocket);
 	vTaskDelete(nullptr);
 }
 
@@ -530,10 +533,8 @@ void httpPost(IOSocketStream& socketStream, HttpRequest& request)
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 		socketStream.close();
 
-		temperatureStop();
-		serverRunning = false;
+		serverStop();
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
-		temperatureStart();
 	}
 	else if (stringCompare((char*)uri, uriLenght, "/api/formatFlash", 16))
 	{
@@ -668,6 +669,7 @@ void httpDelete(IOSocketStream& socketStream, HttpRequest& request)
 
 void restart()
 {
+	if (!serverRunning) return;
 	autoRestartTimes++;
 	if (autoRestartTimes < maxRestartTimes)
 	{
