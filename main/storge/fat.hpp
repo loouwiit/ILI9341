@@ -62,6 +62,7 @@ class IFile : virtual public FileBase
 public:
 	bool open(const char* path);
 	char get();
+	size_t getLine(char* string, size_t size, char ch = '\n');
 	size_t read(void* pointer, size_t size);
 
 	bool eof();

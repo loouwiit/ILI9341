@@ -1,4 +1,5 @@
 #include <sys/stat.h>
+#include <stdio.h>
 #include <cstring> //strlen()
 #include "fat.hpp"
 
@@ -292,9 +293,28 @@ char IFile::get()
 	return fgetc(file);
 }
 
+size_t IFile::getLine(char* string, size_t size, char ch)
+{
+	size_t ret = 0;
+	while (ret < size)
+	{
+		string[ret] = get();
+		if (string[ret] == ch) break;
+		if (eof()) break;
+		ret++;
+	}
+	string[ret] = '\0';
+	return ret;
+}
+
 size_t IFile::read(void* pointer, size_t size)
 {
 	return fread((char*)pointer, sizeof(char), size, file);
+}
+
+bool IFile::eof()
+{
+	return feof(file) != 0;
 }
 
 //Ofile
