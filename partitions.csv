@@ -9,9 +9,6 @@ phy_init, data, phy,     0x00F000,0x001000,
 #4k
 ota_0,    app,  ota_0,   0x010000,0x200000
 #2M
-ota_1,    app,  ota_1,   0x210000,0x200000
-#2M
-fat,      data, fat,     0x410000,0xBF0000,
-#11M+960k
+fat,      data, fat,     0x210000,0xDF0000,
 
 #Flags: encrypted
