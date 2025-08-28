@@ -13,30 +13,11 @@ void AppPicture::init()
 	file.read(&totol, mataDataSize);
 
 	textTime = clock() + TextFadeTime;
-
-	if (xTaskCreate([](void* param)
-		{
-			AppPicture& self = *(AppPicture*)param;
-			while (self.running)
-			{
-				self.tryLoadNext();
-				vTaskDelay(1);
-			}
-			self.deleteAble = true;
-			vTaskDelete(nullptr);
-		}, "picture", 4096, this, 2, nullptr) != pdTRUE)
-	{
-		deleteAble = true;
-		nextFrameTime = (clock_t)-1;
-		textTime = (clock_t)-1;
-		path.text = "error:out of memory";
-		pictureCountText.position.y = LCD::ScreenSize.y;
-	}
 }
 
-void AppPicture::deinit()
+void AppPicture::draw()
 {
-	running = false;
+	tryLoadNext();
 }
 
 void AppPicture::touchUpdate()
@@ -76,16 +57,12 @@ void AppPicture::load(unsigned short index)
 
 	file.setOffset(mataDataSize + frameBufferSize * index);
 
-	drawMutex.lock();
-
 	// file.read(&frameTime, clockBufferSize);
 	nextFrameTime = clock() + frameTime;
 
 	file.read(&frame.buffer, frameBufferSize);
 
 	drawText();
-
-	drawMutex.unlock();
 }
 
 void AppPicture::drawText()

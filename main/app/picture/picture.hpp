@@ -12,9 +12,9 @@ public:
 	AppPicture(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, newAppCallback) {}
 
 	virtual void init() override final;
-	virtual void deinit() override final;
+	// virtual void deinit() override final;
 
-	virtual void draw() override final {};
+	virtual void draw() override final;
 	virtual void touchUpdate() override final;
 	virtual void back() override final;
 
