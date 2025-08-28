@@ -78,7 +78,7 @@ void AppExplorer::touchUpdate()
 		lastFingerPosition[0] = finger[0].position;
 		fingerMoveTotol[0] = {};
 	}
-	else if (finger[0].state == Finger::State::Realease)
+	else if (finger[0].state == Finger::State::Realease && (viewMoveActive[0] || pathMoveActive[0]))
 	{
 		if (abs2(fingerMoveTotol[0]) < moveThreshold2)
 			click(finger[0]);
@@ -94,7 +94,7 @@ void AppExplorer::touchUpdate()
 		lastFingerPosition[1] = finger[1].position;
 		fingerMoveTotol[1] = {};
 	}
-	else if (finger[1].state == Finger::State::Realease)
+	else if (finger[1].state == Finger::State::Realease && (viewMoveActive[1] || pathMoveActive[1]))
 	{
 		if (abs2(fingerMoveTotol[1]) < moveThreshold2)
 			click(finger[1]);
