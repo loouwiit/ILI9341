@@ -62,6 +62,8 @@ void ILI9341<Color>::init(Color color)
 		command(0x3A, { 0x55 }, 1); // 16 bit
 	}
 
+	command(0xC5, { 0x10,0x4C }, 2); // VCM1
+
 	command(0x21); // inverse on
 
 	command(0x29); // display on
