@@ -10,6 +10,7 @@
 
 #include "storge/fat.hpp"
 #include "storge/mem.hpp"
+#include "storge/sd.hpp"
 
 #define ChangeAppLog false
 
@@ -227,7 +228,7 @@ void newAppCallback(App* nextApp)
 
 void app_main(void)
 {
-	spi = SPI{ SPI2_HOST, {GPIO_NUM_NC}, {GPIO_NUM_13}, {GPIO_NUM_14} };
+	spi = SPI{ SPI2_HOST, {GPIO_NUM_45}, {GPIO_NUM_13}, {GPIO_NUM_14} };
 	lcd = LCD{ spi, {GPIO_NUM_21}, {GPIO_NUM_47}, {GPIO_NUM_48}, &screenBuffer };
 
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -236,6 +237,7 @@ void app_main(void)
 
 	mountFlash();
 	mountMem();
+	mountSd(spi, { GPIO_NUM_3 });
 
 	vTaskDelay(1);
 	lcd.init();
