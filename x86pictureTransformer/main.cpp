@@ -5,7 +5,7 @@
 
 #include "color.hpp"
 
-constexpr unsigned short TotolFrames = 20;
+constexpr unsigned short TotolFrames = 100;
 
 using Color = Color565;
 sf::Vector2i ScreenSize = { 320, 240 };
@@ -42,14 +42,19 @@ int main(int argc, char* argv[])
 	{
 		char buffer[] = "files/00000.png";
 		sprintf(buffer, "files/%05d.png", pictureIndex);
-		image.loadFromFile(buffer);
-		appendPicture(file, image);
+		if (image.loadFromFile(buffer))
+		{
+			appendPicture(file, image);
+		}
+		else break;
 	}
 
 	pictureIndex--;
 	file.seekp(0);
 	file.put(pictureIndex & 0xFF);
 	file.put(pictureIndex >> 8);
+
+	std::cout << pictureIndex << "frame totol\n";
 
 	return 0;
 }
