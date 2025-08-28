@@ -29,8 +29,6 @@ private:
 	LCD::Rectangle applicationRectangle[ApplicationSize]{};
 	LCD::Text applicationText[ApplicationSize]{};
 
-	Mutex exitMutex;
-	bool exiting = false;
 	short& offset = applications.start.x;
 	bool fingerActive[2] = { false, false };
 	Vector2s lastFingerPosition[2]{};

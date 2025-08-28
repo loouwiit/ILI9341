@@ -112,17 +112,7 @@ void AppDesktop::click(Finger finger)
 
 	for (unsigned char i = 0; i < ApplicationSize;i++) if (applicationRectangle[i].isClicked(finger.position))
 	{
-		exitMutex.lock();
-		if (exiting)
-		{
-			exitMutex.unlock();
-			ESP_LOGI(TAG, "already changing");
-			continue;
-		}
-		exiting = true;
-		exitMutex.unlock();
-
-		ESP_LOGI(TAG, "change to %s", ApplicationName[i]);
-		changeAppCallback(appFactory(i));
+		ESP_LOGI(TAG, "start %s", ApplicationName[i]);
+		newAppCallback(appFactory(i));
 	}
 }
