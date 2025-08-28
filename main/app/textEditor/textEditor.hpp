@@ -25,8 +25,6 @@ private:
 	constexpr static short GapSize = 8;
 	constexpr static short ContentXOffset = 20;
 
-	constexpr static LCD::Color FileColor = { 63,63,63 };
-	constexpr static LCD::Color FloorColor = { 0,0,63 };
 	constexpr static LCD::Color BackgroundColor = { 8,8,8 };
 
 	constexpr static unsigned char ContensSize = 2;
