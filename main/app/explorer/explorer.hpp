@@ -44,7 +44,7 @@ private:
 	struct ClickCallbackParam_t { AppExplorer* self = nullptr; unsigned char index = 0; };
 	ClickCallbackParam_t clickCallbackParam[FileLayarSize]{};
 
-	void resetPathPosition();
+	void resetPosition();
 	void updateFloor();
 	void floorBack();
 	void clickCallback(unsigned char index);

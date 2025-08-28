@@ -126,8 +126,9 @@ void AppExplorer::back()
 	changeAppCallback(nullptr);
 }
 
-void AppExplorer::resetPathPosition()
+void AppExplorer::resetPosition()
 {
+	offset = 0;
 	path.position.x = ContentXOffset;
 	path.computeSize();
 }
@@ -177,7 +178,7 @@ void AppExplorer::floorBack()
 	while (nowFloorPath[nowFloorPointer] != '/');
 	nowFloorPointer++;
 	nowFloorPath[nowFloorPointer] = '\0';
-	resetPathPosition();
+	resetPosition();
 	updateFloor();
 }
 
@@ -198,7 +199,7 @@ void AppExplorer::clickCallback(unsigned char index)
 	nowFloorPointer++;
 	nowFloorPath[nowFloorPointer] = '\0';
 	floor.open(realFloorPath);
-	resetPathPosition();
+	resetPosition();
 	updateFloor();
 }
 
