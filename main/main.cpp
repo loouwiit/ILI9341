@@ -237,7 +237,7 @@ void app_main(void)
 
 	mountFlash();
 	mountMem();
-	mountSd(spi, { GPIO_NUM_3 });
+	xTaskCreate([](void*) { mountSd(spi, { GPIO_NUM_3 }); vTaskDelete(nullptr); }, "mount sd", 4096, nullptr, 1, nullptr);
 
 	vTaskDelay(1);
 	lcd.init();
