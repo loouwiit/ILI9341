@@ -48,6 +48,7 @@ private:
 	void updateFloor();
 	void floorBack();
 	void clickCallback(unsigned char index);
+	void openFile(unsigned char index);
 	void updateText(unsigned char index, const char* text, Floor::Type type);
 
 	constexpr static float moveThreshold2 = 100.0f;

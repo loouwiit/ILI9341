@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#include "picture/picture.hpp"
 #include "textEditor/textEditor.hpp"
 
 void AppExplorer::init()
@@ -185,10 +186,7 @@ void AppExplorer::clickCallback(unsigned char index)
 	if (files[index].textColor != FloorColor)
 	{
 		// file
-		AppTextEditor* editor = new AppTextEditor{ lcd,touch, changeAppCallback, newAppCallback };
-		floor.openFile(fileName[index], strlen(fileName[index]), editor->file);
-		editor->fileName = fileName[index]; // 生命周期安全，newApp不会析构过去的app
-		newAppCallback(editor);
+		openFile(index);
 		return;
 	}
 
@@ -202,6 +200,26 @@ void AppExplorer::clickCallback(unsigned char index)
 	floor.open(realFloorPath);
 	resetPathPosition();
 	updateFloor();
+}
+
+void AppExplorer::openFile(unsigned char index)
+{
+	char* fileName = this->fileName[index];
+	auto fileNameLength = strlen(fileName);
+	if (strcmp(fileName + fileNameLength - 4, ".pic") == 0)
+	{
+		AppPicture* picture = new AppPicture{ lcd,touch, changeAppCallback, newAppCallback };
+		floor.openFile(fileName, fileNameLength, picture->file);
+		picture->fileName = fileName;
+		newAppCallback(picture);
+	}
+	else
+	{
+		AppTextEditor* editor = new AppTextEditor{ lcd,touch, changeAppCallback, newAppCallback };
+		floor.openFile(fileName, fileNameLength, editor->file);
+		editor->fileName = fileName; // 生命周期安全，newApp不会析构过去的app
+		newAppCallback(editor);
+	}
 }
 
 void AppExplorer::updateText(unsigned char index, const char* text, Floor::Type type)
