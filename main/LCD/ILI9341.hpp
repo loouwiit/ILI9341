@@ -57,7 +57,9 @@ public:
 		resetGpio{ reset, GPIO::Mode::GPIO_MODE_OUTPUT }
 	{}
 
-	operator Frame& () { return frame; }
+	operator Frame& () { return *frame; }
+	Frame& getFrame() { return *frame; }
+
 	Vector2us draw(auto&& element);
 	bool isDrawing();
 
