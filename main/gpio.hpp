@@ -16,6 +16,7 @@ public:
 	GPIO() = default;
 	GPIO(GPIO_NUM gpio) : gpio{ gpio } {}
 	GPIO(GPIO_NUM gpio, Mode mode) : gpio{ gpio } { setMode(mode); }
+	GPIO(GPIO_NUM gpio, Pull pull) : gpio{ gpio } { setPull(pull); }
 	GPIO(GPIO_NUM gpio, Mode mode, Pull pull) : gpio{ gpio } { setMode(mode);setPull(pull); }
 	GPIO(GPIO_NUM gpio, Mode mode, Pull pull, Interrupt interrupt, function_t function = nullptr, void* param = nullptr) : gpio{ gpio } { setMode(mode);setPull(pull);setInterrupt(interrupt, function, param); }
 
