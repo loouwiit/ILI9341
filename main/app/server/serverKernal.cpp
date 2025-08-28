@@ -21,7 +21,8 @@ constexpr char TAG[] = "server";
 
 constexpr char ServerPath[] = "/server";
 constexpr char formatingPassword[] = "I know exactly what I'm doing";
-constexpr size_t PutMaxSize = 6 * 1024 * 1024; //6M
+constexpr size_t FlashPutMaxSize = 6 * 1024 * 1024; //6M
+constexpr size_t SdPutMaxSize = 50 * 1024 * 1024; //50M
 constexpr size_t PutBufferSize = 512;
 
 constexpr size_t socketStreamWindowNumber = 16;
@@ -582,13 +583,24 @@ void httpPut(IOSocketStream& socketStream, HttpRequest& request)
 	{
 		//floor
 		newFloor(path);
-		tree(PerfixRoot); //[debug]
+		// tree(PerfixRoot); //[debug]
 		sendOk(socketStream);
 	}
 	else
 	{
 		//file
-		if (request.getBodyLenght() > PutMaxSize || request.getBodyLenght() > getFreeSpace())
+		bool tooLarge = true;
+		if (prefixCompare(path, pathLength, PrefixSd, strlen(PrefixSd)))
+		{
+			tooLarge = request.getBodyLenght() > SdPutMaxSize;
+		}
+		else
+		{
+			tooLarge = request.getBodyLenght() > FlashPutMaxSize ||
+				request.getBodyLenght() > getFreeSpace();
+		}
+
+		if (tooLarge)
 		{
 			printf("server: put file is too large\n");
 
@@ -635,9 +647,7 @@ void httpPut(IOSocketStream& socketStream, HttpRequest& request)
 			vTaskDelay(1);
 		}
 
-#if true
-		tree(PerfixRoot); //[debug]
-#endif
+		// tree(PerfixRoot); //[debug]
 
 #if false
 		printf("coworker:httpPut(): stack high water = %u\n", uxTaskGetStackHighWaterMark(nullptr));
@@ -663,7 +673,7 @@ void httpDelete(IOSocketStream& socketStream, HttpRequest& request)
 		//file
 		removeFile(path);
 	}
-	tree(PerfixRoot); //[debug]
+	// tree(PerfixRoot); //[debug]
 	sendOk(socketStream);
 }
 
