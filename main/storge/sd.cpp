@@ -8,7 +8,7 @@
 #include <sdmmc_cmd.h>
 
 constexpr static char TAG[] = "SD";
-static sdmmc_card_t* card = nullptr;
+EXT_RAM_BSS_ATTR static sdmmc_card_t* card = nullptr;
 
 bool mountSd(SPI& spi, GPIO cs)
 {

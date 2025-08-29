@@ -25,13 +25,13 @@ DMA_ATTR LCD::Frame screenBuffer;
 static SPI spi{};
 static LCD lcd{};
 
-static IIC iic{};
-static FT6X36 touch{};
+EXT_RAM_BSS_ATTR static IIC iic{};
+EXT_RAM_BSS_ATTR static FT6X36 touch{};
 
-static App* app[10];
-static unsigned char appIndex = 0;
-static Mutex changeMutex;
-static bool changing = false;
+EXT_RAM_BSS_ATTR static App* app[10]{};
+EXT_RAM_BSS_ATTR static unsigned char appIndex = 0;
+EXT_RAM_BSS_ATTR static Mutex changeMutex{};
+EXT_RAM_BSS_ATTR static bool changing = false;
 
 void drawThread(void*)
 {

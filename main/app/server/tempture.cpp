@@ -2,9 +2,9 @@
 #include "mutex.hpp"
 #include "tempture.hpp"
 
-static temperature_sensor_handle_t temp_handle = nullptr;
-static bool tempratureInited = false;
-static bool tempratureEnabled = false;
+EXT_RAM_BSS_ATTR static temperature_sensor_handle_t temp_handle = nullptr;
+EXT_RAM_BSS_ATTR static bool tempratureInited = false;
+EXT_RAM_BSS_ATTR static bool tempratureEnabled = false;
 Mutex temperatureMutex;
 
 bool temperatureIsInited()

@@ -16,24 +16,24 @@
 
 const uint32_t defaultNatIp = esp_ip4addr_aton("192.168.4.1");
 
-const char* TAG = "wifi";
+constexpr char TAG[] = "wifi";
 
-unsigned char wifiRetryCount = 0;
+EXT_RAM_BSS_ATTR unsigned char wifiRetryCount = 0;
 
-bool wifiInited = false;
-bool wifiStarted = false;
-bool wifiStationStarted = false;
-bool wifiStationWantConnect = false;
-bool wifiStationConnected = false;
-bool wifiApStarted = false;
+EXT_RAM_BSS_ATTR bool wifiInited = false;
+EXT_RAM_BSS_ATTR bool wifiStarted = false;
+EXT_RAM_BSS_ATTR bool wifiStationStarted = false;
+EXT_RAM_BSS_ATTR bool wifiStationWantConnect = false;
+EXT_RAM_BSS_ATTR bool wifiStationConnected = false;
+EXT_RAM_BSS_ATTR bool wifiApStarted = false;
 
-bool wifiNatAutoStart = false;
-bool wifiNatStarted = false;
+EXT_RAM_BSS_ATTR bool wifiNatAutoStart = false;
+EXT_RAM_BSS_ATTR bool wifiNatStarted = false;
 
-esp_netif_t* wifiAp = nullptr;
-esp_netif_t* wifiSta = nullptr;
+EXT_RAM_BSS_ATTR esp_netif_t* wifiAp = nullptr;
+EXT_RAM_BSS_ATTR esp_netif_t* wifiSta = nullptr;
 
-esp_ip4_addr_t ip = { 0 };
+EXT_RAM_BSS_ATTR esp_ip4_addr_t ip = { 0 };
 
 bool wifiStationSetConfig(const char* ssid, const char* password);
 bool wifiNatAutoStartDetecte();
