@@ -33,6 +33,8 @@ bool wifiNatStarted = false;
 esp_netif_t* wifiAp = nullptr;
 esp_netif_t* wifiSta = nullptr;
 
+esp_ip4_addr_t ip = { 0 };
+
 bool wifiStationSetConfig(const char* ssid, const char* password);
 bool wifiNatAutoStartDetecte();
 
@@ -66,6 +68,7 @@ void event_handler(void* arg, esp_event_base_t eventBase, int32_t eventId, void*
 		{
 			// 不想连接
 			ESP_LOGI(TAG, "disconnect success");
+			ip = { 0 };
 			wifiStationConnected = false;
 			return;
 		}
@@ -77,6 +80,7 @@ void event_handler(void* arg, esp_event_base_t eventBase, int32_t eventId, void*
 		{
 			// 之前连接 -> 现在丢失连接
 			ESP_LOGI(TAG, "connection lost");
+			ip = { 0 };
 			wifiStationConnected = false;
 		}
 
@@ -101,6 +105,7 @@ void event_handler(void* arg, esp_event_base_t eventBase, int32_t eventId, void*
 			ip_event_got_ip_t* event = (ip_event_got_ip_t*)eventData;
 			ESP_LOGI(TAG, "connect success");
 			ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+			ip = event->ip_info.ip;
 			wifiStationConnected = true;
 			wifiNatAutoStartDetecte();
 		}
@@ -211,6 +216,7 @@ void wifiStart()
 	esp_wifi_start();
 	wifiStarted = true;
 	wifiStationWantConnect = false;
+	ip = { 0 };
 	wifiStationConnected = false;
 	wifiNatStarted = false;
 	ESP_LOGI(TAG, "started");
@@ -230,6 +236,7 @@ void wifiStop()
 	wifiStarted = false;
 	wifiStationStarted = false;
 	wifiStationWantConnect = false;
+	ip = { 0 };
 	wifiStationConnected = false;
 	wifiApStarted = false;
 	wifiNatStarted = false;
@@ -250,6 +257,7 @@ void wifiStationStart()
 	}
 	wifiStationStarted = true;
 	wifiStationWantConnect = false;
+	ip = { 0 };
 	wifiStationConnected = false;
 	wifi_mode_t mode;
 	esp_wifi_get_mode(&mode);
@@ -315,6 +323,11 @@ uint16_t wifiStationScan(wifi_ap_record_t* apInfo, uint16_t maxCount, char* ssid
 	return count;
 }
 
+esp_ip4_addr_t wifiStationGetIp()
+{
+	return ip;
+}
+
 bool wifiIsWantConnect()
 {
 	return wifiStationWantConnect;
@@ -366,6 +379,7 @@ void wifiDisconnect()
 		return;
 	}
 	wifiStationWantConnect = false;
+	ip = { 0 };
 	wifiStationConnected = false; //貌似是冗余
 	wifiNatStarted = false;
 	esp_wifi_disconnect();

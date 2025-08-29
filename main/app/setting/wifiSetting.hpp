@@ -36,8 +36,9 @@ private:
 	LCD::Layar<LayarClassicSize::Small> apSettingLayar{ ApSettingSize };
 	LCD::Text apSettings[ApSettingSize]{};
 
-	constexpr static unsigned char WifiSettingSize = 3;
-	constexpr static const char* WifiSettingName[WifiSettingSize] = { "wifi connect", "ssid:error", "password:error" };
+	constexpr static unsigned char WifiSettingSize = 4;
+	constexpr static const char* WifiSettingName[WifiSettingSize] = { "wifi connect", "ssid:error", "password:error", "ip: error" };
+	char ipBuffer[19] = "ip:255.255.255.255";
 	LCD::Layar<LayarClassicSize::Small> wifiSettingLayar{ WifiSettingSize };
 	LCD::Text wifiSettings[WifiSettingSize]{};
 
@@ -63,6 +64,7 @@ private:
 
 	void updateLayar();
 	void updateSwitch();
+	void updateIp();
 	void wifiListClickd(unsigned char index);
 
 	using CoThreadFunction_t = void(*)(WifiSetting& self);
@@ -73,7 +75,6 @@ private:
 	bool coThreadDeal(CoThreadFunction_t function);
 
 	static void scanWifi(WifiSetting& self);
-	static void tryInitWifi();
 
 	static bool ssidInputChecker(char* ssid);
 	static bool passwordInputChecker(char* password);

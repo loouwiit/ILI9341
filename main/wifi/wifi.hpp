@@ -1,4 +1,5 @@
 #include <esp_wifi_types_generic.h>
+#include <esp_netif_ip_addr.h>
 
 bool wifiIsInited();
 void wifiInit();
@@ -12,6 +13,7 @@ bool wifiStationIsStarted();
 void wifiStationStart();
 void wifiStationStop();
 uint16_t wifiStationScan(wifi_ap_record_t* apInfo, uint16_t maxCount, char* ssid = nullptr);
+esp_ip4_addr_t wifiStationGetIp();
 
 bool wifiIsWantConnect();
 bool wifiIsConnect();

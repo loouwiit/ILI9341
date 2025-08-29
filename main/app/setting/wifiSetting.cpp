@@ -76,6 +76,7 @@ void WifiSetting::init()
 					wifiNatSetAutoStart();
 				}
 				self.updateSwitch();
+				self.updateIp();
 				self.updateLayar();
 			};
 
@@ -96,6 +97,7 @@ void WifiSetting::init()
 						wifiStart();
 				}
 				self.updateSwitch();
+				self.updateIp();
 				self.updateLayar();
 			};
 		switchs[2].clickCallbackParam = this;
@@ -115,6 +117,7 @@ void WifiSetting::init()
 						wifiStart();
 				}
 				self.updateSwitch();
+				self.updateIp();
 				self.updateLayar();
 			};
 	}
@@ -149,9 +152,11 @@ void WifiSetting::init()
 							wifiApStop();
 						wifiApStart();
 						self.updateSwitch();
+						self.updateIp();
 						while (wifiIsWantConnect() && !wifiIsConnect())
 							vTaskDelay(100);
 						self.updateSwitch();
+						self.updateIp();
 					});
 			};
 		apSettings[1].clickCallbackParam = this;
@@ -206,9 +211,11 @@ void WifiSetting::init()
 						self.switchs[2].text = "wifi:setting";
 						wifiConnect(wifiSettingSsid, wifiSettingPassword);
 						self.updateSwitch();
+						self.updateIp();
 						while (wifiIsWantConnect() && !wifiIsConnect())
 							vTaskDelay(100);
 						self.updateSwitch();
+						self.updateIp();
 					});
 			};
 		wifiSettings[1].clickCallbackParam = this;
@@ -233,6 +240,8 @@ void WifiSetting::init()
 				input->finishCallback = textComputeSizer;
 				self.newAppCallback(input);
 			};
+
+		wifiSettings[3].text = ipBuffer;
 	}
 
 	{
@@ -283,6 +292,7 @@ void WifiSetting::init()
 	}
 
 	updateSwitch();
+	updateIp();
 	updateLayar();
 }
 
@@ -419,6 +429,13 @@ void WifiSetting::updateSwitch()
 	apSettingLayar.elementCount = wifiApIsStarted() ? ApSettingSize : 0;
 	wifiSettingLayar.elementCount = wifiStationIsStarted() ? WifiSettingSize : 0;
 	wifiScanLayar.elementCount = wifiStationIsStarted() ? WifiScanSize : 0;
+}
+
+void WifiSetting::updateIp()
+{
+	auto ip = wifiStationGetIp();
+
+	sprintf(ipBuffer, "ip:%lu.%lu.%lu.%lu", ip.addr & 0xFF, (ip.addr >> 8) & 0xFF, (ip.addr >> 16) & 0xFF, (ip.addr >> 24) & 0xFF);
 }
 
 void WifiSetting::wifiListClickd(unsigned char index)
