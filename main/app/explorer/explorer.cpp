@@ -212,7 +212,9 @@ void AppExplorer::openFile(unsigned char index)
 		AppPicture* picture = new AppPicture{ lcd,touch, changeAppCallback, newAppCallback };
 		floor.openFile(fileName, fileNameLength, picture->file);
 		picture->fileName = fileName;
-		newAppCallback(picture);
+		if (picture->file.isOpen())
+			newAppCallback(picture);
+		else delete picture;
 	}
 	else
 	{

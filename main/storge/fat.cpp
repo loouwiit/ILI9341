@@ -360,9 +360,13 @@ bool Floor::open(const char* path)
 {
 	if (this->path != nullptr)
 		delete[] this->path;
-	pathBufferLenght = strlen(path) + 1;
+	pathBufferLenght = strlen(path);
+	if (path[pathBufferLenght - 1] != '/')
+		pathBufferLenght++; // for '/'
 	this->path = new char[pathBufferLenght];
 	memcpy(this->path, path, pathBufferLenght);
+	if (path[pathBufferLenght - 1] == '/')
+		this->path[pathBufferLenght - 1] = '\0';
 
 	if (dir != nullptr)
 		closedir(dir);
@@ -399,10 +403,14 @@ size_t Floor::getPathLenght()
 
 bool Floor::openFloor(const char* path, size_t pathLenght)
 {
-	char* buffer = new char[pathLenght + this->pathBufferLenght + 1];
-	memcpy(buffer, this->path, pathBufferLenght - 1); // \0 不需要复制
+	size_t bufferSize = pathLenght + this->pathBufferLenght + 1;
+	char* buffer = new char[bufferSize];
+	memcpy(buffer, this->path, this->pathBufferLenght - 1); // \0 不需要复制
 	buffer[pathBufferLenght - 1] = '/';
-	memcpy(buffer + pathBufferLenght, path, pathLenght + 1); // with \0
+	memcpy(buffer + this->pathBufferLenght, path, pathLenght + 1); // with \0
+
+	if (buffer[bufferSize - 1] == '/')
+		buffer[bufferSize - 1] = '\0';
 
 	DIR* temp = opendir(buffer);
 	delete[] buffer;
