@@ -3,6 +3,8 @@
 #include "serverKernal.hpp"
 #include "tempture.hpp"
 
+#include "wifi/wifi.hpp"
+
 void AppServer::init()
 {
 	App::init();
@@ -16,6 +18,13 @@ void AppServer::init()
 	contents[1] = &server;
 	contents[2] = &temptureInit;
 	contents[3] = &temptureStart;
+
+	if (!wifiIsInited())
+	{
+		server.text = "wifi not inited";
+		contents.elementCount = 2;
+		return;
+	}
 
 	updateState();
 
