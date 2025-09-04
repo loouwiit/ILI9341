@@ -31,7 +31,8 @@ private:
 
 	constexpr static auto mataDataSize = sizeof(totol) + sizeof(scale);
 	Vector2s frameSize = { LCD::ScreenSize.x, LCD::ScreenSize.y };
-	size_t frameBufferSize = sizeof(LCD::Frame::buffer) / scale * scale;
+	size_t frameBufferLineSize = sizeof(LCD::Color) * frameSize.x;
+	size_t frameBufferSize = frameBufferLineSize * frameSize.y;
 
 	constexpr static clock_t TextFadeTime = 1000;
 	clock_t textTime = (clock_t)-1;
