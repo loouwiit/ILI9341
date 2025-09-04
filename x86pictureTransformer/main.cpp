@@ -5,7 +5,7 @@
 
 #include "color.hpp"
 
-constexpr unsigned short TotolFrames = 100;
+constexpr unsigned short TotolFrames = 600;
 
 using Color = Color565;
 unsigned char scale = 1;
@@ -18,9 +18,18 @@ int main(int argc, char* argv[])
 	std::string path;
 	if (argc > 1)
 		scale = std::max(1, atoi(argv[1]));
+	else
+	{
+		std::cout << "scale:";
+		scale = std::max(1, std::cin.get() - '0');
+		if (std::cin.peek() == ' ' ||
+			std::cin.peek() == '\n')
+			std::cin.ignore();
+	}
 
 	ScreenSize = { 320 / scale, 240 / scale };
 
+	std::cout << "path:";
 	std::getline(std::cin, path, '\n');
 
 	std::string command{};
@@ -29,7 +38,7 @@ int main(int argc, char* argv[])
 	else
 		command = "ffmpeg -i \"" + path + "\"";
 
-	command += " -t 10s -r 10 -f image2 -vf scale=";
+	command += " -t 60s -r 10 -f image2 -vf scale=";
 	command += std::to_string(ScreenSize.x);
 	command += ':';
 	command += std::to_string(ScreenSize.y);
