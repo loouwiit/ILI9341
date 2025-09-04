@@ -28,7 +28,10 @@ bool removeFloor(const char* path);
 class FileBase : public NonCopyAble
 {
 public:
-	using OffsetType = fpos_t;
+	using FileDescription = int;
+	using OffsetType = off_t;
+
+	constexpr static FileDescription NoneFile = -1;
 
 	enum class OffsetMode
 	{
@@ -50,10 +53,10 @@ public:
 	void reGetSize();
 	OffsetType getSize();
 
-	operator FILE*& ();
+	operator FileDescription ();
 
 protected:
-	FILE* file = nullptr;
+	FileDescription file = NoneFile;
 	OffsetType fileSize = 0;
 };
 

@@ -1,15 +1,21 @@
+#include <algorithm>
+
 #include <esp_vfs.h>
-#include <mutex>
+
+#include "mutex.hpp"
 #include "stringCompare.hpp"
 #include "nonCopyAble.hpp"
 #include "mem.hpp"
 #include "fat.hpp"
-#include <algorithm>
+
+using std::min;
+using std::max;
 
 #define MemDebug false
-#define MemUsageDebug true
+#define MemUsageDebug false
 #define MemProcessDebug false
 
+template <class Child>
 class MemBlockLinker; //链表
 class MemFileDataBlock; // 数据块
 class MemDirent; // VFS兼容
@@ -18,21 +24,24 @@ class MemFloorHead; // 目录头
 class MemFloorDir; // VFS兼容
 
 // linker:链表
+template <class Child>
 class MemBlockLinker : public NonCopyAble
 {
 public:
 	//内部文件，直接全部public
-	MemBlockLinker* last = nullptr;
-	MemBlockLinker* next = nullptr;
+	Child* last = nullptr;
+	Child* next = nullptr;
 };
 
 // dataBlock:数据块
-class MemFileDataBlock : public MemBlockLinker
+class MemFileDataBlock : public MemBlockLinker<MemFileDataBlock>
 {
 public:
 	//内部文件，直接全部public
-	char data[MemFileBlockTotolSize - sizeof(MemBlockLinker)] = { '\0' };
+	constexpr static size_t BlockDataSize = MemFileBlockTotolSize - sizeof(MemBlockLinker);
+	char data[BlockDataSize]{};
 };
+static_assert(sizeof(MemFileDataBlock) == MemFileBlockTotolSize, "MemFileDataBlock大小异常");
 
 // dirent VFS兼容文件
 class MemDirent
@@ -45,24 +54,29 @@ public:
 };
 
 // fileHead:文件头
-class MemFileHead : public MemBlockLinker, public MemDirent
+class MemFileHead : public MemBlockLinker<MemFileHead>, public MemDirent
 {
 public:
 	//内部文件，直接全部public
 	struct stat st;
 	off_t& size = st.st_size;
-	off_t operatorPointer = 0;
+
 	MemFileDataBlock* block = nullptr;
+	off_t blockOffset = 0;
+	off_t localOffset = 0;
+
 	MemFloorHead* parent = nullptr;
 
 	MemFileHead();
 	~MemFileHead();
-	ssize_t write(const char* buffer, size_t size);
-	ssize_t read(char* buffer, size_t size);
+	size_t write(const char* buffer, size_t size);
+	size_t read(char* buffer, size_t size);
+
+	void applyLocalOffset();
 };
 
 // floorHead:目录头
-class MemFloorHead : public MemBlockLinker, public MemDirent
+class MemFloorHead : public MemBlockLinker<MemFloorHead>, public MemDirent
 {
 public:
 	//内部文件，直接全部public
@@ -115,10 +129,10 @@ int memCloseDir(DIR* pdir);
 int memMakeDir(const char* name, mode_t mode);
 int memRemoveDir(const char* name);
 
-size_t memTotolUsage = 0;
-MemFloorHead memRoot;
-MemFileHead* memFileDescriptions[MaxMemFileDescriptionCount] = { nullptr };
-std::mutex mutex;
+EXT_RAM_BSS_ATTR size_t memTotolUsage = 0;
+EXT_RAM_BSS_ATTR MemFloorHead memRoot;
+EXT_RAM_BSS_ATTR MemFileHead* memFileDescriptions[MaxMemFileDescriptionCount] = { nullptr };
+EXT_RAM_BSS_ATTR Mutex mutex;
 
 // class函数
 
@@ -132,18 +146,22 @@ MemFileHead::MemFileHead()
 MemFileHead::~MemFileHead()
 {
 	this->parent = nullptr;
-	MemFileDataBlock* data = this->block;
-	this->block = nullptr;
-	while (data->next != nullptr)
+
+	// 回到最前
+	while (block->last != nullptr)
+		block = block->last;
+
+	// 逐个删除
+	while (block->next != nullptr)
 	{
-		data = (MemFileDataBlock*)data->next;
+		block = block->next;
 
 #if MemDebug && MemUsageDebug
 		memTotolUsage -= sizeof(MemFileDataBlock);
 		printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
 #endif
 
-		delete data->last;
+		delete block->last;
 	}
 
 #if MemDebug && MemUsageDebug
@@ -151,20 +169,20 @@ MemFileHead::~MemFileHead()
 	printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
 #endif
 
-	delete data;
+	delete block;
+	block = nullptr;
 }
 
-ssize_t MemFileHead::write(const char* buffer, size_t size)
+size_t MemFileHead::write(const char* buffer, size_t size)
 {
-	if (this->operatorPointer + size > MemFileMaxSize)
-	{
+	// 保证不超长
+	if (this->size + size > MemFileMaxSize)
 		return MemFileSystemError::TooLongTheFile;
-	}
 
-	//确定起始块位置
-	constexpr static size_t blockDataSize = sizeof(MemFileDataBlock::data);
+	auto sizeParamRecord = size; // 仅仅是记录
 
-	if (this->block == nullptr)
+	//确保有块
+	if (block == nullptr)
 	{
 
 #if MemDebug && MemUsageDebug
@@ -172,35 +190,21 @@ ssize_t MemFileHead::write(const char* buffer, size_t size)
 		printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
 #endif
 
-		this->block = new MemFileDataBlock;
-	}
-	MemFileDataBlock* block = this->block;
-	size_t dataPointer = this->operatorPointer; //dataPointer可用%化简
-
-	while (dataPointer > blockDataSize)
-	{
-		if (block->next == nullptr)
-		{
-
-#if MemDebug && MemUsageDebug
-			memTotolUsage += sizeof(MemFileDataBlock);
-			printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
-#endif
-
-			block->next = new MemFileDataBlock;
-			block->next->last = block;
-		}
-		block = (MemFileDataBlock*)block->next;
-		dataPointer -= blockDataSize;
+		block = new MemFileDataBlock;
 	}
 
-	//写入起始块
-	size_t writeSize = std::min(blockDataSize - dataPointer, size);
-	memcpy(block->data + dataPointer, buffer, writeSize);
+	// 应用偏移
+	this->applyLocalOffset();
 
-	//写入后续完整块
-	size_t writePointer = writeSize;
-	while (writePointer < size)
+	// 写入起始块
+	size_t writeSize = min(MemFileDataBlock::BlockDataSize - (size_t)localOffset, size);
+	memcpy(block->data + localOffset, buffer, writeSize);
+	localOffset += writeSize;
+	buffer += writeSize;
+	size -= writeSize;
+
+	// 写入中间完整块
+	while (size > MemFileDataBlock::BlockDataSize)
 	{
 
 #if MemDebug && MemUsageDebug
@@ -210,65 +214,124 @@ ssize_t MemFileHead::write(const char* buffer, size_t size)
 
 		block->next = new MemFileDataBlock;
 		block->next->last = block;
-		block = (MemFileDataBlock*)block->next;
+		block = block->next;
+		blockOffset += MemFileDataBlock::BlockDataSize;
 
-		writeSize = std::min(blockDataSize, size - writePointer);
-		memcpy(block->data, buffer + writePointer, writeSize);
-		writePointer += writeSize;
+		writeSize = MemFileDataBlock::BlockDataSize;
+		memcpy(block->data, buffer, writeSize); // 完整块
+		localOffset = writeSize;
+
+		buffer += writeSize;
+		size -= writeSize;
 	}
 
-	this->operatorPointer += writePointer;
-	if (this->operatorPointer > this->size)
-		this->size = this->operatorPointer;
-	return writePointer;
+	if (size > 0)
+	{
+		// 写入末尾
+
+#if MemDebug && MemUsageDebug
+		memTotolUsage += sizeof(MemFileDataBlock);
+		printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
+#endif
+
+		block->next = new MemFileDataBlock;
+		block->next->last = block;
+		block = block->next;
+		blockOffset += MemFileDataBlock::BlockDataSize;
+
+		writeSize = size;
+		memcpy(block->data, buffer, writeSize);
+		localOffset = writeSize;
+	}
+
+	this->size = max(this->size, blockOffset + localOffset);
+	return sizeParamRecord;
 }
-ssize_t MemFileHead::read(char* buffer, size_t size)
+
+size_t MemFileHead::read(char* buffer, size_t size)
 {
-	//确定起始块位置
-	constexpr static size_t blockDataSize = sizeof(MemFileDataBlock::data);
+	auto sizeParamRecord = size; // 仅仅是记录
 
-	MemFileDataBlock* block = this->block;
-	size_t dataPointer = this->operatorPointer; //dataPointer可用%化简
-	size_t fileLeaveDataSize = this->size;
+	// 应用偏移
+	this->applyLocalOffset();
 
-	while (dataPointer > blockDataSize)
+	//         v blockOffset     v BlockDataSize
+	// ... --- |DataData         | --- ...
+	//           ^     ^ finalBlockLocalSize
+	//           | localOffset
+
+	const size_t finalBlockLocalSize = this->size % MemFileDataBlock::BlockDataSize;
+
+	size_t readSize = 0;
+
+	// 读取起始块
+	if (block->next != nullptr)
+		readSize = min(MemFileDataBlock::BlockDataSize - (size_t)localOffset, size); // 普通块
+	else readSize = min(finalBlockLocalSize - (size_t)localOffset, size); // 末尾
+
+	memcpy(buffer, block->data + localOffset, readSize);
+	localOffset += readSize;
+
+	buffer += readSize;
+	size -= readSize;
+
+	// 读取中间完整块
+	while (size > 0 && block->next != nullptr)
 	{
-		if (block->next == nullptr)
+		block = block->next;
+		blockOffset += MemFileDataBlock::BlockDataSize;
+
+		readSize = min(MemFileDataBlock::BlockDataSize, size);
+		memcpy(buffer, block->data, readSize);
+		localOffset = readSize;
+
+		buffer += readSize;
+		size -= readSize;
+	}
+
+	// 读取末尾
+	if (size > 0 && block->next == nullptr)
+	{
+		readSize = min(finalBlockLocalSize - (size_t)localOffset, size);
+		memcpy(buffer, block->data, readSize);
+		localOffset += readSize;
+
+		buffer += readSize;
+		size -= readSize;
+	}
+
+	return sizeParamRecord - size;
+}
+
+void MemFileHead::applyLocalOffset()
+{
+	// 前移
+	while (localOffset < 0)
+	{
+		if (block->last != nullptr)
 		{
-			// out of file
-			return 0;
+			block = block->last;
+			blockOffset -= MemFileDataBlock::BlockDataSize;
+			localOffset += MemFileDataBlock::BlockDataSize;
 		}
-		block = (MemFileDataBlock*)block->next;
-		dataPointer -= blockDataSize;
-		fileLeaveDataSize -= blockDataSize;
+		else localOffset = blockOffset = 0;
 	}
 
-	// ... --- ................... --- ...
-	// ... --- |      Block      | --- ...
-	//                           ^ blockDataSize
-	// ... --- DataData
-	//           ^     ^ fileLeaveDataSize
-	//           | operatorPointer
-	//
-	//           | buffer |
-
-	//读取起始块
-	size_t readSize = std::min(std::min(blockDataSize, fileLeaveDataSize) - dataPointer, size);
-	memcpy(buffer, block->data + dataPointer, readSize);
-	this->operatorPointer += readSize;
-
-	//读取后续完整块
-	size_t readPointer = readSize;
-	block = (MemFileDataBlock*)block->next;
-	while (readPointer < size && block != nullptr)
+	// 后移
+	while (localOffset > MemFileDataBlock::BlockDataSize)
 	{
-		readSize = std::min(blockDataSize, size - readPointer);
-		memcpy(buffer + readPointer, block->data, readSize);
-		this->operatorPointer += readSize;
-		readPointer += readSize;
+		if (block->next != nullptr)
+		{
+			block = block->next;
+			blockOffset += MemFileDataBlock::BlockDataSize;
+			localOffset -= MemFileDataBlock::BlockDataSize;
+		}
+		else
+		{
+			blockOffset = this->size / MemFileDataBlock::BlockDataSize;
+			localOffset = this->size % MemFileDataBlock::BlockDataSize;
+		}
 	}
-
-	return readPointer;
 }
 
 MemFloorHead::MemFloorHead()
@@ -766,27 +829,9 @@ bool mountMem()
 		return false;
 	}
 	ESP_ERROR_CHECK(esp_vfs_register(PerfixMem, &memFs, NULL));
-	
+
 	return true;
 }
-
-// void testMem()
-// {
-// 	printf("test Mem\n");
-// 	vTaskDelay(100);
-// 	char buffer[10] = "";
-// 	auto file = fopen("/mem/test", "wb+");
-// 	if (file != 0)
-// 	{
-// 		fwrite("pointer", sizeof(char), 7, file);
-// 		fread(buffer, sizeof(char), 7, file);
-// 		fclose(file);
-// 	}
-// 	else
-// 	{
-// 		printf("file == 0!\n");
-// 	}
-// }
 
 int memOpen(const char* path, int flags, int mode)
 {
@@ -803,14 +848,17 @@ int memOpen(const char* path, int flags, int mode)
 		file = memRoot.findFile(path, pathLenght);
 	}
 
-	//operatorPointer归位
-	file->operatorPointer = 0;
+	// offset归位
+	file->localOffset = file->blockOffset = 0;
+	if (file->block != nullptr)
+		while (file->block->last != nullptr)
+			file->block = file->block->last;
 
-	//找fd
+	// 找fd
 	int fd = 0;
-	std::lock_guard<std::mutex>guard{ mutex };
+	Lock lock{ mutex };
 	while (memFileDescriptions[fd] != nullptr && fd < MaxMemFileDescriptionCount) fd++;
-	//没有文件描述符
+	// 没有文件描述符
 	if (fd == MaxMemFileDescriptionCount) return MemFileSystemError::NoAviliableDescription;
 
 #if MemDebug && MemProcessDebug
@@ -865,27 +913,25 @@ off_t memSeek(int fd, off_t size, int mod)
 #endif
 	if (memFileDescriptions[fd] == nullptr) return MemFileSystemError::NotOpenedFileDescription;
 
-	off_t& offset = memFileDescriptions[fd]->operatorPointer;
+	auto& file = *memFileDescriptions[fd];
 	switch (mod)
 	{
 	case SEEK_SET:
 		// beg
-		offset = size;
+		file.localOffset += size - (file.blockOffset + file.localOffset);
 		break;
 	default:
 	case SEEK_CUR:
 		// cur
-		offset += size;
+		file.localOffset += size;
 		break;
 	case SEEK_END:
 		// end
-		offset = size + memFileDescriptions[fd]->size;
+		file.localOffset += size - (file.blockOffset + file.localOffset) + file.size;
 		break;
 	}
-	if (offset < 0) offset = 0;
-	if (offset > memFileDescriptions[fd]->size) offset = memFileDescriptions[fd]->size;
 
-	return memFileDescriptions[fd]->operatorPointer;
+	return file.blockOffset + file.localOffset;
 }
 
 int memRename(const char* src, const char* dst)

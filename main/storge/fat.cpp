@@ -1,5 +1,8 @@
 #include <sys/stat.h>
-#include <stdio.h>
+#include <sys/unistd.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
 #include <cstring> //strlen()
 #include "fat.hpp"
 
@@ -220,40 +223,36 @@ bool removeFloor(const char* path)
 
 FileBase::~FileBase()
 {
-	if (file != nullptr)
-	{
-		fclose(file);
-		file = nullptr;
-	}
+	this->close();
 }
 
 void FileBase::close()
 {
-	if (file != nullptr)
+	if (file != NoneFile)
 	{
-		fclose(file);
-		file = nullptr;
+		::close(file);
+		file = NoneFile;
 	}
 }
 
 bool FileBase::isOpen()
 {
-	return file != nullptr;
+	return file != NoneFile;
 }
 
 FileBase::OffsetType FileBase::getOffset()
 {
-	return ftell(file);
+	return lseek(file, 0, (int)OffsetMode::Current);
 }
 
 void FileBase::setOffset(FileBase::OffsetType offset, OffsetMode mode)
 {
-	fseek(file, offset, (int)mode);
+	lseek(file, offset, (int)mode);
 }
 
 void FileBase::offset(FileBase::OffsetType offset)
 {
-	fsetpos(file, &offset);
+	lseek(file, offset, (int)OffsetMode::Current);
 }
 
 void FileBase::reGetSize()
@@ -269,7 +268,7 @@ FileBase::OffsetType FileBase::getSize()
 	return fileSize;
 }
 
-FileBase::operator FILE*& ()
+FileBase::operator FileDescription()
 {
 	return file;
 }
@@ -278,19 +277,18 @@ FileBase::operator FILE*& ()
 
 bool IFile::open(const char* path)
 {
-	if (file != nullptr)
+	if (file != NoneFile)
 		close();
 	fileSize = 0;
-	file = fopen(path, "rb");
-	if (file != nullptr)
-		return true;
-	else
-		return false;
+	file = ::open(path, O_RDONLY);
+	return file != NoneFile;
 }
 
 char IFile::get()
 {
-	return fgetc(file);
+	char buffer = '\0';
+	read(&buffer, 1);
+	return buffer;
 }
 
 size_t IFile::getLine(char* string, size_t size, char ch)
@@ -309,36 +307,33 @@ size_t IFile::getLine(char* string, size_t size, char ch)
 
 size_t IFile::read(void* pointer, size_t size)
 {
-	return fread((char*)pointer, sizeof(char), size, file);
+	return ::read(file, (char*)pointer, size);
 }
 
 bool IFile::eof()
 {
-	return feof(file) != 0;
+	return getOffset() < fileSize;
 }
 
 //Ofile
 
 bool OFile::open(const char* path)
 {
-	if (file != nullptr)
+	if (file != NoneFile)
 		close();
 	fileSize = 0;
-	file = fopen(path, "r+b");
-	if (file != nullptr)
-		return true;
-	else
-		return false;
+	file = ::open(path, O_RDWR | O_CREAT);
+	return file != NoneFile;
 }
 
 bool OFile::put(const char ch)
 {
-	return fputc(ch, file) == 0;
+	return write(&ch, 1) != 0;
 }
 
 size_t OFile::write(const void* pointer, size_t size)
 {
-	return fwrite(pointer, sizeof(char), size, file);
+	return ::write(file, pointer, size);
 }
 
 Floor::~Floor()
