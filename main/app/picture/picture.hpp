@@ -22,15 +22,16 @@ public:
 	const char* fileName = "";
 
 private:
-	constexpr static auto mataDataSize = sizeof(unsigned short);
-	constexpr static auto frameBufferSize = sizeof(LCD::Frame::buffer);
-	constexpr static auto clockBufferSize = sizeof(clock_t);
-
 	LCD::Text path{ { 0, (short)LCD::ScreenSize.y}, "error" };
 	LCD::Number<unsigned short> pictureCountText{ { 0, (short)LCD::ScreenSize.y} };
 
 	unsigned short& index = pictureCountText.number;
 	unsigned short totol = 1;
+	unsigned char scale = 1;
+
+	constexpr static auto mataDataSize = sizeof(totol) + sizeof(scale);
+	Vector2s frameSize = { LCD::ScreenSize.x, LCD::ScreenSize.y };
+	size_t frameBufferSize = sizeof(LCD::Frame::buffer) / scale * scale;
 
 	constexpr static clock_t TextFadeTime = 1000;
 	clock_t textTime = (clock_t)-1;
@@ -40,6 +41,7 @@ private:
 
 	void tryLoadNext();
 	void load(unsigned short index);
+	void scaleBuffer();
 
 	void drawText();
 };

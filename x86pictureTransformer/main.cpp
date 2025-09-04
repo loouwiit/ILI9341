@@ -8,17 +8,20 @@
 constexpr unsigned short TotolFrames = 100;
 
 using Color = Color565;
-sf::Vector2i ScreenSize = { 320, 240 };
+unsigned char scale = 1;
+sf::Vector2i ScreenSize = { 320 / scale, 240 / scale };
 
 int appendPicture(std::ofstream& file, sf::Image& image);
 
 int main(int argc, char* argv[])
 {
 	std::string path;
-	if (argc < 2)
-		std::getline(std::cin, path, '\n');
-	else
-		path = { argv[1] };
+	if (argc > 1)
+		scale = std::max(1, atoi(argv[1]));
+
+	ScreenSize = { 320 / scale, 240 / scale };
+
+	std::getline(std::cin, path, '\n');
 
 	std::string command{};
 	if (path[0] == '"' || path[0] == '\'')
@@ -26,7 +29,11 @@ int main(int argc, char* argv[])
 	else
 		command = "ffmpeg -i \"" + path + "\"";
 
-	command += " -t 10s -r 10 -f image2 -vf scale=320:240 files/%05d.png";
+	command += " -t 10s -r 10 -f image2 -vf scale=";
+	command += std::to_string(ScreenSize.x);
+	command += ':';
+	command += std::to_string(ScreenSize.y);
+	command += " files/%05d.png";
 
 	system(command.c_str());
 
@@ -36,6 +43,7 @@ int main(int argc, char* argv[])
 
 	char totolCount[2] = { 0x00,0x00 };
 	file.write(&totolCount[0], 2);
+	file.write((const char*)&scale, 1);
 
 	unsigned short pictureIndex = 1;
 	for (; pictureIndex <= TotolFrames; pictureIndex++)
