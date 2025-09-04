@@ -215,12 +215,15 @@ size_t MemFileView::write(const char* buffer, size_t size)
 	while (size > MemFileDataBlock::BlockDataSize)
 	{
 
+		if (block->next == nullptr)
+		{
 #if MemDebug && MemUsageDebug
-		memTotolUsage += sizeof(MemFileDataBlock);
-		printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
+			memTotolUsage += sizeof(MemFileDataBlock);
+			printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
 #endif
+			block->next = new MemFileDataBlock;
+		}
 
-		block->next = new MemFileDataBlock;
 		block->next->last = block;
 		block = block->next;
 		blockOffset += MemFileDataBlock::BlockDataSize;
@@ -237,12 +240,15 @@ size_t MemFileView::write(const char* buffer, size_t size)
 	{
 		// 写入末尾
 
+		if (block->next == nullptr)
+		{
 #if MemDebug && MemUsageDebug
-		memTotolUsage += sizeof(MemFileDataBlock);
-		printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
+			memTotolUsage += sizeof(MemFileDataBlock);
+			printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
 #endif
+			block->next = new MemFileDataBlock;
+		}
 
-		block->next = new MemFileDataBlock;
 		block->next->last = block;
 		block = block->next;
 		blockOffset += MemFileDataBlock::BlockDataSize;
