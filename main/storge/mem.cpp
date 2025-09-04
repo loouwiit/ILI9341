@@ -19,7 +19,8 @@ template <class Child>
 class MemBlockLinker; //链表
 class MemFileDataBlock; // 数据块
 class MemDirent; // VFS兼容
-class MemFileHead; // 文件头
+class MemFileHead; // 文件头，提供存储
+class MemFileView; // 文件视口，提供读写
 class MemFloorHead; // 目录头
 class MemFloorDir; // VFS兼容
 
@@ -61,14 +62,25 @@ public:
 	struct stat st;
 	off_t& size = st.st_size;
 
-	MemFileDataBlock* block = nullptr;
-	off_t blockOffset = 0;
-	off_t localOffset = 0;
+	MemFileDataBlock* dataBlock = nullptr;
 
 	MemFloorHead* parent = nullptr;
 
 	MemFileHead();
 	~MemFileHead();
+};
+
+// fileView:文件窗口
+class MemFileView
+{
+public:
+	//内部文件，直接全部public
+	MemFileHead* file = nullptr;
+
+	MemFileDataBlock* block;
+	off_t blockOffset = 0;
+	off_t localOffset = 0;
+
 	size_t write(const char* buffer, size_t size);
 	size_t read(char* buffer, size_t size);
 
@@ -131,7 +143,7 @@ int memRemoveDir(const char* name);
 
 EXT_RAM_BSS_ATTR size_t memTotolUsage = 0;
 EXT_RAM_BSS_ATTR MemFloorHead memRoot;
-EXT_RAM_BSS_ATTR MemFileHead* memFileDescriptions[MaxMemFileDescriptionCount] = { nullptr };
+EXT_RAM_BSS_ATTR MemFileView memFileDescriptions[MaxMemFileDescriptionCount] = {};
 EXT_RAM_BSS_ATTR Mutex mutex;
 
 // class函数
@@ -147,21 +159,17 @@ MemFileHead::~MemFileHead()
 {
 	this->parent = nullptr;
 
-	// 回到最前
-	while (block->last != nullptr)
-		block = block->last;
-
 	// 逐个删除
-	while (block->next != nullptr)
+	while (dataBlock->next != nullptr)
 	{
-		block = block->next;
+		dataBlock = dataBlock->next;
 
 #if MemDebug && MemUsageDebug
 		memTotolUsage -= sizeof(MemFileDataBlock);
 		printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
 #endif
 
-		delete block->last;
+		delete dataBlock->last;
 	}
 
 #if MemDebug && MemUsageDebug
@@ -169,14 +177,14 @@ MemFileHead::~MemFileHead()
 	printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
 #endif
 
-	delete block;
-	block = nullptr;
+	delete dataBlock;
+	dataBlock = nullptr;
 }
 
-size_t MemFileHead::write(const char* buffer, size_t size)
+size_t MemFileView::write(const char* buffer, size_t size)
 {
 	// 保证不超长
-	if (this->size + size > MemFileMaxSize)
+	if (this->file->size + size > MemFileMaxSize)
 		return MemFileSystemError::TooLongTheFile;
 
 	auto sizeParamRecord = size; // 仅仅是记录
@@ -190,7 +198,7 @@ size_t MemFileHead::write(const char* buffer, size_t size)
 		printf("mem: totol memory usage = %u at %d\n", memTotolUsage, __LINE__);
 #endif
 
-		block = new MemFileDataBlock;
+		file->dataBlock = block = new MemFileDataBlock;
 	}
 
 	// 应用偏移
@@ -244,11 +252,11 @@ size_t MemFileHead::write(const char* buffer, size_t size)
 		localOffset = writeSize;
 	}
 
-	this->size = max(this->size, blockOffset + localOffset);
+	this->file->size = max(this->file->size, blockOffset + localOffset);
 	return sizeParamRecord;
 }
 
-size_t MemFileHead::read(char* buffer, size_t size)
+size_t MemFileView::read(char* buffer, size_t size)
 {
 	auto sizeParamRecord = size; // 仅仅是记录
 
@@ -260,11 +268,12 @@ size_t MemFileHead::read(char* buffer, size_t size)
 	//           ^     ^ finalBlockLocalSize
 	//           | localOffset
 
-	const size_t finalBlockLocalSize = this->size % MemFileDataBlock::BlockDataSize;
+	const size_t finalBlockLocalSize = this->file->size % MemFileDataBlock::BlockDataSize;
 
 	size_t readSize = 0;
 
 	// 读取起始块
+	if (block == nullptr) return 0;
 	if (block->next != nullptr)
 		readSize = min(MemFileDataBlock::BlockDataSize - (size_t)localOffset, size); // 普通块
 	else readSize = min(finalBlockLocalSize - (size_t)localOffset, size); // 末尾
@@ -303,7 +312,7 @@ size_t MemFileHead::read(char* buffer, size_t size)
 	return sizeParamRecord - size;
 }
 
-void MemFileHead::applyLocalOffset()
+void MemFileView::applyLocalOffset()
 {
 	// 前移
 	while (localOffset < 0)
@@ -328,8 +337,8 @@ void MemFileHead::applyLocalOffset()
 		}
 		else
 		{
-			blockOffset = this->size / MemFileDataBlock::BlockDataSize;
-			localOffset = this->size % MemFileDataBlock::BlockDataSize;
+			blockOffset = this->file->size / MemFileDataBlock::BlockDataSize;
+			localOffset = this->file->size % MemFileDataBlock::BlockDataSize;
 		}
 	}
 }
@@ -848,23 +857,20 @@ int memOpen(const char* path, int flags, int mode)
 		file = memRoot.findFile(path, pathLenght);
 	}
 
-	// offset归位
-	file->localOffset = file->blockOffset = 0;
-	if (file->block != nullptr)
-		while (file->block->last != nullptr)
-			file->block = file->block->last;
-
 	// 找fd
 	int fd = 0;
 	Lock lock{ mutex };
-	while (memFileDescriptions[fd] != nullptr && fd < MaxMemFileDescriptionCount) fd++;
+	while (memFileDescriptions[fd].file != nullptr && fd < MaxMemFileDescriptionCount) fd++;
 	// 没有文件描述符
 	if (fd == MaxMemFileDescriptionCount) return MemFileSystemError::NoAviliableDescription;
 
 #if MemDebug && MemProcessDebug
 	printf("memOpend with fd = %d\n", fd);
 #endif
-	memFileDescriptions[fd] = file;
+	memFileDescriptions[fd].file = file;
+	memFileDescriptions[fd].block = file->dataBlock;
+	memFileDescriptions[fd].blockOffset = 0;
+	memFileDescriptions[fd].localOffset = 0;
 	return fd;
 }
 
@@ -873,8 +879,8 @@ int memFstat(int fd, struct stat* st)
 #if MemDebug && MemProcessDebug
 	printf("memFstat\n");
 #endif
-	if (memFileDescriptions[fd] == nullptr) return MemFileSystemError::NotOpenedFileDescription;
-	*st = memFileDescriptions[fd]->st;
+	if (memFileDescriptions[fd].file == nullptr) return MemFileSystemError::NotOpenedFileDescription;
+	*st = memFileDescriptions[fd].file->st;
 	return 0;
 }
 
@@ -883,8 +889,8 @@ ssize_t memWrite(int fd, const void* data, size_t size)
 #if MemDebug && MemProcessDebug
 	printf("memWrite\n");
 #endif
-	if (memFileDescriptions[fd] == nullptr) return MemFileSystemError::NotOpenedFileDescription;
-	return (memFileDescriptions[fd]->write((const char*)data, size));
+	if (memFileDescriptions[fd].file == nullptr) return MemFileSystemError::NotOpenedFileDescription;
+	return (memFileDescriptions[fd].write((const char*)data, size));
 }
 
 ssize_t memRead(int fd, void* dst, size_t size)
@@ -892,8 +898,8 @@ ssize_t memRead(int fd, void* dst, size_t size)
 #if MemDebug && MemProcessDebug
 	printf("memRead\n");
 #endif
-	if (memFileDescriptions[fd] == nullptr) return MemFileSystemError::NotOpenedFileDescription;
-	return (memFileDescriptions[fd]->read((char*)dst, size));
+	if (memFileDescriptions[fd].file == nullptr) return MemFileSystemError::NotOpenedFileDescription;
+	return (memFileDescriptions[fd].read((char*)dst, size));
 }
 
 int memClose(int fd)
@@ -901,8 +907,8 @@ int memClose(int fd)
 #if MemDebug && MemProcessDebug
 	printf("memClose\n");
 #endif
-	if (memFileDescriptions[fd] == nullptr) return MemFileSystemError::NotOpenedFileDescription;
-	memFileDescriptions[fd] = nullptr;
+	if (memFileDescriptions[fd].file == nullptr) return MemFileSystemError::NotOpenedFileDescription;
+	memFileDescriptions[fd].file = nullptr;
 	return 0;
 }
 
@@ -911,9 +917,9 @@ off_t memSeek(int fd, off_t size, int mod)
 #if MemDebug && MemProcessDebug
 	printf("memSeek\n");
 #endif
-	if (memFileDescriptions[fd] == nullptr) return MemFileSystemError::NotOpenedFileDescription;
+	if (memFileDescriptions[fd].file == nullptr) return MemFileSystemError::NotOpenedFileDescription;
 
-	auto& file = *memFileDescriptions[fd];
+	auto& file = memFileDescriptions[fd];
 	switch (mod)
 	{
 	case SEEK_SET:
@@ -927,7 +933,7 @@ off_t memSeek(int fd, off_t size, int mod)
 		break;
 	case SEEK_END:
 		// end
-		file.localOffset += size - (file.blockOffset + file.localOffset) + file.size;
+		file.localOffset += size - (file.blockOffset + file.localOffset) + file.file->size;
 		break;
 	}
 
