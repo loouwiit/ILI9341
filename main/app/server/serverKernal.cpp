@@ -20,19 +20,25 @@ EXT_RAM_BSS_ATTR static uint8_t maxRestartTimes = 0;
 constexpr char TAG[] = "server";
 
 constexpr char ServerPath[] = "/server";
-constexpr char formatingPassword[] = "I know exactly what I'm doing";
+constexpr char FormatingPassword[] = "I know exactly what I'm doing";
 constexpr size_t FlashPutMaxSize = 6 * 1024 * 1024; //6M
 constexpr size_t SdPutMaxSize = 50 * 1024 * 1024; //50M
 constexpr size_t PutBufferSize = 512;
 
-constexpr size_t socketStreamWindowNumber = 16;
-constexpr size_t coworkerNumber = 1;
+constexpr size_t SocketStreamWindowNumber = 16;
+constexpr size_t CoworkerNumber = 6;
 
-constexpr size_t wifiApRecordSize = 50;
+constexpr size_t WifiApRecordSize = 50;
 
 EXT_RAM_BSS_ATTR Socket serverListenSocket{};
 EXT_RAM_BSS_ATTR bool serverRunning = false;
-EXT_RAM_BSS_ATTR SocketStreamWindow socketStreamWindows[socketStreamWindowNumber]{};
+EXT_RAM_BSS_ATTR SocketStreamWindow socketStreamWindows[SocketStreamWindowNumber]{};
+EXT_RAM_BSS_ATTR static Mutex scanMutex{};
+EXT_RAM_BSS_ATTR static size_t scanPosition = 0;
+
+EXT_RAM_BSS_ATTR TaskHandle_t coWorkerHandle[CoworkerNumber]{};
+EXT_RAM_BSS_ATTR StackType_t* coWorkerStack[CoworkerNumber]{};
+StaticTask_t coWorkerTasks[CoworkerNumber]{};
 
 void server(void*);
 void serverCoworker(void*);
@@ -60,10 +66,19 @@ void serverStart(unsigned char maxAutoRestartTimes)
 	xTaskCreate(server, "server", 4096, nullptr, 2, NULL);
 	char serverCoTaskName[13] = "coServer00";
 	size_t startedCoTask = 0;
-	for (size_t i = 0;i < coworkerNumber;i++)
+	for (size_t i = 0; i < CoworkerNumber; i++)
 	{
+		if (coWorkerStack[i] != nullptr) continue;
+		coWorkerStack[i] = new StackType_t[4096];
 		sprintf(serverCoTaskName, "coServer%02d", i);
-		startedCoTask += pdTRUE == xTaskCreate(serverCoworker, serverCoTaskName, 4096, (void*)i, 3, NULL);
+		coWorkerHandle[i] = xTaskCreateStatic(serverCoworker, serverCoTaskName, 4096, (void*)i, 2, coWorkerStack[i], &coWorkerTasks[i]);
+		if (coWorkerHandle[i] != nullptr)
+			startedCoTask++;
+		else
+		{
+			delete[] coWorkerStack[i];
+			coWorkerStack[i] = nullptr;
+		}
 	}
 	if (startedCoTask == 0)
 		serverStop();
@@ -153,26 +168,33 @@ void server(void*)
 		while (!socketStreamWindows[index].setSocket(sock))
 		{
 			index++;
-			if (index >= socketStreamWindowNumber)
+			if (index >= SocketStreamWindowNumber)
 			{
 				index = 0;
 				printf("server: all window was occupyed\n");
 				vTaskDelay(100 / portTICK_PERIOD_MS);
 			}
 		}
-		printf("SocketStreamWindow state: %d / %d\n", SocketStreamWindow::getEnabledCount(), socketStreamWindowNumber);
+		printf("SocketStreamWindow state: %d / %d\n", SocketStreamWindow::getEnabledCount(), SocketStreamWindowNumber);
 		vTaskDelay(1);
 	}
 
 	close(serverListenSocket);
+
+	for (size_t i = 0; i < CoworkerNumber; i++)
+	{
+		while (coWorkerHandle[i] != nullptr)
+			vTaskDelay(1);
+
+		delete[] coWorkerStack[i];
+		coWorkerStack[i] = nullptr;
+	}
+
 	vTaskDelete(nullptr);
 }
 
 void serverCoworker(void* coworkerIndex)
 {
-	static Mutex scanMutex;
-	static size_t scanPosition = 0;
-
 	bool scanning = false;
 	size_t index = 0;
 
@@ -190,7 +212,7 @@ void serverCoworker(void* coworkerIndex)
 
 		while (scanning && serverRunning)
 		{
-			for (; index < socketStreamWindowNumber; index++)
+			for (; index < SocketStreamWindowNumber; index++)
 			{
 
 				//尝试激活每一个窗口
@@ -201,7 +223,7 @@ void serverCoworker(void* coworkerIndex)
 				if (socketStreamWindows[index].check())
 				{
 					//移交扫描权
-					scanPosition = index + 1 % socketStreamWindowNumber;
+					scanPosition = index + 1 % SocketStreamWindowNumber;
 					scanMutex.unlock();
 
 					//处理数据
@@ -210,7 +232,7 @@ void serverCoworker(void* coworkerIndex)
 					socketStreamWindows[index].disable(); //窗口已激活，现取消激活窗口
 
 					//取消自身扫描
-					index = socketStreamWindowNumber;
+					index = SocketStreamWindowNumber;
 					scanning = false;
 				}
 				else
@@ -233,6 +255,7 @@ void serverCoworker(void* coworkerIndex)
 		// scanning == false，无需移交扫描权
 	}
 	printf("Coworker %d ended\n", (int)coworkerIndex);
+	coWorkerHandle[(int)coworkerIndex] = nullptr;
 	vTaskDelete(NULL);
 }
 
@@ -446,8 +469,8 @@ void httpPost(IOSocketStream& socketStream, HttpRequest& request)
 		}
 
 		// 扫描
-		wifi_ap_record_t* wifi = new wifi_ap_record_t[wifiApRecordSize]; // 96 bytes per record
-		size_t count = wifiStationScan(wifi, wifiApRecordSize);
+		wifi_ap_record_t* wifi = new wifi_ap_record_t[WifiApRecordSize]; // 96 bytes per record
+		size_t count = wifiStationScan(wifi, WifiApRecordSize);
 
 		// 统计长度
 		// unsigned char wifiRssiLenght[wifiApRecordSize] = {0};
@@ -550,7 +573,7 @@ void httpPost(IOSocketStream& socketStream, HttpRequest& request)
 		char body[request.bodyLenght + 1] = "";
 		size_t bodyLength = socketStream.read(body, request.bodyLenght + 1);
 		printf("formating password input: %s\n", body);
-		if (stringCompare((char*)body, bodyLength, formatingPassword, sizeof(formatingPassword) - 1))
+		if (stringCompare((char*)body, bodyLength, FormatingPassword, sizeof(FormatingPassword) - 1))
 		{
 			printf("formating flash\n");
 			formatFlash();
