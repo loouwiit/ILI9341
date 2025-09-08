@@ -4,16 +4,19 @@
 #include "tempture.hpp"
 
 #include "wifi/wifi.hpp"
+#include "app/setting/wifiSetting.hpp"
 
 void AppServer::init()
 {
 	App::init();
 
+	title.position = { LCD::ScreenSize.x / 2, 0 };
 	title.position.x -= title.computeSize().x / 2;
 	title.computeSize();
 	title.clickCallbackParam = this;
 	title.releaseCallback = [](Finger&, void* param) { AppServer& self = *(AppServer*)param; self.changeAppCallback(nullptr); };
 
+	contents.elementCount = 4;
 	contents[0] = &title;
 	contents[1] = &server;
 	contents[2] = &temptureInit;
@@ -21,8 +24,16 @@ void AppServer::init()
 
 	if (!wifiIsInited())
 	{
-		server.text = "wifi not inited";
 		contents.elementCount = 2;
+		server.text = "wifi not inited";
+		server.computeSize();
+		server.clickCallbackParam = this;
+		server.releaseCallback = [](Finger&, void* param)
+			{
+				AppServer& self = *(AppServer*)param;
+				WifiSetting* wifiSetting = new WifiSetting{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				self.newAppCallback(wifiSetting);
+			};
 		return;
 	}
 
@@ -60,6 +71,11 @@ void AppServer::init()
 			else temperatureStart();
 			self.updateState();
 		};
+}
+
+void AppServer::focusIn()
+{
+	init();
 }
 
 void AppServer::draw()

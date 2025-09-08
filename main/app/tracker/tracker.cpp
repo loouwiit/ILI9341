@@ -3,6 +3,7 @@
 #include <lwip/sockets.h>
 
 #include "wifi/wifi.hpp"
+#include "app/setting/wifiSetting.hpp"
 
 constexpr static char TAG[] = "tracker";
 
@@ -10,6 +11,11 @@ void AppTracker::init()
 {
 	App::init();
 	xTaskCreate(serverThread, "appTracker", 4096, this, 2, nullptr);
+}
+
+void AppTracker::focusIn()
+{
+	init();
 }
 
 void AppTracker::deinit()
@@ -37,7 +43,10 @@ void AppTracker::touchUpdate()
 		lastFingerPosition[0] = touch[0].position;
 	}
 	else if (touch[0].state == Finger::State::Realease)
+	{
 		fingerActive[0] = false;
+		if (!wifiIsInited()) text.finger(touch[0]);
+	}
 
 	if (touch[1].state == Finger::State::Press)
 	{
@@ -45,18 +54,26 @@ void AppTracker::touchUpdate()
 		lastFingerPosition[1] = touch[1].position;
 	}
 	else if (touch[1].state == Finger::State::Realease)
+	{
 		fingerActive[1] = false;
+		if (!wifiIsInited()) text.finger(touch[1]);
+	}
 
 	if (fingerActive[0])
 	{
 		text.position += touch[0].position - lastFingerPosition[0];
 		lastFingerPosition[0] = touch[0].position;
+
+		if (!wifiIsInited()) text.computeSize();
 	}
 	if (fingerActive[1])
 	{
 		text.position += touch[1].position - lastFingerPosition[1];
 		lastFingerPosition[1] = touch[1].position;
+
+		if (!wifiIsInited()) text.computeSize();
 	}
+
 }
 
 void AppTracker::back()
@@ -115,7 +132,15 @@ void AppTracker::serverThread(void* param)
 	if (!wifiIsInited())
 	{
 		ESP_LOGW(TAG, "wifi not inited");
-		self.update("wifi not inited");
+		strcpy(self.buffer, "wifi not inited");
+		self.text.computeSize();
+		self.text.clickCallbackParam = param;
+		self.text.releaseCallback = [](Finger&, void* param)
+			{
+				AppTracker& self = *(AppTracker*)param;
+				WifiSetting* wifiSetting = new WifiSetting{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				self.newAppCallback(wifiSetting);
+			};
 		self.deleteAble = true;
 		vTaskDelete(nullptr);
 	}

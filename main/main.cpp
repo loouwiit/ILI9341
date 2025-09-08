@@ -130,6 +130,7 @@ void changeAppCallback(App* nextApp)
 				{
 					// back to last one
 					appIndex--;
+					app[appIndex]->focusIn();
 #if ChangeAppLog
 					ESP_LOGI(TAG, "back to last app @ %p", app[appIndex]);
 #endif
