@@ -6,7 +6,7 @@
 class AppTracker final : public App
 {
 public:
-	AppTracker(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, changeAppCallback) {}
+	AppTracker(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, newAppCallback) {}
 
 	virtual void init() override final;
 	virtual void deinit() override final;
