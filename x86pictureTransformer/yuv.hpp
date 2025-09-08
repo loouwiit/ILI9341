@@ -28,9 +28,9 @@ public:
 	{
 		return Color666
 		{
-			(uint8_t)((y + ((351 * v) >> 8)) >> 2),
-			(uint8_t)((y - ((86 * u + 179 * v) >> 8)) >> 2),
-			(uint8_t)((y + ((444 * u) >> 8)) >> 2)
+			(uint8_t)((unsigned)(y + ((351 * v) >> 8)) >> 2),
+			(uint8_t)((unsigned)(y - ((86 * u + 179 * v) >> 8)) >> 2),
+			(uint8_t)((unsigned)(y + ((444 * u) >> 8)) >> 2)
 		};
 	}
 };

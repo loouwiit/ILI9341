@@ -81,6 +81,7 @@ int main(int argc, char* argv[])
 	file.seekp(0);
 	file.put(pictureIndex & 0xFF);
 	file.put(pictureIndex >> 8);
+	file.close();
 
 	std::cout << pictureIndex << "frame totol\n";
 
@@ -122,20 +123,24 @@ int appendYuv420(std::ofstream& file, sf::Image& image)
 
 	for (int y = 0; y < ScreenSize.y; y += 2) for (int x = 0; x < ScreenSize.x; x += 2)
 	{
+		// 获取输入
 		colorInput[0] = image.getPixel(x + 0, y + 0);
 		colorInput[1] = image.getPixel(x + 0, y + 1);
 		colorInput[2] = image.getPixel(x + 1, y + 0);
 		colorInput[3] = image.getPixel(x + 1, y + 1);
 
+		// 转换RGB666
 		for (int i = 0; i < 4; i++)
 			color[i] = Color{ (uint8_t)(colorInput[i].r >> 2), (uint8_t)(colorInput[i].g >> 2), (uint8_t)(colorInput[i].b >> 2) };
 
+		// 转换yuv
 		for (int i = 0; i < 4; i++)
 			yuv[i] = color[i];
 
+		// 模拟存储损失
 		yExtra = yuv[0].y & (1 << 2);
 		for (int i = 0; i < 4; i++)
-			yuv[i].y = (yuv[i].y & 0xF8) + yExtra * 0x07; // 模拟并补偿存储时的损失
+			yuv[i].y = (yuv[i].y & 0xF8) + yExtra * 0x07;
 
 		yuv[0].u = yuv[0].u < 0 ? (yuv[0].u + 7) & 0xF8 : yuv[0].u & 0xF8;
 		yuv[0].v = yuv[0].v < 0 ? (yuv[0].v + 7) & 0xF8 : yuv[0].v & 0xF8;
@@ -146,26 +151,32 @@ int appendYuv420(std::ofstream& file, sf::Image& image)
 			yuv[i].v = yuv[0].v;
 		}
 
-		for (int i = 1; i < 4;i++)
+		// 确保不会溢出
+		for (int i = 0; i < 4;i++)
 		{
 			reverse = (Color)yuv[i];
-			while (reverse.getG() < 5 && color[i].getG() > 28)
+			while (reverse.getG() < 20 && color[i].getG() > 40 ||
+				reverse.R < 10 && color[i].R > 20 ||
+				reverse.B < 10 && color[i].B > 20)
 			{
-				// G溢出，减少Y
 				yuv[i].y -= 1 << 3;
+				reverse = (Color)yuv[i];
+			}
+			while (reverse.getG() > 40 && color[i].getG() < 20 ||
+				reverse.R > 20 && color[i].R < 10 ||
+				reverse.B > 20 && color[i].B < 10)
+			{
+				yuv[i].y += 1 << 3;
 				reverse = (Color)yuv[i];
 			}
 		}
 
-		reverse = yuv[0]; // for debug
-		reverse = yuv[1]; // for debug
-		reverse = yuv[2]; // for debug
-		reverse = yuv[3]; // for debug
-
+		// 计算Y偏移
 		yuv[1].y -= yuv[0].y & 0xF8;
 		yuv[2].y -= yuv[0].y & 0xF8;
 		yuv[3].y -= yuv[0].y & 0xF8;
 
+		// 输出
 		fileOutput = (yExtra << 15) +
 			((yuv[0].y >> 3) << 10) +
 			(((yuv[0].u + 0x7F) >> 3) << 5) +
