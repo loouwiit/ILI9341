@@ -26,8 +26,11 @@ public:
 		R{ R }, G{ G }, B{ B }
 	{}
 
-	bool operator==(Color666 o) { return R == o.R && G == o.G && B == o.B; }
-	bool operator!=(Color666 o) { return R != o.R || G != o.G || B != o.B; }
+	constexpr bool operator==(Color666 o) { return R == o.R && G == o.G && B == o.B; }
+	constexpr bool operator!=(Color666 o) { return R != o.R || G != o.G || B != o.B; }
+
+	constexpr Color666 operator+(Color666 o) { return { (unsigned char)(R + o.R), (unsigned char)(G + o.G), (unsigned char)(B + o.B) }; }
+	constexpr Color666 operator-(Color666 o) { return { (unsigned char)(R - o.R), (unsigned char)(G - o.G), (unsigned char)(B - o.B) }; }
 
 	const static Color666 White;
 	const static Color666 Black;
@@ -70,11 +73,13 @@ public:
 		Color565(color.R, color.G, color.B)
 	{}
 
-	operator Color666() { return { (uint8_t)(R << 1), (uint8_t)((GH << 3) + GL), (uint8_t)(B << 1) }; }
-	operator uint16_t() { return (R << 11) + (GH << 8) + (GL << 5) + B; }
+	constexpr operator Color666() { return { (uint8_t)(R << 1), (uint8_t)((GH << 3) + GL), (uint8_t)(B << 1) }; }
+	constexpr operator uint16_t() { return (R << 11) + (GH << 8) + (GL << 5) + B; }
 
-	bool operator ==(Color565 o) { return GH == o.GH && R == o.R && B == o.B && GL == o.GL; }
-	bool operator !=(Color565 o) { return GH != o.GH || R != o.R || B != o.B || GL != o.GL; }
+	constexpr bool operator ==(Color565 o) { return GH == o.GH && R == o.R && B == o.B && GL == o.GL; }
+	constexpr bool operator !=(Color565 o) { return GH != o.GH || R != o.R || B != o.B || GL != o.GL; }
+
+	uint8_t getG() { return (uint8_t)((GH << 3) + GL); }
 
 	const static Color565 White;
 	const static Color565 Black;

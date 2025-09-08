@@ -160,7 +160,7 @@ MemFileHead::~MemFileHead()
 	this->parent = nullptr;
 
 	// 逐个删除
-	while (dataBlock->next != nullptr)
+	if (dataBlock != nullptr) while (dataBlock->next != nullptr)
 	{
 		dataBlock = dataBlock->next;
 

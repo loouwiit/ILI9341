@@ -3,6 +3,44 @@
 #include <cstdint>
 #include <algorithm>
 
+class Color666
+{
+public:
+	// XXRRRRRR
+	uint8_t : 2;
+	uint8_t R : 6;
+	// XXGGGGGG
+	uint8_t : 2;
+	uint8_t G : 6;
+	// XXBBBBBB
+	uint8_t : 2;
+	uint8_t B : 6;
+
+	constexpr Color666() = default;
+	constexpr Color666(const Color666&) = default;
+	constexpr Color666& operator=(const Color666&) = default;
+	constexpr Color666(Color666&&) = default;
+	constexpr Color666& operator=(Color666&&) = default;
+
+	constexpr Color666(const uint8_t R, const uint8_t G, const uint8_t B) :
+		R{ R }, G{ G }, B{ B }
+	{}
+
+	constexpr bool operator==(Color666 o) { return R == o.R && G == o.G && B == o.B; }
+	constexpr bool operator!=(Color666 o) { return R != o.R || G != o.G || B != o.B; }
+
+	constexpr Color666 operator+(Color666 o) { return { (unsigned char)(R + o.R), (unsigned char)(G + o.G), (unsigned char)(B + o.B) }; }
+	constexpr Color666 operator-(Color666 o) { return { (unsigned char)(R - o.R), (unsigned char)(G - o.G), (unsigned char)(B - o.B) }; }
+
+	const static Color666 White;
+	const static Color666 Black;
+	const static Color666 Red;
+	const static Color666 Green;
+	const static Color666 Blue;
+};
+
+static_assert(sizeof(Color666) == 3, "666模式下Color应为3字节");
+
 class Color565
 {
 public:
@@ -18,15 +56,38 @@ public:
 	constexpr Color565& operator=(Color565&&) = default;
 
 	constexpr Color565(const uint8_t R, const uint8_t G, const uint8_t B) :
-		GL{ (uint8_t)(G & 0x7) },
+		GH{ (uint8_t)((G >> 3) & 0x7) },
 		R{ (uint8_t)((R >> 1) & 0x1F) },
 		B{ (uint8_t)((B >> 1) & 0x1F) },
-		GH{ (uint8_t)((G >> 3) & 0x7) }
+		GL{ (uint8_t)(G & 0x7) }
 	{}
 
-	operator uint16_t() { return (R << 11) + (GH << 8) + (GL << 5) + B; }
+	constexpr Color565(const uint16_t color) :
+		GH{ (uint8_t)((color >> 8) & 0x7) },
+		R{ (uint8_t)((color >> 11) & 0x1F) },
+		B{ (uint8_t)(color & 0x1F) },
+		GL{ (uint8_t)((color >> 5) & 0x7) }
+	{}
 
-	bool operator ==(Color565 o) { return GH == o.GH && R == o.R && B == o.B && GL == o.GL; }
-	bool operator !=(Color565 o) { return GH != o.GH || R != o.R || B != o.B || GL != o.GL; }
+	constexpr Color565(const Color666 color) :
+		Color565(color.R, color.G, color.B)
+	{}
+
+	constexpr operator Color666() { return { (uint8_t)(R << 1), (uint8_t)((GH << 3) + GL), (uint8_t)(B << 1) }; }
+	constexpr operator uint16_t() { return (R << 11) + (GH << 8) + (GL << 5) + B; }
+
+	constexpr bool operator ==(Color565 o) { return GH == o.GH && R == o.R && B == o.B && GL == o.GL; }
+	constexpr bool operator !=(Color565 o) { return GH != o.GH || R != o.R || B != o.B || GL != o.GL; }
+
+	uint8_t getG() { return (uint8_t)((GH << 3) + GL); }
+
+	const static Color565 White;
+	const static Color565 Black;
+	const static Color565 Red;
+	const static Color565 Green;
+	const static Color565 Blue;
 };
 static_assert(sizeof(Color565) == 2, "565模式下Color应为2字节");
+
+template <class T>
+concept ColorTemplate = requires{std::is_same<T, Color565>::value || std::is_same<T, Color666>::value;};

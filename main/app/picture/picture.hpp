@@ -28,11 +28,12 @@ private:
 	unsigned short& index = pictureCountText.number;
 	unsigned short totol = 1;
 	unsigned char scale = 1;
+	bool yuv420Mode = false;
 
 	constexpr static auto mataDataSize = sizeof(totol) + sizeof(scale);
-	Vector2s frameSize = { LCD::ScreenSize.x, LCD::ScreenSize.y };
-	size_t frameBufferLineSize = sizeof(LCD::Color) * frameSize.x;
-	size_t frameBufferSize = frameBufferLineSize * frameSize.y;
+	Vector2s frameReadSize = { LCD::ScreenSize.x, LCD::ScreenSize.y };
+	size_t frameReadLineSize = sizeof(LCD::Color) * frameReadSize.x;
+	size_t frameBufferSize = frameReadLineSize * frameReadSize.y;
 
 	constexpr static clock_t TextFadeTime = 1000;
 	clock_t textTime = (clock_t)-1;
@@ -42,6 +43,7 @@ private:
 
 	void tryLoadNext();
 	void load(unsigned short index);
+	void yuv420Decode();
 	void scaleBuffer();
 
 	void drawText();
