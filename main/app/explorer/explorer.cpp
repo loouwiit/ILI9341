@@ -16,12 +16,12 @@ void AppExplorer::init()
 	title.position.x -= title.computeSize().x / 2;
 	title.computeSize();
 	title.clickCallbackParam = this;
-	title.releaseCallback = [](Finger&, void* param) { AppExplorer& self = *(AppExplorer*)param; self.changeAppCallback(nullptr); };
+	title.releaseCallback = [](Finger&, void* param) { AppExplorer& self = *(AppExplorer*)param; self.back(); };
 
 	path.text = nowFloorPath;
 	path.computeSize();
 	path.clickCallbackParam = this;
-	path.releaseCallback = [](Finger&, void* param) { AppExplorer& self = *(AppExplorer*)param; self.floorBack(); };
+	path.releaseCallback = [](Finger&, void* param) { AppExplorer& self = *(AppExplorer*)param; self.updateFloor(); };
 
 	fileLayar.start.x = ContentXOffset;
 	fileLayar.start.y = 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 1;
@@ -123,7 +123,8 @@ void AppExplorer::touchUpdate()
 
 void AppExplorer::back()
 {
-	changeAppCallback(nullptr);
+	if (!floorBack())
+		changeAppCallback(nullptr);
 }
 
 void AppExplorer::resetPosition()
@@ -165,12 +166,12 @@ void AppExplorer::updateFloor()
 	fileLayar.elementCount = totolCount;
 }
 
-void AppExplorer::floorBack()
+bool AppExplorer::floorBack()
 {
 	if (nowFloorPointer == 1)
 	{
 		updateFloor();
-		return;
+		return false;
 	}
 
 	nowFloorPointer--; // '/' <- '\0'
@@ -180,6 +181,7 @@ void AppExplorer::floorBack()
 	nowFloorPath[nowFloorPointer] = '\0';
 	resetPosition();
 	updateFloor();
+	return true;
 }
 
 void AppExplorer::clickCallback(unsigned char index)

@@ -46,7 +46,7 @@ private:
 
 	void resetPosition();
 	void updateFloor();
-	void floorBack();
+	bool floorBack();
 	void clickCallback(unsigned char index);
 	void openFile(unsigned char index);
 	void updateText(unsigned char index, const char* text, Floor::Type type);
