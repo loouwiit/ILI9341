@@ -7,6 +7,7 @@
 #include "tracker/tracker.hpp"
 #include "server/server.hpp"
 #include "explorer/explorer.hpp"
+#include "tetris/tetris.hpp"
 
 constexpr char TAG[] = "AppDesktop";
 
@@ -100,6 +101,8 @@ App* AppDesktop::appFactory(unsigned char index)
 		return new AppServer{ lcd, touch, changeAppCallback, newAppCallback };
 	case 4:
 		return new AppExplorer{ lcd, touch, changeAppCallback, newAppCallback };
+	case 5:
+		return new AppTetris{ lcd, touch, changeAppCallback, newAppCallback };
 	default:
 		ESP_LOGE(TAG, "failed to new app %s (case %d)", ApplicationName[index], index);
 		return nullptr;

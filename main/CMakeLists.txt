@@ -11,5 +11,6 @@ idf_component_register(SRCS "main.cpp" "stringCompare.cpp" "spi.cpp"
                         "app/explorer/explorer.cpp"
                         "app/textEditor/textEditor.cpp"
                         "app/picture/picture.cpp"
+                        "app/tetris/tetris.cpp" "app/tetris/map.cpp" "app/tetris/block.cpp"
                     INCLUDE_DIRS "app" "."
                     PRIV_REQUIRES esp_driver_gpio esp_driver_spi esp_driver_i2c nvs_flash esp_wifi spi_flash fatfs esp_driver_tsens)

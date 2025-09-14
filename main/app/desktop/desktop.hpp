@@ -21,11 +21,11 @@ private:
 
 	constexpr static float moveThreshold2 = 100.0f;
 
-	constexpr static unsigned char ApplicationSize = 5;
+	constexpr static unsigned char ApplicationSize = 6;
 
-	constexpr const static char* ApplicationName[ApplicationSize] = { "setting", "clock", "tracker", "server", "explorer" };
+	constexpr const static char* ApplicationName[ApplicationSize] = { "setting", "clock", "tracker", "server", "explorer", "tetris" };
 
-	LCD::Layar<LayarClassicSize::Middle> applications{ ApplicationSize * 2 };
+	LCD::Layar<LayarClassicSize::Large> applications{ ApplicationSize * 2 };
 	LCD::Rectangle applicationRectangle[ApplicationSize]{};
 	LCD::Text applicationText[ApplicationSize]{};
 
