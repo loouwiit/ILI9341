@@ -34,7 +34,7 @@ private:
 	constexpr static unsigned char BottonTextScale = 3;
 	constexpr static short GapSize = 8;
 	constexpr static Vector2s BottonPosition = { 130,110 };
-	constexpr static const char* const BottonText[6] = { "L ", "/\\", " R", "<-", "\\/", "->" };
+	constexpr static const char* const BottonText[6] = { "L", "/\\", "R", "<-", "\\/", "->" };
 	LCD::Text botton[6]{};
 
 	constexpr static clock_t PressGapTime = 300;
