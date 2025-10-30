@@ -1,4 +1,4 @@
 #include "font.hpp"
 
-FontBuiltIn builtInFont{};
-FontBuiltInEqualWidth builtInFontEqualWidth{};
+FontBuiltIn fontBuiltIn{};
+FontBuiltInEqualWidth fontBuiltInEqualWidth{};

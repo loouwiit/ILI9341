@@ -247,5 +247,5 @@ private:
 	};
 };
 
-extern FontBuiltIn builtInFont;
-extern FontBuiltInEqualWidth builtInFontEqualWidth;
+extern FontBuiltIn fontBuiltIn;
+extern FontBuiltInEqualWidth fontBuiltInEqualWidth;
