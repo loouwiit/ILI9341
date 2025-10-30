@@ -12,13 +12,13 @@ class Character final : public Element<Color, Size>
 public:
 	Vector2s position{};
 	char text{};
-	Font* font = &fontBuiltIn;
+	const Font* font = &fontBuiltIn;
 	Color textColor{};
 	Color backgroundColor{};
 	unsigned char scale = 1;
 
 	Character() = default;
-	Character(Vector2s position, char text = '\0', Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, Font* font = &fontBuiltIn) : position{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Character(Vector2s position, char text = '\0', Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, const Font* font = &fontBuiltIn) : position{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Character(Character&) = default;
 	Character& operator=(Character&) = default;
 	Character(Character&&) = default;
@@ -96,14 +96,14 @@ public:
 	Vector2s position{};
 	Vector2s endPosition{};
 	const char* text = "";
-	Font* font = &fontBuiltIn;
+	const Font* font = fontBuiltIn;
 	Color textColor{};
 	Color backgroundColor{};
 	unsigned char scale = 1;
 
 	Text() = default;
-	Text(Vector2s position, const char* text = "", Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, Font* font = &fontBuiltIn) : position{ position }, endPosition{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
-	Text(Vector2s position, const char* text, unsigned char scale, Color textColor = Color::White, Color backgroundColor = Color::Black, Font* font = &fontBuiltIn) : position{ position }, endPosition{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Text(Vector2s position, const char* text = "", Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, const Font* font = fontBuiltIn) : position{ position }, endPosition{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Text(Vector2s position, const char* text, unsigned char scale, Color textColor = Color::White, Color backgroundColor = Color::Black, const Font* font = fontBuiltIn) : position{ position }, endPosition{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Text(Text&) = default;
 	Text& operator=(Text&) = default;
 	Text(Text&&) = default;
@@ -195,14 +195,14 @@ public:
 	Vector2s position{};
 	Vector2s endPosition{};
 	T number{};
-	Font* font = &fontBuiltIn;
+	const Font* font = fontBuiltIn;
 	unsigned char base = 10;
 	Color textColor{};
 	Color backgroundColor{};
 	unsigned char scale = 1;
 
 	Number() = default;
-	Number(Vector2s position, T number = T{}, unsigned char base = 10, Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, Font* font = &fontBuiltIn) : position{ position }, endPosition{ position }, number{ number }, font{ font }, base{ base }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Number(Vector2s position, T number = T{}, unsigned char base = 10, Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, const Font* font = fontBuiltIn) : position{ position }, endPosition{ position }, number{ number }, font{ font }, base{ base }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Number(Number&) = default;
 	Number& operator=(Number&) = default;
 	Number(Number&&) = default;
