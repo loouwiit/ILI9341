@@ -8,6 +8,7 @@
 * 作为http文件服务器存储、共享文件
 * 查看文本文档
 * 显示经处理后的视频/图片
+* 游玩俄罗斯方块
 
 # 环境
 * ESP32S3
@@ -38,7 +39,8 @@
 │   │   │   └── input.hpp
 │   │   ├── picture
 │   │   │   ├── picture.cpp
-│   │   │   └── picture.hpp
+│   │   │   ├── picture.hpp
+│   │   │   └── yuv.hpp
 │   │   ├── server
 │   │   │   ├── buildinHtml
 │   │   │   │   ├── file.hpp
@@ -60,6 +62,14 @@
 │   │   │   ├── touchTest.hpp
 │   │   │   ├── wifiSetting.cpp
 │   │   │   └── wifiSetting.hpp
+│   │   ├── tetris
+│   │   │   ├── block.cpp
+│   │   │   ├── block.hpp
+│   │   │   ├── mapBase.hpp
+│   │   │   ├── map.cpp
+│   │   │   ├── map.hpp
+│   │   │   ├── tetris.cpp
+│   │   │   └── tetris.hpp
 │   │   ├── textEditor
 │   │   │   ├── textEditor.cpp
 │   │   │   └── textEditor.hpp
@@ -162,7 +172,10 @@
 * ffmpeg
 * sfml-dev
 
-提取帧率为10fps，均转为320x240的png于files子文件夹中，最终组合到files/out.pic中。
+提取帧率为10fps，均转为png于files子文件夹中，最终组合到files/out.pic中。
+
+scale控制缩放系数，可节约存储空间
+yuv420Enabled控制yuv420压缩，可节约存储空间。输入‘+’以启用。
 
 ## 已知问题
 * 上一次转换完的png若未手动删除将被打包至下一次的pic中

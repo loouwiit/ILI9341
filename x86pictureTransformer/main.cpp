@@ -11,7 +11,7 @@ constexpr unsigned short TotolFrames = 600;
 using Color = Color565;
 unsigned char scale = 1;
 sf::Vector2i ScreenSize = { 320 / scale, 240 / scale };
-bool rgb3111Enabled = false;
+bool yuv420Enabled = false;
 
 int appendRgb(std::ofstream& file, sf::Image& image);
 int appendYuv420(std::ofstream& file, sf::Image& image);
@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
 	scale = std::min(std::max(1, std::cin.get() - '0'), 16);
 	if (std::cin.peek() == '+')
 	{
-		rgb3111Enabled = true;
+		yuv420Enabled = true;
 		std::cin.ignore();
 	}
 
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 	char totolCount[2] = { 0x00,0x00 };
 	file.write(&totolCount[0], 2);
 
-	scale |= rgb3111Enabled << 7;
+	scale |= yuv420Enabled << 7;
 	file.write((const char*)&scale, 1);
 	scale &= ~(1 << 7);
 
@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
 		sprintf(buffer, "files/%05d.png", pictureIndex);
 		if (image.loadFromFile(buffer))
 		{
-			if (rgb3111Enabled)
+			if (yuv420Enabled)
 				appendYuv420(file, image);
 			else
 				appendRgb(file, image);
