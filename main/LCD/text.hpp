@@ -12,12 +12,13 @@ class Character final : public Element<Color, Size>
 public:
 	Vector2s position{};
 	char text{};
+	Font* font = &builtInFont;
 	Color textColor{};
 	Color backgroundColor{};
 	unsigned char scale = 1;
 
 	Character() = default;
-	Character(Vector2s position, char text = '\0', Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1) : position{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Character(Vector2s position, char text = '\0', Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, Font* font = &builtInFont) : position{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Character(Character&) = default;
 	Character& operator=(Character&) = default;
 	Character(Character&&) = default;
@@ -25,21 +26,19 @@ public:
 
 	Vector2us getSize()
 	{
-		return Vector2us{ 8,16 } *scale;
+		return font->getSize() * scale;
 	}
 
 	virtual bool isClicked(Vector2s point) override final
 	{
-		auto sub = point - position; // 如果溢出也能正常比较
-		return sub.x < 8 * scale &&
-			sub.y < 16 * scale;
+		auto sub = point - position;
+		return sub.x < font->getSize().x * scale &&
+			sub.y < font->getSize().y * scale;
 	}
 
 	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
-		if (text < 0x20) return { 0,0 };
-
-		constexpr Vector2s fontSize = { 8,16 };
+		Vector2s fontSize = font->getSize();
 		Vector2s modPositionStart = { 0,0 };
 		Vector2s modPositionEnd = fontSize;
 
@@ -68,14 +67,14 @@ public:
 		}
 		Vector2s nowPosition = drawPosition;
 		Vector2s repeatPosition = { 0,0 };
-		const unsigned char* font = fonts[(unsigned char)text - 0x20];
+		const unsigned char* font = this->font->get(&text);
 
 		for (auto y = modPositionStart.y; y < modPositionEnd.y; y++)
 		{
-			const unsigned char& mod = font[y];
 			for (auto x = modPositionStart.x; x < modPositionEnd.x; x++)
 			{
-				bool draw = mod & ((1 << 7) >> x);
+				const unsigned char& mod = font[(y * ((fontSize.x + 7) / 8)) + x / 8];
+				bool draw = mod & ((1 << 7) >> (x % 8));
 				Color& color = draw ? textColor : backgroundColor;
 
 				for (repeatPosition.y = 0; repeatPosition.y < scale; repeatPosition.y++) for (repeatPosition.x = 0; repeatPosition.x < scale; repeatPosition.x++)
@@ -86,7 +85,7 @@ public:
 			nowPosition.y += scale;
 		}
 
-		return Vector2us{ 8,16 } *scale;
+		return fontSize * scale;
 	}
 };
 
@@ -97,13 +96,14 @@ public:
 	Vector2s position{};
 	Vector2s endPosition{};
 	const char* text = "";
+	Font* font = &builtInFont;
 	Color textColor{};
 	Color backgroundColor{};
 	unsigned char scale = 1;
 
 	Text() = default;
-	Text(Vector2s position, const char* text = "", Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1) : position{ position }, endPosition{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
-	Text(Vector2s position, const char* text, unsigned char scale, Color textColor = Color::White, Color backgroundColor = Color::Black) : position{ position }, endPosition{ position }, text{ text }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Text(Vector2s position, const char* text = "", Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, Font* font = &builtInFont) : position{ position }, endPosition{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Text(Vector2s position, const char* text, unsigned char scale, Color textColor = Color::White, Color backgroundColor = Color::Black, Font* font = &builtInFont) : position{ position }, endPosition{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Text(Text&) = default;
 	Text& operator=(Text&) = default;
 	Text(Text&&) = default;
@@ -116,8 +116,11 @@ public:
 
 	Vector2us computeSize()
 	{
+		Vector2s fontSize = font->getSize();
+
 		endPosition = position;
 		Vector2s nowPosition = position;
+
 		for (const char* textPointer = text; *textPointer != '\0'; textPointer++)
 		{
 			switch (*textPointer)
@@ -126,22 +129,22 @@ public:
 				if (endPosition.x < nowPosition.x)
 					endPosition.x = nowPosition.x;
 				nowPosition.x = position.x;
-				nowPosition.y += 16 * scale;
+				nowPosition.y += fontSize.y * scale;
 				continue;
 			case '\r':
 				nowPosition.x = position.x;
 				continue;
 			case '\b': // 直接赌不会向左
-				nowPosition.x -= 8 * scale;
+				nowPosition.x -= fontSize.x * scale;
 				continue;
 			default:
-				nowPosition.x += 8 * scale;
+				nowPosition.x += fontSize.x * scale;
 			}
 		}
 
 		if (endPosition.x < nowPosition.x)
 			endPosition.x = nowPosition.x;
-		endPosition.y = nowPosition.y + 16 * scale;
+		endPosition.y = nowPosition.y + fontSize.y * scale;
 
 		return getSize();
 	}
@@ -154,8 +157,9 @@ public:
 
 	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
+		Vector2s fontSize = font->getSize();
 		Vector2s drawPosition = position + offset;
-		Character<Color, Size> tempCharacter{ drawPosition, '\0', textColor, backgroundColor,scale };
+		Character<Color, Size> tempCharacter{ drawPosition, '\0', textColor, backgroundColor,scale, font };
 		Vector2s& nowPosition = tempCharacter.position;
 
 		for (const char* textPointer = text; *textPointer != '\0'; textPointer++)
@@ -164,23 +168,23 @@ public:
 			{
 			case '\n':
 				nowPosition.x = drawPosition.x;
-				nowPosition.y += 16 * scale;
+				nowPosition.y += fontSize.y * scale;
 				continue;
 			case '\r':
 				nowPosition.x = drawPosition.x;
 				continue;
 			case '\b':
-				nowPosition.x -= 8 * scale;
+				nowPosition.x -= fontSize.x * scale;
 				continue;
 			case '\t':
-				nowPosition.x += 8 * scale;
+				nowPosition.x += fontSize.x * scale;
 				continue;
 			}
 			tempCharacter.text = *textPointer;
 			nowPosition.x += tempCharacter.drawTo(target).x;
 		}
 
-		return nowPosition - drawPosition + Vector2s{ 0, 16 } *scale;
+		return nowPosition - drawPosition + Vector2s{ 0, fontSize.y } *scale;
 	}
 };
 
@@ -191,13 +195,14 @@ public:
 	Vector2s position{};
 	Vector2s endPosition{};
 	T number{};
+	Font* font = &builtInFont;
 	unsigned char base = 10;
 	Color textColor{};
 	Color backgroundColor{};
 	unsigned char scale = 1;
 
 	Number() = default;
-	Number(Vector2s position, T number = T{}, unsigned char base = 10, Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1) : position{ position }, endPosition{ position }, number{ number }, base{ base }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Number(Vector2s position, T number = T{}, unsigned char base = 10, Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, Font* font = &builtInFont) : position{ position }, endPosition{ position }, number{ number }, font{ font }, base{ base }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Number(Number&) = default;
 	Number& operator=(Number&) = default;
 	Number(Number&&) = default;
@@ -232,7 +237,7 @@ public:
 	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		Vector2s drawPosition = position;
-		Character<Color, Size> tempCharacter{ drawPosition, '0', textColor, backgroundColor, scale };
+		Character<Color, Size> tempCharacter{ drawPosition, '0', textColor, backgroundColor, scale, font };
 		Vector2s& nowPosition = tempCharacter.position;
 		T nowNumber = number;
 
@@ -259,6 +264,6 @@ public:
 
 		draw(nowNumber, draw); // 递归lambda
 
-		return nowPosition - drawPosition + Vector2s{ 0,16 } *scale;
+		return nowPosition - drawPosition + Vector2us{ 0,font->getSize().y } *scale;
 	}
 };
