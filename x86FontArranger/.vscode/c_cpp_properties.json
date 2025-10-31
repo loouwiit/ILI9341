@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${default}"
+            ],
+            "defines": [],
+            "compilerArgs": [
+                "./"
+            ]
+        }
+    ],
+    "version": 4
+}

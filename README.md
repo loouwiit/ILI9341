@@ -150,6 +150,14 @@
 │       ├── A.pic
 │       └── B.pic
 ├── sdkconfig
+├── x86FontArranger
+│   ├── build
+│   │   ├── fontArrangeer
+│   │   └── out.font
+│   ├── gbk.cpp
+│   ├── gbk.hpp
+│   ├── main.cpp
+│   └── utf8.hpp
 ├── x86pictureTransformer
 │   ├── build
 │   │   └── pictureTransformer
@@ -164,6 +172,20 @@
     ├── socketStream.cpp
     └── socketStream.hpp
 ```
+
+# x86FontArranger
+转换字模数组到特定格式以供esp32使用。font文件定义如下：
+* unicode字符区：使用两字节编码一个字符。要求**单调递增**。
+* 字模区：32字节编码一个字符。顺序与unicode字符区相同。
+字模从左到右，从上到下按字节存储。每字节编码八个位，每行末尾不足八位的补足至一字节。
+
+eg.
+```
+0bxxxxxxxx 0bxxxxxx00
+0bxxxxxxxx 0bxxxxxx00
+0bxxxxxxxx 0bxxxxxx00
+```
+存储着14x3大小的字模
 
 # x86pictureTransformer
 将转换多媒体到特定格式以供esp32使用。该工具使用ffmpeg提取视频帧，再通过sfml提供的多媒体库读取每一帧的内容。
