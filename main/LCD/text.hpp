@@ -11,14 +11,14 @@ class Character final : public Element<Color, Size>
 {
 public:
 	Vector2s position{};
-	char text{};
+	Unicode text{};
 	const Font* font = &fontBuiltIn;
 	Color textColor{};
 	Color backgroundColor{};
 	unsigned char scale = 1;
 
 	Character() = default;
-	Character(Vector2s position, char text = '\0', Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, const Font* font = &fontBuiltIn) : position{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Character(Vector2s position, Unicode text = '\0', Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, const Font* font = &fontBuiltIn) : position{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Character(Character&) = default;
 	Character& operator=(Character&) = default;
 	Character(Character&&) = default;
@@ -67,7 +67,7 @@ public:
 		}
 		Vector2s nowPosition = drawPosition;
 		Vector2s repeatPosition = { 0,0 };
-		const unsigned char* font = this->font->get(&text);
+		const unsigned char* font = this->font->get(text);
 
 		for (auto y = modPositionStart.y; y < modPositionEnd.y; y++)
 		{
@@ -104,6 +104,7 @@ public:
 	Text() = default;
 	Text(Vector2s position, const char* text = "", Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, const Font* font = fontBuiltIn) : position{ position }, endPosition{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Text(Vector2s position, const char* text, unsigned char scale, Color textColor = Color::White, Color backgroundColor = Color::Black, const Font* font = fontBuiltIn) : position{ position }, endPosition{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Text(Vector2s position, const char* text, unsigned char scale, const Font* font, Color textColor = Color::White, Color backgroundColor = Color::Black) : position{ position }, endPosition{ position }, text{ text }, font{ font }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Text(Text&) = default;
 	Text& operator=(Text&) = default;
 	Text(Text&&) = default;
@@ -121,7 +122,9 @@ public:
 		endPosition = position;
 		Vector2s nowPosition = position;
 
-		for (const char* textPointer = text; *textPointer != '\0'; textPointer++)
+		for (const char* textPointer = text;
+			*textPointer != '\0';
+			textPointer += Utf8{ textPointer }.getLength())
 		{
 			switch (*textPointer)
 			{
@@ -162,7 +165,9 @@ public:
 		Character<Color, Size> tempCharacter{ drawPosition, '\0', textColor, backgroundColor,scale, font };
 		Vector2s& nowPosition = tempCharacter.position;
 
-		for (const char* textPointer = text; *textPointer != '\0'; textPointer++)
+		for (const char* textPointer = text;
+			*textPointer != '\0';
+			textPointer += Utf8::getUft8LengthFromUnicode(tempCharacter.text))
 		{
 			switch (*textPointer)
 			{
@@ -180,7 +185,8 @@ public:
 				nowPosition.x += fontSize.x * scale;
 				continue;
 			}
-			tempCharacter.text = *textPointer;
+			Utf8 tempUtf8{ textPointer };
+			tempCharacter.text = tempUtf8.getUnicode();
 			nowPosition.x += tempCharacter.drawTo(target).x;
 		}
 

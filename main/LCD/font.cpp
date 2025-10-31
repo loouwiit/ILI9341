@@ -1,18 +1,22 @@
 #include "font.hpp"
+#include "mutex.hpp"
+#include "storge/fat.hpp"
+#include "cstring"
+
+const unsigned char* const Font::error = Font::errorTable;
 
 class FontBuiltIn : public Font
 {
 public:
 	constexpr FontBuiltIn() : Font({ 8,16 }) {}
-	virtual const unsigned char* get(char* text) const override
+	virtual const unsigned char* get(Unicode text) const override
 	{
-		unsigned char index = (unsigned char)*text;
-		if (index < 0x20) return error;
+		if (text < 0x20) return error;
 
-		index -= 0x20;
-		if (index >= (sizeof(table) / sizeof(table[0]))) return error;
+		text -= 0x20;
+		if (text >= (sizeof(table) / sizeof(table[0]))) return error;
 
-		return table[index];
+		return table[text];
 	}
 
 private:
@@ -119,15 +123,14 @@ class FontBuiltInEqualWidth : public Font
 {
 public:
 	constexpr FontBuiltInEqualWidth() : Font({ 16,16 }) {}
-	virtual const unsigned char* get(char* text) const override
+	virtual const unsigned char* get(Unicode text) const override
 	{
-		unsigned char index = (unsigned char)*text;
-		if (index < 0x20) return error;
+		if (text < 0x20) return error;
 
-		index -= 0x20;
-		if (index >= (sizeof(table) / sizeof(table[0]))) return error;
+		text -= 0x20;
+		if (text >= (sizeof(table) / sizeof(table[0]))) return error;
 
-		return table[index];
+		return table[text];
 	}
 
 private:
@@ -230,8 +233,162 @@ private:
 	};
 };
 
-static constexpr FontBuiltIn fontBuiltInReal{};
-static constexpr FontBuiltInEqualWidth fontBuiltInEqualWidthReal{};
+class FontInFile : public Font
+{
+public:
+	FontInFile(unsigned short cacheSize = 512) : Font({ 16, 16 }), cacheSize{ cacheSize }
+	{
+		cacheIndex = new CharacterIndex[cacheSize];
+		cache = new Character[cacheSize];
+	}
 
-const Font* fontBuiltIn = &fontBuiltInReal;
-const Font* fontBuiltInEqualWidth = &fontBuiltInEqualWidthReal;
+	virtual ~FontInFile()
+	{
+		file.close();
+		delete[] cacheIndex;
+		cacheIndex = nullptr;
+		delete[] cache;
+		cache = nullptr;
+	}
+
+	bool loadFromPath(const char* path)
+	{
+		Floor root;
+		root.open(PerfixRoot);
+		if (!root.openFile(path, strlen(path), file))
+			return false;
+
+		file.reGetSize();
+		fontSize = file.getSize() / (sizeof(Unicode) + sizeof(Character));
+		fontSectionOffset = sizeof(Unicode) * fontSize;
+
+		for (unsigned short i = 0; i < cacheSize; i++)
+			cacheIndex[i].aviliable = false;
+
+		return true;
+	}
+
+	virtual const unsigned char* get(Unicode text) const override
+	{
+		auto ret = getFromCache(text);
+		if (ret != error) [[likely]] return ret;
+		return getFromFile(text);
+	};
+
+private:
+	using Character = unsigned char[32];
+	class CharacterIndex
+	{
+	public:
+		Unicode unicode = 0;
+		bool aviliable = false;
+		unsigned char access = 0; // 二次机会
+
+		constexpr static unsigned char DefaultAccess = 1;
+	};
+
+	mutable IFile file{};
+	unsigned short fontSize = 0;
+	IFile::OffsetType fontSectionOffset = 0;
+
+	unsigned short cacheSize = 512;
+
+	mutable Mutex cacheMutex{};
+	mutable unsigned short cacheReplaceSearchIndex = 0;
+	mutable CharacterIndex* cacheIndex = nullptr;
+	mutable Character* cache = nullptr;
+
+	const unsigned char* getFromCache(Unicode unicode) const
+	{
+		for (unsigned short i = 0; i < cacheSize; i++)
+		{
+			if (!cacheIndex[i].aviliable) [[unlikely]] continue;
+			if (cacheIndex[i].unicode == unicode) [[unlikely]]
+			{
+				cacheIndex[i].access = CharacterIndex::DefaultAccess;
+				return cache[i];
+			}
+		}
+		return error;
+	}
+
+	const unsigned char* getFromFile(Unicode unicode) const
+	{
+		// 假定cache中没有（有的话也只是浪费空间而已）
+		Lock lock{ cacheMutex };
+
+		// 搜索flash -> 二分
+		constexpr static unsigned short NotFound = -1;
+		unsigned short fontPosition = NotFound;
+		{
+			int left = -1;
+			int right = fontSize;
+			Unicode leftUnicode = 0;
+			Unicode midUnicode = 0;
+
+			while (left + 1 != right)
+			{
+				int mid = (left + right) / 2;
+
+				file.setOffset(mid * sizeof(Unicode));
+				file.read(&midUnicode, sizeof(Unicode));
+				if (midUnicode <= unicode)
+				{
+					leftUnicode = midUnicode;
+					left = mid;
+				}
+				else right = mid;
+			}
+			if (leftUnicode == unicode) fontPosition = left;
+		}
+		if (fontPosition == NotFound) [[unlikely]] return error;
+
+		// 寻找空闲
+		unsigned short i = searchReplaceIndex();
+
+		file.setOffset(fontSectionOffset + fontPosition * sizeof(Character));
+		file.read(cache[i], sizeof(Character));
+		cacheIndex[i].unicode = unicode;
+		cacheIndex[i].access = CharacterIndex::DefaultAccess;
+		cacheIndex[i].aviliable = true;
+
+		return cache[i];
+	}
+
+	unsigned short searchReplaceIndex() const
+	{
+		unsigned short i = cacheReplaceSearchIndex;
+
+		while (true)
+		{
+			if (!cacheIndex[i].aviliable) [[unlikely]] break;
+			if (cacheIndex[i].access == 0) [[unlikely]] break;
+
+			cacheIndex[i].access--;
+			i = (i + 1) % cacheSize;
+		}
+
+		cacheReplaceSearchIndex = (i + 1) % cacheSize;
+		return i;
+	}
+};
+
+Font* Font::load(const char* path)
+{
+	auto font = new FontInFile;
+	if (!font->loadFromPath(path))
+	{
+		delete font;
+		font = nullptr;
+	}
+
+	return font;
+}
+
+static const FontBuiltIn fontBuiltInHalfWidthReal{};
+static const FontBuiltInEqualWidth fontBuiltInFullWidthReal{};
+
+const Font* const fontBuiltInHalfWidth = &fontBuiltInHalfWidthReal;
+const Font* const fontBuiltInFullWidth = &fontBuiltInFullWidthReal;
+const Font* fontBuiltIn = fontBuiltInHalfWidth;
+const Font* fontChinese = fontBuiltIn;

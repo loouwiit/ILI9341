@@ -240,6 +240,13 @@ void app_main(void)
 	mountMem();
 	xTaskCreate([](void*) { mountSd(spi, { GPIO_NUM_3 }); vTaskDelete(nullptr); }, "mount sd", 4096, nullptr, 1, nullptr);
 
+	fontChinese = Font::load("system/chinese.font");
+	if (fontChinese == nullptr)
+	{
+		fontChinese = fontBuiltIn;
+		ESP_LOGE(TAG, "system/chinese.font" " load failed");
+	}
+
 	vTaskDelay(1);
 	lcd.init();
 

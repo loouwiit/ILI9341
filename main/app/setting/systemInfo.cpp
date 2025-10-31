@@ -27,12 +27,15 @@ void SystemInfo::init()
 		settings[i].scale = TextSize;
 		contents[i] = &settings[i];
 	}
-	updateHeapTraceText(settings[6]);
-	settings[SettingSize - 1].text = taskListBuffer;
-	settings[SettingSize - 1].scale = TaskTextSize;
-
 	settings[0].position.x = ContentXOffset;
 	settings[0].position.y = title.position.y + title.getSize().y + GapSize;
+
+	updateHeapTraceText(settings[6]);
+
+	settings[10].font = fontChinese;
+
+	settings[SettingSize - 1].text = taskListBuffer;
+	settings[SettingSize - 1].scale = TaskTextSize;
 	for (unsigned char i = 1; i < SettingSize; i++)
 	{
 		settings[i].position.x = ContentXOffset;
