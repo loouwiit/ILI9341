@@ -269,7 +269,7 @@ public:
 		fontSectionOffset = sizeof(Unicode) * fontSize;
 
 		for (unsigned short i = 0; i < cacheSize; i++)
-			cacheIndex[i].aviliable = false;
+			cacheIndex[i].unicode = 0x00;
 
 		return true;
 	}
@@ -287,7 +287,6 @@ private:
 	{
 	public:
 		Unicode unicode = 0;
-		bool aviliable = false;
 		unsigned char access = 0; // 二次机会
 
 		constexpr static unsigned char DefaultAccess = 1;
@@ -308,7 +307,6 @@ private:
 	{
 		for (unsigned short i = 0; i < cacheSize; i++)
 		{
-			if (!cacheIndex[i].aviliable) [[unlikely]] continue;
 			if (cacheIndex[i].unicode == unicode) [[unlikely]]
 			{
 				cacheIndex[i].access = CharacterIndex::DefaultAccess;
@@ -347,16 +345,23 @@ private:
 			}
 			if (leftUnicode == unicode) fontPosition = left;
 		}
-		if (fontPosition == NotFound) [[unlikely]] return error;
 
 		// 寻找空闲
 		unsigned short i = searchReplaceIndex();
 
-		file.setOffset(fontSectionOffset + fontPosition * sizeof(Character));
-		file.read(cache[i], sizeof(Character));
+		if (fontPosition != NotFound) [[likely]]
+		{
+			file.setOffset(fontSectionOffset + fontPosition * sizeof(Character));
+			file.read(cache[i], sizeof(Character));
+		}
+		else
+		{
+			//error也归在cache中
+			for (int j = 0; j < sizeof(cache[i]); j++)
+				cache[i][j] = errorTable[j % sizeof(errorTable)];
+		}
 		cacheIndex[i].unicode = unicode;
 		cacheIndex[i].access = CharacterIndex::DefaultAccess;
-		cacheIndex[i].aviliable = true;
 
 		return cache[i];
 	}
@@ -367,7 +372,6 @@ private:
 
 		while (true)
 		{
-			if (!cacheIndex[i].aviliable) [[unlikely]] break;
 			if (cacheIndex[i].access == 0) [[unlikely]] break;
 
 			cacheIndex[i].access--;
