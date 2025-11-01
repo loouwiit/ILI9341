@@ -32,8 +32,6 @@ void SystemInfo::init()
 
 	updateHeapTraceText(settings[6]);
 
-	settings[10].font = fontChinese;
-
 	settings[SettingSize - 1].text = taskListBuffer;
 	settings[SettingSize - 1].scale = TaskTextSize;
 	for (unsigned char i = 1; i < SettingSize; i++)

@@ -238,13 +238,20 @@ void app_main(void)
 
 	mountFlash();
 	mountMem();
-	xTaskCreate([](void*) { mountSd(spi, { GPIO_NUM_3 }); vTaskDelete(nullptr); }, "mount sd", 4096, nullptr, 1, nullptr);
+
+	GPIO{ GPIO_NUM_3 }.setPull(GPIO::Pull::GPIO_PULLUP_ONLY);
+	xTaskCreate([](void*) { vTaskDelay(500); mountSd(spi, { GPIO_NUM_3 }); vTaskDelete(nullptr); }, "mount sd", 4096, nullptr, 1, nullptr);
 
 	fontChinese = Font::load("system/chinese.font");
 	if (fontChinese == nullptr)
 	{
 		fontChinese = fontBuiltIn;
 		ESP_LOGE(TAG, "system/chinese.font" " load failed");
+	}
+	else
+	{
+		fontsDefault.setFont(1, fontChinese);
+		fontsFullWidth.setFont(1, fontChinese);
 	}
 
 	vTaskDelay(1);

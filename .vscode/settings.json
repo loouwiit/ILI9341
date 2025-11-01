@@ -92,5 +92,7 @@
     "idf.espIdfPath": "/home/lo/Develop/ESP/v5.4.2/esp-idf",
     "idf.toolsPath": "/home/lo/.espressif/tools",
     "idf.pythonInstallPath": "/usr/bin/python3",
-    "terminal.integrated.scrollback": 5000
+    "terminal.integrated.scrollback": 5000,
+    "C_Cpp.default.cStandard": "gnu17",
+    "C_Cpp.default.cppStandard": "gnu++23"
 }

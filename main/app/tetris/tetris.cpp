@@ -49,8 +49,8 @@ void AppTetris::init()
 		downThreadRunning = false;
 	}
 
-	botton[0].font = fontBuiltInFullWidth;
-	botton[2].font = fontBuiltInFullWidth;
+	botton[0].fonts = &fontsFullWidth;
+	botton[2].fonts = &fontsFullWidth;
 
 	Vector2s position = BottonPosition;
 	for (int i = 0; i < 3; i++)

@@ -233,6 +233,12 @@ private:
 	};
 };
 
+class FontNone : public Font
+{
+public:
+	FontNone() : Font({ 8,16 }) {}
+};
+
 class FontInFile : public Font
 {
 public:
@@ -387,8 +393,13 @@ Font* Font::load(const char* path)
 
 static const FontBuiltIn fontBuiltInHalfWidthReal{};
 static const FontBuiltInEqualWidth fontBuiltInFullWidthReal{};
+static const FontNone fontNoneReal{};
 
 const Font* const fontBuiltInHalfWidth = &fontBuiltInHalfWidthReal;
 const Font* const fontBuiltInFullWidth = &fontBuiltInFullWidthReal;
+const Font* const fontNone = &fontNoneReal;
 const Font* fontBuiltIn = fontBuiltInHalfWidth;
 const Font* fontChinese = fontBuiltIn;
+
+Fonts fontsDefault{ {fontBuiltInHalfWidth} };
+Fonts fontsFullWidth{ {fontBuiltInFullWidth} };
