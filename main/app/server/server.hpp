@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app.hpp"
+#include "LCD/autoLanguage.hpp"
 
 class AppServer final : public App
 {
@@ -24,7 +25,7 @@ private:
 
 	constexpr static unsigned char ContensSize = 4;
 	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };
-	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, "server", TitleSize };
+	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{"server", "服务器"}, TitleSize };
 	LCD::Text server{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 0}, "server:error", TextSize, LCD::Color::White, BackgroundColor };
 	LCD::Text temptureInit{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 1}, "tempture:error", TextSize, LCD::Color::White, BackgroundColor };
 	LCD::Text temptureStart{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 2}, "tempture:error", TextSize, LCD::Color::White, BackgroundColor };

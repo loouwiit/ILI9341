@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app.hpp"
+#include "LCD/autoLanguage.hpp"
 
 #include <ctime>
 
@@ -25,10 +26,10 @@ private:
 
 	constexpr static unsigned char ContensSize = 4;
 	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };
-	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, "time setting", TitleSize };
+	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{"time setting", "时间设置"}, TitleSize };
 	LCD::Text nowDate{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 0}, "error in date", TextSize, LCD::Color::White, BackgroundColor };
 	LCD::Text nowTime{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 1}, "error in time", TextSize, LCD::Color::White, BackgroundColor };
-	LCD::Text ntpUpdate{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 2}, "ntp update time", TextSize, LCD::Color::White, BackgroundColor };
+	LCD::Text ntpUpdate{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 2}, AutoLnaguage{"ntp update time", "nft同步时间"}, TextSize, LCD::Color::White, BackgroundColor };
 
 	char dateBuffer[11] = "2000/01/01";
 	char timeBuffer[9] = "00:00:00";

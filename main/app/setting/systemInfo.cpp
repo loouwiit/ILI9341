@@ -88,7 +88,7 @@ void SystemInfo::init()
 	{
 		delete[] taskListBuffer;
 		taskListBuffer = nullptr;
-		settings[SettingSize - 1].text = "error:out of memory";
+		settings[SettingSize - 1].text = AutoLnaguage{"error:out of memory", "错误：内存不足"};
 		deleteAble = true;
 	};
 }
@@ -181,9 +181,9 @@ void SystemInfo::updateHeapTraceText(LCD::Text& text)
 {
 	switch (traceInfoState)
 	{
-	case 'i': text.text = "init heap trace"; break; // init
-	case 'r': text.text = "stop heap trace"; break; // running
-	case 's': text.text = "start heap trace"; break; // stop
+	case 'i': text.text = AutoLnaguage{ "init heap trace", "初始化heap trace" }; break; // init
+	case 'r': text.text = AutoLnaguage{ "stop heap trace", "停止heap trace" }; break; // running
+	case 's': text.text = AutoLnaguage{ "start heap trace", "启动heap trace" }; break; // stop
 	}
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app.hpp"
+#include "LCD/autoLanguage.hpp"
 
 #include "storge/fat.hpp"
 
@@ -29,7 +30,7 @@ private:
 	constexpr static unsigned char ContensSize = 3;
 	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };
 
-	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, "explorer", TitleSize };
+	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{ "explorer", "文件浏览" }, TitleSize };
 	LCD::Text path{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 0}, nullptr, TextSize, FloorColor, BackgroundColor };
 	constexpr static unsigned char FileLayarSize = LayarClassicSize::Huge;
 	LCD::Layar<FileLayarSize> fileLayar{ 0 };

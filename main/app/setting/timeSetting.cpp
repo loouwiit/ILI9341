@@ -85,8 +85,8 @@ void TimeSetting::init()
 		}
 		, "timeSetting", 4096, this, 1, nullptr) != pdTRUE)
 	{
-		nowDate.text = "error:out of memory";
-		nowTime.text = "error:out of memory";
+		nowDate.text = AutoLnaguage{"error:out of memory", "错误：内存不足"};
+		nowTime.text = AutoLnaguage{"error:out of memory", "错误：内存不足"};
 		deleteAble = true;
 	}
 }

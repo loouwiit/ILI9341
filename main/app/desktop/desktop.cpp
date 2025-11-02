@@ -104,7 +104,7 @@ App* AppDesktop::appFactory(unsigned char index)
 	case 5:
 		return new AppTetris{ lcd, touch, changeAppCallback, newAppCallback };
 	default:
-		ESP_LOGE(TAG, "failed to new app %s (case %d)", ApplicationName[index], index);
+		ESP_LOGE(TAG, "failed to new app %s (case %d)", ApplicationName[index].english, index);
 		return nullptr;
 	}
 }
@@ -115,7 +115,7 @@ void AppDesktop::click(Finger finger)
 
 	for (unsigned char i = 0; i < ApplicationSize;i++) if (applicationRectangle[i].isClicked(finger.position))
 	{
-		ESP_LOGI(TAG, "start %s", ApplicationName[i]);
+		ESP_LOGI(TAG, "start %s", ApplicationName[i].english);
 		newAppCallback(appFactory(i));
 	}
 }

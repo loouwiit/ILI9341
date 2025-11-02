@@ -1,4 +1,5 @@
 #include "tracker.hpp"
+#include "LCD/autoLanguage.hpp"
 
 #include <lwip/sockets.h>
 
@@ -132,7 +133,7 @@ void AppTracker::serverThread(void* param)
 	if (!wifiIsInited())
 	{
 		ESP_LOGW(TAG, "wifi not inited");
-		strcpy(self.buffer, "wifi not inited");
+		strcpy(self.buffer, AutoLnaguage{ "wifi not inited", "请先初始化wifi" });
 		self.text.computeSize();
 		self.text.clickCallbackParam = param;
 		self.text.releaseCallback = [](Finger&, void* param)
@@ -149,7 +150,7 @@ void AppTracker::serverThread(void* param)
 	if (listen_sock < 0)
 	{
 		ESP_LOGE(TAG, "socket creat failed: error %d", listen_sock);
-		self.update("socket creat failed");
+		self.update(AutoLnaguage{ "socket creat failed", "socket创建失败" });
 		close(listen_sock);
 		self.deleteAble = true;
 		vTaskDelete(nullptr);
@@ -170,7 +171,7 @@ void AppTracker::serverThread(void* param)
 	if (err != 0)
 	{
 		ESP_LOGE(TAG, "socket bind failed: errno %d\n", errno);
-		self.update("socket bind failed");
+		self.update(AutoLnaguage{ "socket bind failed","socket绑定失败" });
 		close(listen_sock);
 		self.deleteAble = true;
 		vTaskDelete(nullptr);
@@ -180,7 +181,7 @@ void AppTracker::serverThread(void* param)
 	if (err != 0)
 	{
 		ESP_LOGE(TAG, "socket listen failed: errno %d\n", errno);
-		self.update("socket listen failed");
+		self.update(AutoLnaguage{ "socket listen failed","socket监听失败" });
 		close(listen_sock);
 		self.deleteAble = true;
 		vTaskDelete(nullptr);
@@ -192,7 +193,7 @@ void AppTracker::serverThread(void* param)
 	while (self.running)
 	{
 		ESP_LOGI(TAG, "socket listening\n");
-		self.update("wait for connection");
+		self.update(AutoLnaguage{ "wait for connection", "等待连接……" });
 
 		struct sockaddr_storage source_addr;
 		socklen_t addr_len = sizeof(source_addr);
@@ -200,7 +201,7 @@ void AppTracker::serverThread(void* param)
 		if (sock < 0)
 		{
 			ESP_LOGE(TAG, "Unable to accept connection: errno %d\n", errno);
-			self.update("Unable to accept connection");
+			self.update(AutoLnaguage{ "Unable to accept connection", "接受连接失败" });
 			break;
 		}
 
@@ -226,7 +227,7 @@ void AppTracker::serverThread(void* param)
 		IOSocketStream socketStream;
 		socketStream.setSocket(sock);
 		self.dealSocket(socketStream);
-		self.update("disconnected");
+		self.update(AutoLnaguage{ "disconnected","连接已断开" });
 	}
 
 	close(listen_sock);

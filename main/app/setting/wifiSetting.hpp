@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app.hpp"
+#include "LCD/autoLanguage.hpp"
 #include "esp_wifi_types_generic.h"
 
 class WifiSetting final : public App
@@ -24,20 +25,20 @@ private:
 
 	constexpr static unsigned char ContensSize = 5;
 	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };
-	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, "wifi setting", TitleSize };
+	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{"wifi setting", "wifi设置"}, TitleSize };
 
 	constexpr static unsigned char SwitchSize = 3;
-	constexpr static const char* SwitchName[SwitchSize] = { "(de)init wifi" ,"ap:state", "wifi:state" };
+	constexpr static AutoLnaguage SwitchName[SwitchSize] = { {"(de)init wifi", "（反）初始化wifi"} ,{"ap:state", "ap:状态"}, {"wifi:state", "wifi:状态"} };
 	LCD::Layar<LayarClassicSize::Small> switchLayar{ SwitchSize };
 	LCD::Text switchs[SwitchSize]{};
 
 	constexpr static unsigned char ApSettingSize = 3;
-	constexpr static const char* ApSettingName[ApSettingSize] = { "access point", "ssid:error", "password:error" };
+	constexpr static AutoLnaguage ApSettingName[ApSettingSize] = { {"access point", "设置ap"}, {"ssid:error","ssid:错误"}, {"password:error","密码:错误"} };
 	LCD::Layar<LayarClassicSize::Small> apSettingLayar{ ApSettingSize };
 	LCD::Text apSettings[ApSettingSize]{};
 
 	constexpr static unsigned char WifiSettingSize = 4;
-	constexpr static const char* WifiSettingName[WifiSettingSize] = { "wifi connect", "ssid:error", "password:error", "ip: error" };
+	constexpr static AutoLnaguage WifiSettingName[WifiSettingSize] = { { "wifi connect", "连接wifi"}, {"ssid:error","ssid:错误"}, {"password:error","密码:错误"}, {"ip:error", "ip:错误"} };
 	char ipBuffer[19] = "ip:255.255.255.255";
 	LCD::Layar<LayarClassicSize::Small> wifiSettingLayar{ WifiSettingSize };
 	LCD::Text wifiSettings[WifiSettingSize]{};
@@ -45,7 +46,7 @@ private:
 	constexpr static unsigned char WifiScanSize = 2;
 	constexpr static unsigned char WifiListSize = 20;
 	LCD::Layar<LayarClassicSize::Pair> wifiScanLayar{ WifiScanSize };
-	LCD::Text wifiScanText{ {0,0}, "wifi scan", TextSize, LCD::Color::White, BackgroundColor };
+	LCD::Text wifiScanText{ {0,0}, AutoLnaguage{"wifi scan","扫描wifi"}, TextSize, LCD::Color::White, BackgroundColor };
 	LCD::Layar<LayarClassicSize::Large> wifiListLayar{ WifiListSize };
 	LCD::Text wifiListText[WifiListSize]{};
 	wifi_ap_record_t wifiListBuffer[WifiListSize]{};

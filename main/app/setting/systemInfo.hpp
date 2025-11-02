@@ -3,6 +3,7 @@
 #define defineString(x) #x
 
 #include "app.hpp"
+#include "LCD/autoLanguage.hpp"
 
 class SystemInfo final : public App
 {
@@ -32,10 +33,10 @@ private:
 	char ramBuffer[19] = "ram:-1KB";
 	char psramBuffer[19] = "psram:-1KB";
 	char* taskListBuffer = nullptr;
-	const char* SettingName[SettingSize] = { socBuffer, "flash size:" CONFIG_ESPTOOLPY_FLASHSIZE, ramBuffer, psramBuffer, "", "print to uart", "error in heap trace", "restart device", "","chinese:支持中文", "", taskListBuffer };
+	const AutoLnaguage SettingName[SettingSize] = { socBuffer, {"flash size:" CONFIG_ESPTOOLPY_FLASHSIZE, "flash大小:" CONFIG_ESPTOOLPY_FLASHSIZE}, ramBuffer, psramBuffer, "", {"print to uart", "打印内存信息至串口"}, "error in heap trace", {"restart device","重启设备"}, "",{"chinese:not supported", "中文：支持"}, "", taskListBuffer };
 
 	LCD::Layar<LayarClassicSize::Large> contents{ 1 + SettingSize };
-	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, "system info", TitleSize };
+	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{"system info", "系统信息"}, TitleSize };
 	LCD::Text settings[SettingSize]{};
 
 	constexpr static float moveThreshold2 = 100.0f;

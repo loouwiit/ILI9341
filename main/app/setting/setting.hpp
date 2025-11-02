@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app.hpp"
+#include "LCD/autoLanguage.hpp"
 
 class AppSetting final : public App
 {
@@ -21,10 +22,10 @@ private:
 	constexpr static LCD::Color BackgroundColor = { 8,8,8 };
 
 	constexpr static unsigned char SettingSize = 4;
-	constexpr static const char* SettingName[SettingSize] = { "wifi setting","time setting", "system info", "touch test"};
+	constexpr static AutoLnaguage SettingName[SettingSize] = { {"wifi setting", "wifi设置"},{"time setting","时间设置"}, {"system info", "系统信息" }, {"touch test","触摸测试"} };
 
 	LCD::Layar<LayarClassicSize::Middle> contents{ 1 + SettingSize };
-	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, "setting", TitleSize };
+	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{"setting","设置"}, TitleSize };
 	LCD::Text settings[SettingSize]{};
 
 	constexpr static float moveThreshold2 = 100.0f;

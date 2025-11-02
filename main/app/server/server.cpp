@@ -25,7 +25,7 @@ void AppServer::init()
 	if (!wifiIsInited())
 	{
 		contents.elementCount = 2;
-		server.text = "wifi not inited";
+		server.text = AutoLnaguage{ "wifi not inited", "请先初始化wifi" };
 		server.computeSize();
 		server.clickCallbackParam = this;
 		server.releaseCallback = [](Finger&, void* param)
@@ -139,16 +139,16 @@ void AppServer::back()
 
 void AppServer::updateState()
 {
-	server.text = serverIsStarted() ? "server:started" : "server:stoped";
+	server.text = serverIsStarted() ? AutoLnaguage{ "server:started", "服务器：已启动" } : AutoLnaguage{ "server:stoped", "服务器：停止" };
 	server.computeSize();
 
-	temptureInit.text = temperatureIsInited() ? "deinit tempture" : "init tempture";
+	temptureInit.text = temperatureIsInited() ? AutoLnaguage{ "deinit tempture", "反初始化测温系统" } : AutoLnaguage{ "init tempture", "初始化测温系统" };
 	temptureInit.computeSize();
 
 	if (!temperatureIsInited())
 		temptureStart.text = "";
 	else
-		temptureStart.text = temperatureIsStarted() ? "tempture:started" : "tempture:stoped";
+		temptureStart.text = temperatureIsStarted() ? AutoLnaguage{"tempture:started", "测温系统：已启动"} : AutoLnaguage{"tempture:stoped", "测温系统：停止"};
 	temptureStart.computeSize();
 }
 

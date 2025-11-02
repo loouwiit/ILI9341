@@ -111,7 +111,7 @@ App* AppSetting::appFactory(unsigned char index)
 	case 3:
 		return new TouchTest{ lcd, touch, changeAppCallback, newAppCallback };
 	default:
-		ESP_LOGW(TAG, "failed to new setting %s (case %d)", SettingName[index], index);
+		ESP_LOGW(TAG, "failed to new setting %s (case %d)", SettingName[index].english, index);
 		return nullptr;
 	}
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app.hpp"
+#include "LCD/autoLanguage.hpp"
 
 class AppDesktop final : public App
 {
@@ -23,7 +24,7 @@ private:
 
 	constexpr static unsigned char ApplicationSize = 6;
 
-	constexpr const static char* ApplicationName[ApplicationSize] = { "setting", "clock", "tracker", "server", "explorer", "tetris" };
+	const AutoLnaguage ApplicationName[ApplicationSize] = { {"setting","设置"}, {"clock","时钟"}, {"tracker","接收器"}, {"server","服务器"}, {"explorer","文件\n浏览"},{"tetris", "俄罗斯方块"} };
 
 	LCD::Layar<LayarClassicSize::Large> applications{ ApplicationSize * 2 };
 	LCD::Rectangle applicationRectangle[ApplicationSize]{};

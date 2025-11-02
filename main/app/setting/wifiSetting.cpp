@@ -10,22 +10,37 @@ constexpr char TAG[] = "WifiSetting";
 
 static char apSettingSsidTextBuffer[6 + 32 + 1] = "ssid:";
 static char* apSettingSsid = apSettingSsidTextBuffer + 5;
-static char apSettingPasswordTextBuffer[10 + 64 + 1] = "password:";
+static char apSettingPasswordTextBuffer[10 + 64 + 1] = "password:error";
 static char* apSettingPassword = apSettingPasswordTextBuffer + 9;
 
 static char wifiSettingSsidTextBuffer[6 + 32 + 1] = "ssid:";
 static char* wifiSettingSsid = wifiSettingSsidTextBuffer + 5;
-static char wifiSettingPasswordTextBuffer[10 + 64 + 1] = "password:";
+static char wifiSettingPasswordTextBuffer[10 + 64 + 1] = "password:error";
 static char* wifiSettingPassword = wifiSettingPasswordTextBuffer + 9;
 
 void WifiSetting::init()
 {
 	App::init();
 
+	if (fontChinese != fontNone)
+	{
+		strcpy(apSettingPasswordTextBuffer, "密码:");
+		apSettingPassword = apSettingPasswordTextBuffer + 7;
+		strcpy(wifiSettingPasswordTextBuffer, "密码:");
+		wifiSettingPassword = wifiSettingPasswordTextBuffer + 7;
+	}
+	else
+	{
+		strcpy(apSettingPasswordTextBuffer, "password:");
+		apSettingPassword = apSettingPasswordTextBuffer + 9;
+		strcpy(wifiSettingPasswordTextBuffer, "password:");
+		wifiSettingPassword = wifiSettingPasswordTextBuffer + 9;
+	}
+
 	coThreadQueue = xQueueCreate(CoThreadQueueLength, sizeof(CoThreadFunction_t));
 	if (xTaskCreate(coThread, "wifiSettingCothread", 4096, this, 2, nullptr) != pdTRUE)
 	{
-		wifiScanText.text = "error:out of memory";
+		wifiScanText.text = AutoLnaguage{ "error:out of memory", "错误：内存不足" };
 		deleteAble = true;
 	}
 
@@ -208,7 +223,7 @@ void WifiSetting::init()
 				WifiSetting& self = *(WifiSetting*)param;
 				self.coThreadDeal([](WifiSetting& self)
 					{
-						self.switchs[2].text = "wifi:setting";
+						self.switchs[2].text = AutoLnaguage{ "wifi:setting","wifi:配置中" };
 						wifiConnect(wifiSettingSsid, wifiSettingPassword);
 						self.updateSwitch();
 						self.updateIp();
@@ -417,11 +432,11 @@ void WifiSetting::updateLayar()
 
 void WifiSetting::updateSwitch()
 {
-	switchs[0].text = wifiIsInited() ? "deinit wifi" : "init wifi";
+	switchs[0].text = wifiIsInited() ? AutoLnaguage{ "deinit wifi","反初始化wifi" } : AutoLnaguage{ "init wifi", "初始化wifi" };
 	switchs[0].computeSize();
-	switchs[1].text = wifiApIsStarted() ? "ap:on" : "ap:off";
+	switchs[1].text = wifiApIsStarted() ? AutoLnaguage{ "ap:on","ap:启用" } : AutoLnaguage{ "ap:off","ap:关闭" };
 	switchs[1].computeSize();
-	switchs[2].text = wifiStationIsStarted() ? (wifiIsConnect() ? "wifi:connected" : (wifiIsWantConnect() ? "wifi:connecting" : "wifi:disconnected")) : "wifi:off"; // 好屎💩
+	switchs[2].text = wifiStationIsStarted() ? (wifiIsConnect() ? AutoLnaguage{ "wifi:connected", "wifi:已连接" } : (wifiIsWantConnect() ? AutoLnaguage{ "wifi:connecting","wifi:正在连接" } : AutoLnaguage{ "wifi:disconnected", "wifi:未连接" })) : AutoLnaguage{ "wifi:off","wifi:关闭" }; // 好屎💩
 	switchs[2].computeSize();
 
 	switchLayar.elementCount = wifiIsInited() ? SwitchSize : 1;
