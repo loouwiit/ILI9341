@@ -17,7 +17,7 @@ void AppDesktop::init()
 	{
 		applicationRectangle[i] = { StaticOffset + Vector2s{(short)((BlockSize + GapSize) * i),0}, {BlockSize,BlockSize}, LCD::Color::White };
 
-		applicationText[i] = { StaticOffset + Vector2s{(short)((BlockSize + GapSize) * i),0} + Vector2s{BlockSize / 2, BlockSize}, ApplicationName[i], TextSize };
+		applicationText[i] = { StaticOffset + Vector2s{(short)((BlockSize + GapSize) * i),0} + Vector2s{BlockSize / 2, BlockSize + TextGapSize}, ApplicationName[i], TextSize };
 		applicationText[i].position.x -= applicationText[i].computeSize().x / 2;
 		applicationText[i].computeSize();
 

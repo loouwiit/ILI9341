@@ -18,6 +18,7 @@ private:
 	constexpr static Vector2s StaticOffset = { 30,50 };
 	constexpr static unsigned short GapSize = 40;
 	constexpr static unsigned short BlockSize = 100;
+	constexpr static unsigned short TextGapSize = 2;
 	constexpr static unsigned char TextSize = 2;
 
 	constexpr static float moveThreshold2 = 100.0f;
