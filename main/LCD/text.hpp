@@ -131,15 +131,19 @@ public:
 					endPosition.x = nowPosition.x;
 				nowPosition.x = position.x;
 				nowPosition.y += 16 * scale;
+				nowText = '\n';
 				continue;
 			case '\r':
 				nowPosition.x = position.x;
+				nowText = '\r';
 				continue;
 			case '\b':
 				nowPosition.x -= 8 * scale;
+				nowText = '\b';
 				continue;
 			case '\t':
 				nowPosition.x += 8 * scale;
+				nowText = '\t';
 				continue;
 			default:
 				nowText = Utf8{ textPointer }.getUnicode();
@@ -175,15 +179,19 @@ public:
 			case '\n':
 				nowPosition.x = drawPosition.x;
 				nowPosition.y += 16 * scale;
+				tempCharacter.text = '\n';
 				continue;
 			case '\r':
 				nowPosition.x = drawPosition.x;
+				tempCharacter.text = '\r';
 				continue;
 			case '\b':
 				nowPosition.x -= 8 * scale;
+				tempCharacter.text = '\b';
 				continue;
 			case '\t':
 				nowPosition.x += 8 * scale;
+				tempCharacter.text = '\t';
 				continue;
 			default: break;
 			}
