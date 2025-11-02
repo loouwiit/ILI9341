@@ -18,7 +18,7 @@ public:
 	unsigned char scale = 1;
 
 	Character() = default;
-	Character(Vector2s position, Unicode text = '\0', Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, const Fonts* fonts = &fontBuiltIn) : position{ position }, text{ text }, fonts{ fonts }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
+	Character(Vector2s position, Unicode text = '\0', Color textColor = Color::White, Color backgroundColor = Color::Black, unsigned char scale = 1, const Fonts* fonts = &fontsDefault) : position{ position }, text{ text }, fonts{ fonts }, textColor{ textColor }, backgroundColor{ backgroundColor }, scale{ scale } {}
 	Character(Character&) = default;
 	Character& operator=(Character&) = default;
 	Character(Character&&) = default;

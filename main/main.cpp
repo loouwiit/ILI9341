@@ -245,7 +245,7 @@ void app_main(void)
 	fontChinese = Font::load("system/chinese.font");
 	if (fontChinese == nullptr)
 	{
-		fontChinese = fontBuiltIn;
+		fontChinese = fontNone;
 		ESP_LOGE(TAG, "system/chinese.font" " load failed");
 	}
 	else

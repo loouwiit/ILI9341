@@ -30,7 +30,6 @@ protected:
 extern const Font* const fontBuiltInHalfWidth;
 extern const Font* const fontBuiltInFullWidth;
 extern const Font* const fontNone;
-extern const Font* fontBuiltIn;
 extern const Font* fontChinese;
 
 class Fonts
@@ -53,7 +52,7 @@ public:
 		for (; i < list.size() && i < MaxFontSize; i++)
 			fonts[i] = list.begin()[i];
 		for (; i < MaxFontSize; i++)
-			fonts[i] = fontBuiltIn;
+			fonts[i] = fontNone;
 
 		for (i = 0; i < MaxFontSize; i++)
 			fontSize[i] = fonts[i]->getSize();

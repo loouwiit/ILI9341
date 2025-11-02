@@ -518,8 +518,7 @@ const Font* const fontBuiltInHalfWidth = &fontBuiltInHalfWidthReal;
 const Font* const fontBuiltInFullWidth = &fontBuiltInFullWidthReal;
 const Font* const fontNone = &fontNoneReal;
 const Font* const fontUnicode = &fontUnicodeReal;
-const Font* fontBuiltIn = fontBuiltInHalfWidth;
-const Font* fontChinese = fontBuiltIn;
+const Font* fontChinese = fontNone;
 
-Fonts fontsDefault{ {fontBuiltInHalfWidth, fontNone, fontUnicode} };
-Fonts fontsFullWidth{ {fontBuiltInFullWidth,fontNone, fontUnicode} };
+Fonts fontsDefault{ {fontBuiltInHalfWidth, fontChinese, fontUnicode} };
+Fonts fontsFullWidth{ {fontBuiltInFullWidth,fontChinese, fontUnicode} };
