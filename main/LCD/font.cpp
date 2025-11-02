@@ -239,6 +239,119 @@ public:
 	FontNone() : Font({ 8,16 }) {}
 };
 
+class FontUnicode : public Font
+{
+public:
+	FontUnicode() : Font({ 16,16 })
+	{
+		cacheIndex = new CharacterIndex[cacheSize];
+		cache = new Character[cacheSize];
+	}
+
+	virtual const unsigned char* get(Unicode text) const override
+	{
+		auto ret = getFromCache(text);
+		if (ret != error) [[likely]] return ret;
+		return getFromAlgorithm(text);
+	};
+
+private:
+	using Character = unsigned char[32];
+	class CharacterIndex
+	{
+	public:
+		Unicode unicode = 0;
+		unsigned char access = 0; // 二次机会
+
+		constexpr static unsigned char DefaultAccess = 1;
+	};
+
+	constexpr static char numberTable[16][8] = {
+		{0x00,0x3C,0x24,0x24,0x24,0x24,0x24,0x3C}, // 0
+		{0x00,0x04,0x04,0x04,0x04,0x04,0x04,0x04}, // 1
+		{0x00,0x3C,0x04,0x04,0x3C,0x20,0x20,0x3C}, // 2
+		{0x00,0x3C,0x04,0x04,0x3C,0x04,0x04,0x3C}, // 3
+		{0x00,0x24,0x24,0x24,0x3C,0x04,0x04,0x04}, // 4
+		{0x00,0x3C,0x20,0x20,0x3C,0x04,0x04,0x3C}, // 5
+		{0x00,0x3C,0x20,0x20,0x3C,0x24,0x24,0x3C}, // 6
+		{0x00,0x3C,0x04,0x04,0x04,0x04,0x04,0x04}, // 7
+		{0x00,0x3C,0x24,0x24,0x3C,0x24,0x24,0x3C}, // 8
+		{0x00,0x3C,0x24,0x24,0x3C,0x04,0x04,0x3C}, // 9
+		{0x00,0x3C,0x24,0x24,0x3C,0x24,0x24,0x24}, // A
+		{0x00,0x38,0x24,0x24,0x38,0x24,0x24,0x38}, // B
+		{0x00,0x1C,0x20,0x20,0x20,0x20,0x20,0x1C}, // C
+		{0x00,0x38,0x24,0x24,0x24,0x24,0x24,0x38}, // D
+		{0x00,0x3C,0x20,0x20,0x3C,0x20,0x20,0x3C}, // E
+		{0x00,0x3C,0x20,0x20,0x3C,0x20,0x20,0x20}, // F
+	};
+
+	unsigned short cacheSize = 32;
+
+	mutable Mutex cacheMutex{};
+	mutable unsigned short cacheReplaceSearchIndex = 0;
+	mutable CharacterIndex* cacheIndex = nullptr;
+	mutable Character* cache = nullptr;
+
+	const unsigned char* getFromCache(Unicode unicode) const
+	{
+		for (unsigned short i = 0; i < cacheSize; i++)
+		{
+			if (cacheIndex[i].unicode == unicode) [[unlikely]]
+			{
+				cacheIndex[i].access = CharacterIndex::DefaultAccess;
+				return cache[i];
+			}
+		}
+		return error;
+	}
+	const unsigned char* getFromAlgorithm(Unicode unicode) const
+	{
+		// 假定cache中没有（有的话也只是浪费空间而已）
+		Lock lock{ cacheMutex };
+
+		// 寻找空闲
+		unsigned short i = searchReplaceIndex();
+
+		//生成字符
+		auto& font = cache[i];
+		unsigned char nums[4]{
+			(unsigned char)((unicode >> 12) & 0x0F),
+			(unsigned char)((unicode >> 8) & 0x0F),
+			(unsigned char)((unicode >> 4) & 0x0F),
+			(unsigned char)((unicode >> 0) & 0x0F) };
+
+		for (int j = 0; j < 8; j++)
+			font[j * 2] = numberTable[nums[0]][j];
+		for (int j = 0; j < 8; j++)
+			font[j * 2 + 1] = numberTable[nums[1]][j];
+		for (int j = 0; j < 8; j++)
+			font[j * 2 + 16] = numberTable[nums[2]][j];
+		for (int j = 0; j < 8; j++)
+			font[j * 2 + 17] = numberTable[nums[3]][j];
+
+		cacheIndex[i].unicode = unicode;
+		cacheIndex[i].access = CharacterIndex::DefaultAccess;
+
+		return font;
+	}
+
+	unsigned short searchReplaceIndex() const
+	{
+		unsigned short i = cacheReplaceSearchIndex;
+
+		while (true)
+		{
+			if (cacheIndex[i].access == 0) [[unlikely]] break;
+
+			cacheIndex[i].access--;
+			i = (i + 1) % cacheSize;
+		}
+
+		cacheReplaceSearchIndex = (i + 1) % cacheSize;
+		return i;
+	}
+};
+
 class FontInFile : public Font
 {
 public:
@@ -276,9 +389,13 @@ public:
 
 	virtual const unsigned char* get(Unicode text) const override
 	{
-		auto ret = getFromCache(text);
-		if (ret != error) [[likely]] return ret;
-		return getFromFile(text);
+		auto index = getFromCache(text);
+		if (index == NotFound) [[unlikely]]
+			index = getFromFile(text);
+
+		if (cacheIndex[index].aviliable) [[likely]]
+			return cache[index];
+		else return error;
 	};
 
 private:
@@ -287,6 +404,7 @@ private:
 	{
 	public:
 		Unicode unicode = 0;
+		bool aviliable = false; // 是否存在该字
 		unsigned char access = 0; // 二次机会
 
 		constexpr static unsigned char DefaultAccess = 1;
@@ -297,32 +415,32 @@ private:
 	IFile::OffsetType fontSectionOffset = 0;
 
 	unsigned short cacheSize = 512;
+	constexpr static unsigned short NotFound = -1;
 
 	mutable Mutex cacheMutex{};
 	mutable unsigned short cacheReplaceSearchIndex = 0;
 	mutable CharacterIndex* cacheIndex = nullptr;
 	mutable Character* cache = nullptr;
 
-	const unsigned char* getFromCache(Unicode unicode) const
+	unsigned short getFromCache(Unicode unicode) const
 	{
 		for (unsigned short i = 0; i < cacheSize; i++)
 		{
 			if (cacheIndex[i].unicode == unicode) [[unlikely]]
 			{
 				cacheIndex[i].access = CharacterIndex::DefaultAccess;
-				return cache[i];
+				return i;
 			}
 		}
-		return error;
+		return NotFound;
 	}
 
-	const unsigned char* getFromFile(Unicode unicode) const
+	unsigned short getFromFile(Unicode unicode) const
 	{
 		// 假定cache中没有（有的话也只是浪费空间而已）
 		Lock lock{ cacheMutex };
 
 		// 搜索flash -> 二分
-		constexpr static unsigned short NotFound = -1;
 		unsigned short fontPosition = NotFound;
 		{
 			int left = -1;
@@ -351,19 +469,15 @@ private:
 
 		if (fontPosition != NotFound) [[likely]]
 		{
+			cacheIndex[i].aviliable = true;
 			file.setOffset(fontSectionOffset + fontPosition * sizeof(Character));
 			file.read(cache[i], sizeof(Character));
 		}
-		else
-		{
-			//error也归在cache中
-			for (int j = 0; j < sizeof(cache[i]); j++)
-				cache[i][j] = errorTable[j % sizeof(errorTable)];
-		}
+		else cacheIndex[i].aviliable = false;
 		cacheIndex[i].unicode = unicode;
 		cacheIndex[i].access = CharacterIndex::DefaultAccess;
 
-		return cache[i];
+		return i;
 	}
 
 	unsigned short searchReplaceIndex() const
@@ -398,12 +512,14 @@ Font* Font::load(const char* path)
 static const FontBuiltIn fontBuiltInHalfWidthReal{};
 static const FontBuiltInEqualWidth fontBuiltInFullWidthReal{};
 static const FontNone fontNoneReal{};
+static const FontUnicode fontUnicodeReal{};
 
 const Font* const fontBuiltInHalfWidth = &fontBuiltInHalfWidthReal;
 const Font* const fontBuiltInFullWidth = &fontBuiltInFullWidthReal;
 const Font* const fontNone = &fontNoneReal;
+const Font* const fontUnicode = &fontUnicodeReal;
 const Font* fontBuiltIn = fontBuiltInHalfWidth;
 const Font* fontChinese = fontBuiltIn;
 
-Fonts fontsDefault{ {fontBuiltInHalfWidth} };
-Fonts fontsFullWidth{ {fontBuiltInFullWidth} };
+Fonts fontsDefault{ {fontBuiltInHalfWidth, fontNone, fontUnicode} };
+Fonts fontsFullWidth{ {fontBuiltInFullWidth,fontNone, fontUnicode} };

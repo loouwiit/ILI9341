@@ -75,7 +75,7 @@ public:
 	void setFont(int index, const Font* font) { fonts[index] = font; fontSize[index] = font->getSize(); }
 
 private:
-	constexpr static int MaxFontSize = 2;
+	constexpr static int MaxFontSize = 3;
 
 	const Font* fonts[MaxFontSize];
 	Vector2us fontSize[MaxFontSize];
