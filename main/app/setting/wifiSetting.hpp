@@ -68,6 +68,9 @@ private:
 	void updateIp();
 	void wifiListClickd(unsigned char index);
 
+	void loadWifiInfo();
+	void loadApInfo();
+
 	using CoThreadFunction_t = void(*)(WifiSetting& self);
 	constexpr static size_t CoThreadQueueLength = 4;
 

@@ -14,6 +14,7 @@ void wifiStationStart();
 void wifiStationStop();
 uint16_t wifiStationScan(wifi_ap_record_t* apInfo, uint16_t maxCount, char* ssid = nullptr);
 esp_ip4_addr_t wifiStationGetIp();
+wifi_sta_config_t wifiStationGetInfo();
 
 bool wifiIsWantConnect();
 bool wifiIsConnect();
@@ -24,6 +25,7 @@ bool wifiApIsStarted();
 void wifiApStart();
 void wifiApSet(const char* ssid, const char* password, wifi_auth_mode_t authMode = wifi_auth_mode_t::WIFI_AUTH_WPA2_WPA3_PSK);
 void wifiApStop();
+wifi_ap_config_t wifiApGetInfo();
 
 void wifiNatSetAutoStart(bool flag = true);
 bool wifiNatIsAutoStart();

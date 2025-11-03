@@ -328,6 +328,14 @@ esp_ip4_addr_t wifiStationGetIp()
 	return ip;
 }
 
+wifi_sta_config_t wifiStationGetInfo()
+{
+	wifi_config_t wifi{};
+	auto ret = esp_wifi_get_config(WIFI_IF_STA, &wifi);
+	ESP_ERROR_CHECK_WITHOUT_ABORT(ret);
+	return wifi.sta;
+}
+
 bool wifiIsWantConnect()
 {
 	return wifiStationWantConnect;
@@ -467,6 +475,14 @@ void wifiApStop()
 	wifiApStarted = false;
 	wifiNatStarted = false;
 	ESP_LOGI(TAG, "Ap stopped");
+}
+
+wifi_ap_config_t wifiApGetInfo()
+{
+	wifi_config_t wifi{};
+	auto ret = esp_wifi_get_config(WIFI_IF_AP, &wifi);
+	ESP_ERROR_CHECK_WITHOUT_ABORT(ret);
+	return wifi.ap;
 }
 
 void wifiNatSetAutoStart(bool flag)

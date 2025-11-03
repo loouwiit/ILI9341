@@ -37,6 +37,12 @@ void WifiSetting::init()
 		wifiSettingPassword = wifiSettingPasswordTextBuffer + 9;
 	}
 
+	if (wifiIsInited())
+	{
+		loadWifiInfo();
+		loadApInfo();
+	}
+
 	coThreadQueue = xQueueCreate(CoThreadQueueLength, sizeof(CoThreadFunction_t));
 	if (xTaskCreate(coThread, "wifiSettingCothread", 4096, this, 2, nullptr) != pdTRUE)
 	{
@@ -89,6 +95,8 @@ void WifiSetting::init()
 					wifiInit();
 					mdnsStart();
 					wifiNatSetAutoStart();
+					self.loadWifiInfo();
+					self.loadApInfo();
 				}
 				self.updateSwitch();
 				self.updateIp();
@@ -459,6 +467,20 @@ void WifiSetting::wifiListClickd(unsigned char index)
 	if (0 == strcmp(wifiSettingSsid, (const char*)wifiListBuffer[index].ssid))
 		offset = -(wifiSettingLayar.start.y + wifiSettings[0].position.y);
 	strcpy(wifiSettingSsid, (const char*)wifiListBuffer[index].ssid);
+}
+
+void WifiSetting::loadWifiInfo()
+{
+	auto wifiInfo = wifiStationGetInfo();
+	strcpy(wifiSettingSsid, (const char*)wifiInfo.ssid);
+	strcpy(wifiSettingPassword, (const char*)wifiInfo.password);
+}
+
+void WifiSetting::loadApInfo()
+{
+	auto apInfo = wifiApGetInfo();
+	strcpy(apSettingSsid, (const char*)apInfo.ssid);
+	strcpy(apSettingPassword, (const char*)apInfo.password);
 }
 
 void WifiSetting::coThread(void* param)
