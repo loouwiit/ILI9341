@@ -16,6 +16,9 @@
 * ESP-IDF Extension for VS Code
 * VS code
 
+# readme缺失
+* 中文支持
+
 # 目录结构
 ```
 .
