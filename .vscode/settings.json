@@ -86,7 +86,8 @@
         "text_encoding": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "led_strip_interface.h": "c"
     },
     "cmake.configureOnOpen": false,
     "idf.espIdfPath": "/home/lo/Develop/ESP/v5.4.2/esp-idf",

@@ -23,9 +23,9 @@ private:
 
 	constexpr static float moveThreshold2 = 100.0f;
 
-	constexpr static unsigned char ApplicationSize = 6;
+	constexpr static unsigned char ApplicationSize = 7;
 
-	const AutoLnaguage ApplicationName[ApplicationSize] = { {"setting","设置"}, {"clock","时钟"}, {"tracker","接收器"}, {"server","服务器"}, {"explorer","文件\n浏览"},{"tetris", "俄罗斯方块"} };
+	const AutoLnaguage ApplicationName[ApplicationSize] = { {"setting","设置"}, {"clock","时钟"}, {"tracker","接收器"}, {"server","服务器"}, {"explorer","文件\n浏览"},{"tetris", "俄罗斯方块"}, {"strip", "灯带"} };
 
 	LCD::Layar<LayarClassicSize::Large> applications{ ApplicationSize * 2 };
 	LCD::Rectangle applicationRectangle[ApplicationSize]{};
