@@ -474,6 +474,8 @@ void WifiSetting::loadWifiInfo()
 	auto wifiInfo = wifiStationGetInfo();
 	strcpy(wifiSettingSsid, (const char*)wifiInfo.ssid);
 	strcpy(wifiSettingPassword, (const char*)wifiInfo.password);
+	wifiSettings[1].computeSize();
+	wifiSettings[2].computeSize();
 }
 
 void WifiSetting::loadApInfo()
@@ -481,6 +483,8 @@ void WifiSetting::loadApInfo()
 	auto apInfo = wifiApGetInfo();
 	strcpy(apSettingSsid, (const char*)apInfo.ssid);
 	strcpy(apSettingPassword, (const char*)apInfo.password);
+	apSettings[1].computeSize();
+	apSettings[2].computeSize();
 }
 
 void WifiSetting::coThread(void* param)
