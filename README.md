@@ -1,5 +1,9 @@
 # ESP32S3 驱动 ILI9341
 
+# readme缺失
+* 中文支持
+* WS2812驱动
+
 # 功能
 * wifi nat功能
 * 当一块表看时间
@@ -9,15 +13,13 @@
 * 查看文本文档
 * 显示经处理后的视频/图片
 * 游玩俄罗斯方块
+* 驱动WS2812灯带
 
 # 环境
 * ESP32S3
 * ILI9341 spi接口
 * ESP-IDF Extension for VS Code
 * VS code
-
-# readme缺失
-* 中文支持
 
 # 目录结构
 ```
