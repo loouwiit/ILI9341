@@ -23,7 +23,7 @@ private:
 	constexpr static unsigned char TaskTextSize = 1;
 	constexpr static short GapSize = 8;
 	constexpr static short ContentXOffset = 20;
-	constexpr static LCD::Color BackgroundColor = { 8,8,8 };
+	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
 
 	constexpr static unsigned char SettingSize = 12;
 

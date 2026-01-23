@@ -21,7 +21,7 @@ private:
 	constexpr static unsigned char TextSize = 2;
 	constexpr static short GapSize = 8;
 	constexpr static short ContentXOffset = 20;
-	constexpr static LCD::Color BackgroundColor = { 8,8,8 };
+	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
 
 	constexpr static unsigned char ContensSize = 5;
 	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };

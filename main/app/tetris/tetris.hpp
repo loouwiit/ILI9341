@@ -30,7 +30,7 @@ private:
 
 	constexpr static unsigned char NextBlocksCount = 8;
 
-	constexpr static Color BottonTextBackgroundColor = { 8,8,8 };
+	constexpr static Color BottonTextBackgroundColor = { 0x20,0x20,0x20 };
 	constexpr static unsigned char BottonTextScale = 3;
 	constexpr static short GapSize = 8;
 	constexpr static Vector2s BottonPosition = { 130,110 };

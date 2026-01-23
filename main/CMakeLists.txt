@@ -1,6 +1,6 @@
-idf_component_register(SRCS "main.cpp" "stringCompare.cpp" "spi.cpp"
+idf_component_register(SRCS "main.cpp" "stringCompare.cpp" "spi.cpp" "color.cpp"
                         "wifi/wifi.cpp" "wifi/socketStream.cpp" "wifi/socketStreamWindow.cpp" "wifi/http.cpp" "wifi/mdns.cpp"
-                        "LCD/color.cpp" "LCD/ILI9341.cpp" "LCD/iic.cpp" "LCD/FT6X36.cpp" "LCD/clickable.cpp" "LCD/font.cpp"
+                        "LCD/ILI9341.cpp" "LCD/iic.cpp" "LCD/FT6X36.cpp" "LCD/clickable.cpp" "LCD/font.cpp"
                         "storge/fat.cpp" "storge/mem.cpp" "storge/sd.cpp"
                         "app/clock/clock.cpp"
                         "app/desktop/desktop.cpp"

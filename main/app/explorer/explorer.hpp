@@ -23,9 +23,9 @@ private:
 	constexpr static short GapSize = 8;
 	constexpr static short ContentXOffset = 20;
 
-	constexpr static LCD::Color FileColor = { 63,63,63 };
-	constexpr static LCD::Color FloorColor = { 0,0,63 };
-	constexpr static LCD::Color BackgroundColor = { 8,8,8 };
+	constexpr static LCD::Color FileColor = { 0xFF,0xFF,0xFF };
+	constexpr static LCD::Color FloorColor = { 0,0,0xFF };
+	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
 
 	constexpr static unsigned char ContensSize = 3;
 	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };

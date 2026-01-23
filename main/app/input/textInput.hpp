@@ -31,7 +31,7 @@ private:
 	constexpr static short BoardSize = 16;
 	constexpr static short FoucsRightSpareSize = 16;
 	constexpr static short FoucsLeftSpareSize = 64;
-	constexpr static LCD::Color BackgroundColor = { 8,8,8 };
+	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
 
 	char* inputBuffer = nullptr;
 	unsigned short inputIndex = 0;

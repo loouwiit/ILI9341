@@ -19,7 +19,7 @@ private:
 	constexpr static unsigned char TextSize = 2;
 	constexpr static short GapSize = 8;
 	constexpr static short ContentXOffset = 20;
-	constexpr static LCD::Color BackgroundColor = { 8,8,8 };
+	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
 
 	constexpr static unsigned char SettingSize = 4;
 	constexpr static AutoLnaguage SettingName[SettingSize] = { {"wifi setting", "wifi设置"},{"time setting","时间设置"}, {"system info", "系统信息" }, {"touch test","触摸测试"} };
