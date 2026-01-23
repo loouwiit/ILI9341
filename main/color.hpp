@@ -88,10 +88,10 @@ static_assert(sizeof(Color666) == 3, "666模式下Color应为3字节");
 class Color565
 {
 public:
-	uint8_t GH : 3;
-	uint8_t R : 5;
-	uint8_t B : 5;
-	uint8_t GL : 3;
+	uint8_t GH : 3 = 0;
+	uint8_t R : 5 = 0;
+	uint8_t B : 5 = 0;
+	uint8_t GL : 3 = 0;
 
 	constexpr Color565() = default;
 	constexpr Color565(const Color565&) = default;
