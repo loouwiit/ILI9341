@@ -1,10 +1,10 @@
-#include "input.hpp"
+#include "textInput.hpp"
 #include <esp_log.h>
 #include <cstring>
 
-constexpr static char TAG[] = "AppInput";
+constexpr static char TAG[] = "AppTextInput";
 
-void AppInput::init()
+void AppTextInput::init()
 {
 	keyBoard.start.y = 16 * InputSize + GapSize;
 	keyBoard.end.x = LCD::ScreenSize.x;
@@ -45,13 +45,13 @@ void AppInput::init()
 	keys[2][0].clickCallbackParam = this;
 	keys[2][0].pressCallback = [](Finger&, void* param)
 		{
-			AppInput& self = *(AppInput*)param;
+			AppTextInput& self = *(AppTextInput*)param;
 			self.shiftLongPressClock = clock() + ShiftLongPressClockThreshold;
 		};
 	keys[2][0].holdCallback = [](Finger&, void* param)
 		{
-			AppInput& self = *(AppInput*)param;
-			using State = AppInput::KeyBoardState;
+			AppTextInput& self = *(AppTextInput*)param;
+			using State = AppTextInput::KeyBoardState;
 			State& state = self.keyBoardState;
 
 			if (self.shiftLongPressClock < clock() && self.shiftLongPressClock != InfinityClock)
@@ -70,8 +70,8 @@ void AppInput::init()
 		};
 	keys[2][0].releaseCallback = [](Finger&, void* param)
 		{
-			AppInput& self = *(AppInput*)param;
-			using State = AppInput::KeyBoardState;
+			AppTextInput& self = *(AppTextInput*)param;
+			using State = AppTextInput::KeyBoardState;
 			State& state = self.keyBoardState;
 
 			if (clock() < self.shiftLongPressClock && self.shiftLongPressClock != InfinityClock)
@@ -92,7 +92,7 @@ void AppInput::init()
 	keys[2][8].clickCallbackParam = this;
 	keys[2][8].releaseCallback = [](Finger&, void* param)
 		{
-			AppInput& self = *(AppInput*)param;
+			AppTextInput& self = *(AppTextInput*)param;
 			if (self.inputIndex == 0) return;
 			self.inputIndex--;
 			char old = self.inputBuffer[self.inputIndex];
@@ -112,7 +112,7 @@ void AppInput::init()
 	keys[3][9].clickCallbackParam = this;
 	keys[3][9].releaseCallback = [](Finger&, void* param)
 		{
-			AppInput& self = *(AppInput*)param;
+			AppTextInput& self = *(AppTextInput*)param;
 			self.back();
 		};
 
@@ -122,14 +122,14 @@ void AppInput::init()
 		keys[i][j].computeSize();
 }
 
-void AppInput::draw()
+void AppTextInput::draw()
 {
 	lcd.clear();
 	lcd.draw(inputText);
 	lcd.draw(keyBoard);
 }
 
-void AppInput::touchUpdate()
+void AppTextInput::touchUpdate()
 {
 	Finger finger[2] = { touch[0],touch[1] };
 
@@ -196,20 +196,20 @@ void AppInput::touchUpdate()
 	}
 }
 
-void AppInput::back()
+void AppTextInput::back()
 {
 	finishCallback(finishCallbackParam);
 	changeAppCallback(nullptr);
 }
 
-void AppInput::setInputBuffer(char* inputBuffer)
+void AppTextInput::setInputBuffer(char* inputBuffer)
 {
 	this->inputBuffer = inputBuffer;
 	inputText.text = inputBuffer;
 	inputIndex = strlen(inputBuffer);
 }
 
-void AppInput::updateKeyBoardShift(AppInput& self)
+void AppTextInput::updateKeyBoardShift(AppTextInput& self)
 {
 	auto& Keys = KeyBoardKey[(unsigned char)self.keyBoardState];
 
@@ -222,9 +222,9 @@ void AppInput::updateKeyBoardShift(AppInput& self)
 	}
 }
 
-void AppInput::keyBoardInput(Finger&, void* param)
+void AppTextInput::keyBoardInput(Finger&, void* param)
 {
-	AppInput& self = *(((CallbackParam_t*)param)->self);
+	AppTextInput& self = *(((CallbackParam_t*)param)->self);
 	LCD::Text& text = *(((CallbackParam_t*)param)->keyText);
 
 	self.inputIndex++;
@@ -239,13 +239,13 @@ void AppInput::keyBoardInput(Finger&, void* param)
 	self.focus();
 }
 
-void AppInput::releaseDetect()
+void AppTextInput::releaseDetect()
 {
 	if (offset > 0)
 		offset = 0;
 }
 
-void AppInput::focus()
+void AppTextInput::focus()
 {
 	inputText.computeSize();
 	auto RightPosition = inputText.endPosition.x;

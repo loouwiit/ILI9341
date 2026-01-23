@@ -3,10 +3,10 @@
 #include "app.hpp"
 #include <ctime>
 
-class AppInput final : public App
+class AppTextInput final : public App
 {
 public:
-	AppInput(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, newAppCallback) {}
+	AppTextInput(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, newAppCallback) {}
 
 	virtual void init() override final;
 	// virtual void deinit() override final;
@@ -69,10 +69,10 @@ private:
 	LCD::Layar<LayarClassicSize::Small>keyBoard{ KeyBoardLineCount };
 	LCD::Layar<LayarClassicSize::Middle>keyBoardLine[KeyBoardLineCount]{};
 	LCD::Text keys[KeyBoardLineCount][KeyBoardLineSize]{};
-	struct CallbackParam_t { AppInput* self; LCD::Text* keyText; };
+	struct CallbackParam_t { AppTextInput* self; LCD::Text* keyText; };
 	CallbackParam_t keyCallbackParam[KeyBoardLineCount][KeyBoardLineSize]{};
 
-	void static updateKeyBoardShift(AppInput& self);
+	void static updateKeyBoardShift(AppTextInput& self);
 	void static keyBoardInput(Finger&, void* param);
 
 	constexpr static float moveThreshold2 = 100.0f;

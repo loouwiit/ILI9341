@@ -4,7 +4,7 @@
 
 #include "wifi/wifi.hpp"
 #include "wifi/mdns.hpp"
-#include "input/input.hpp"
+#include "input/textInput.hpp"
 
 constexpr char TAG[] = "WifiSetting";
 
@@ -186,7 +186,7 @@ void WifiSetting::init()
 		apSettings[1].releaseCallback = [](Finger&, void* param)
 			{
 				WifiSetting& self = *(WifiSetting*)param;
-				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				AppTextInput* input = new AppTextInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
 				input->setInputBuffer(apSettingSsid);
 				input->checker = ssidInputChecker;
 				input->finishCallbackParam = &self.apSettings[1];
@@ -197,7 +197,7 @@ void WifiSetting::init()
 		apSettings[2].releaseCallback = [](Finger&, void* param)
 			{
 				WifiSetting& self = *(WifiSetting*)param;
-				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				AppTextInput* input = new AppTextInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
 				input->setInputBuffer(apSettingPassword);
 				input->checker = passwordInputChecker;
 				input->finishCallbackParam = &self.apSettings[2];
@@ -245,7 +245,7 @@ void WifiSetting::init()
 		wifiSettings[1].releaseCallback = [](Finger&, void* param)
 			{
 				WifiSetting& self = *(WifiSetting*)param;
-				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				AppTextInput* input = new AppTextInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
 				input->setInputBuffer(wifiSettingSsid);
 				input->checker = ssidInputChecker;
 				input->finishCallbackParam = &self.wifiSettings[1];
@@ -256,7 +256,7 @@ void WifiSetting::init()
 		wifiSettings[2].releaseCallback = [](Finger&, void* param)
 			{
 				WifiSetting& self = *(WifiSetting*)param;
-				AppInput* input = new AppInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				AppTextInput* input = new AppTextInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
 				input->setInputBuffer(wifiSettingPassword);
 				input->checker = passwordInputChecker;
 				input->finishCallbackParam = &self.wifiSettings[2];

@@ -2,8 +2,6 @@
 
 #include <cstring>
 
-#include "input/input.hpp"
-
 void AppTextEditor::init()
 {
 	App::init();
