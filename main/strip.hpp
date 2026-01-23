@@ -3,6 +3,7 @@
 #include "esp_log.h"
 
 #include "led_strip.h"
+#include "color.hpp"
 #include "gpio.hpp"
 
 class Strip
@@ -10,26 +11,21 @@ class Strip
 public:
 	constexpr static uint32_t LED_STRIP_RMT_RES_HZ = 10 * 1000 * 1000;
 
-	struct RGB
-	{
-		uint32_t red = 0;
-		uint32_t green = 0;
-		uint32_t blue = 0;
-	};
+	using RGB = Color888;
 
 	struct RGBW
 	{
-		uint32_t red = 0;
-		uint32_t green = 0;
-		uint32_t blue = 0;
-		uint32_t white = 0;
+		uint32_t r = 0;
+		uint32_t g = 0;
+		uint32_t b = 0;
+		uint32_t w = 0;
 	};
 
 	struct HSV
 	{
-		uint16_t hue = 0;
-		uint8_t saturation = 0;
-		uint8_t value = 0xFF;
+		uint16_t h = 0;
+		uint8_t s = 0;
+		uint8_t v = 0xFF;
 	};
 
 	class Led
@@ -43,19 +39,19 @@ public:
 
 		RGB operator=(RGB rgb)
 		{
-			led_strip_set_pixel(handle, index, rgb.red, rgb.green, rgb.blue);
+			led_strip_set_pixel(handle, index, rgb.R, rgb.G, rgb.B);
 			return rgb;
 		}
 
 		RGBW operator=(RGBW rgbw)
 		{
-			led_strip_set_pixel_rgbw(handle, index, rgbw.red, rgbw.green, rgbw.blue, rgbw.white);
+			led_strip_set_pixel_rgbw(handle, index, rgbw.r, rgbw.g, rgbw.b, rgbw.w);
 			return rgbw;
 		}
 
 		HSV operator=(HSV hsv)
 		{
-			led_strip_set_pixel_hsv(handle, index, hsv.hue, hsv.saturation, hsv.value);
+			led_strip_set_pixel_hsv(handle, index, hsv.h, hsv.s, hsv.v);
 			return hsv;
 		}
 
