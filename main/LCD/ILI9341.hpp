@@ -14,6 +14,7 @@
 #include "pixel.hpp"
 #include "rectangle.hpp"
 #include "text.hpp"
+#include "bar.hpp"
 
 #define ILI9341_IRAM_ENABLE true
 #if ILI9341_IRAM_ENABLE
@@ -42,6 +43,9 @@ public:
 
 	template <class T>
 	using Number = ::Number<Color, ScreenSize, T>;
+
+	template <class T>
+	using Bar = ::Bar<Color, ScreenSize, T>;
 
 	ILI9341() = default;
 	ILI9341(ILI9341&) = delete;
