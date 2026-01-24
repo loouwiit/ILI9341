@@ -30,6 +30,7 @@ void AppStrip::init()
 			{
 				// 启动strip
 				strip = Strip{ {gpioNum, GPIO::Mode::GPIO_MODE_OUTPUT}, ledCount, led_model_t::LED_MODEL_WS2812 };
+				strip.clear();
 
 				// 输入颜色
 				auto* appColorInput = new AppColorInput{ self.lcd,self.touch,self.changeAppCallback,self.newAppCallback };
