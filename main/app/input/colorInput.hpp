@@ -37,10 +37,10 @@ public:
 
 private:
 	constexpr static Vector2s ColorPreviewPosition{ 30,30 };
-	constexpr static Vector2s ColorPreviewSize{ 50,50 };
+	constexpr static Vector2s ColorPreviewSize{ 260,40 };
 	constexpr static short ColorPreviewBoardSize = 3;
-	constexpr static Vector2s BarGap{ 0,35 };
-	constexpr static Vector2s BarFirstPosition = Vector2s{ 15,180 } - BarGap * 2;
+	constexpr static Vector2s BarGap{ 0,45 };
+	constexpr static Vector2s BarFirstPosition = Vector2s{ 15,200 } - BarGap * 2;
 	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
 
 	Color888 color{};

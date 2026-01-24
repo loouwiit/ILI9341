@@ -6,7 +6,7 @@ template<ColorTemplate Color, Vector2us Size, class T>
 class Bar final : public Element<Color, Size>
 {
 public:
-	Bar(Vector2s position = {}, short barLength = 100, short barHight = 10, short slideSize = 20, Color backGroundColor = Color::Black, Color slideColor = Color::White) :
+	Bar(Vector2s position = {}, short barLength = 100, short barHight = 20, short slideSize = 30, short textGap = 10, Color backGroundColor = Color::Black, Color slideColor = Color::White) :
 		slideSize{ slideSize }
 	{
 		bar.start = { 0,(short)(-barHight / 2) };
@@ -17,7 +17,7 @@ public:
 		slide.end = Vector2s{ (short)(slideSize / 2),(short)(slideSize / 2) };
 		slide.color = slideColor;
 
-		number.position = { (short)(barLength + slideSize),0 };
+		number.position = { (short)(barLength + slideSize / 2 + textGap),0 };
 		number.position.y -= number.computeSize().y / 2;
 		number.computeSize();
 	}
