@@ -10,6 +10,13 @@ void AppColorInput::init()
 	content[1] = &colorPreviewBoard;
 	content[2] = &colorPreview;
 
+	colorPreview.clickCallbackParam = this;
+	colorPreview.pressCallback = [](Finger& finger, void* param)
+		{
+			AppColorInput& self = *(AppColorInput*)param;
+			self.back();
+		};
+
 	bars[0] = &bar[0];
 	bars[1] = &bar[1];
 	bars[2] = &bar[2];
