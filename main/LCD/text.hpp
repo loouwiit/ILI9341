@@ -253,7 +253,7 @@ public:
 
 	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
-		Vector2s drawPosition = position;
+		Vector2s drawPosition = position + offset;
 		Character<Color, Size> tempCharacter{ drawPosition, '0', textColor, backgroundColor, scale, fonts };
 		Vector2s& nowPosition = tempCharacter.position;
 		T nowNumber = number;
