@@ -2,6 +2,8 @@
 
 #include "../../strip.hpp"
 
+#include "app/input/colorInput.hpp"
+
 EXT_RAM_BSS_ATTR Strip strip{};
 
 void AppStrip::init()
@@ -26,12 +28,24 @@ void AppStrip::init()
 			AppStrip& self = *(AppStrip*)param;
 			if (strip.empty())
 			{
+				// 启动strip
 				strip = Strip{ {gpioNum, GPIO::Mode::GPIO_MODE_OUTPUT}, ledCount, led_model_t::LED_MODEL_WS2812 };
-				strip[0] = Strip::RGB{ 0xFF,0,0 };
-				strip[1] = Strip::RGB{ 0,0xFF,0 };
-				strip[2] = Strip::RGB{ 0,0,0xFF };
-				strip[4] = Strip::RGB{ 0x66,0x66,0x66 };
-				strip.flush();
+
+				// 输入颜色
+				auto* appColorInput = new AppColorInput{ self.lcd,self.touch,self.changeAppCallback,self.newAppCallback };
+				self.appColorInput = appColorInput;
+
+				appColorInput->callbackParam = &self;
+				appColorInput->changeCallback = [](void* param)
+					{
+						AppStrip& self = *(AppStrip*)param;
+
+						for (int i = 0; i < self.ledCount; i++)
+							strip[i] = ((AppColorInput*)self.appColorInput)->getColor();
+						strip.flush();
+					};
+
+				self.newAppCallback(appColorInput);
 			}
 			else
 			{

@@ -32,6 +32,8 @@ private:
 	constexpr static uint32_t ledCount = 15;
 	void updateState();
 
+	App* appColorInput = nullptr;
+
 	constexpr static float moveThreshold2 = 100.0f;
 
 	short& offset = contents.start.y;
