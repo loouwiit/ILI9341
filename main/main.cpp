@@ -13,7 +13,7 @@
 #include "storge/mem.hpp"
 #include "storge/sd.hpp"
 
-#define ChangeAppLog true
+#define ChangeAppLog false
 
 extern "C" void app_main(void);
 
