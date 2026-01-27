@@ -59,7 +59,7 @@ void TimeSetting::init()
 					}
 					self.syncMutex.unlock();
 
-					if (ESP_ERR_TIMEOUT == esp_netif_sntp_sync_wait(100) && self.running) return 100;
+					if (ESP_ERR_TIMEOUT == esp_netif_sntp_sync_wait(0) && self.running) return 100;
 					esp_netif_sntp_deinit();
 
 					self.ntpUpdate.text = AutoLnaguage{ "ntp update time", "nft同步时间" };
