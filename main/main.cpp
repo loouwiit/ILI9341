@@ -6,13 +6,14 @@
 #include "LCD/ILI9341.hpp"
 #include "LCD/FT6X36.hpp"
 #include "app.hpp"
+#include "task.hpp"
 #include "desktop/desktop.hpp"
 
 #include "storge/fat.hpp"
 #include "storge/mem.hpp"
 #include "storge/sd.hpp"
 
-#define ChangeAppLog false
+#define ChangeAppLog true
 
 extern "C" void app_main(void);
 
@@ -29,6 +30,7 @@ EXT_RAM_BSS_ATTR static IIC iic{};
 EXT_RAM_BSS_ATTR static FT6X36 touch{};
 
 EXT_RAM_BSS_ATTR static App* app[10]{};
+EXT_RAM_BSS_ATTR static App* deletingApp = nullptr;
 EXT_RAM_BSS_ATTR static unsigned char appIndex = 0;
 EXT_RAM_BSS_ATTR static Mutex changeMutex{};
 EXT_RAM_BSS_ATTR static bool changing = false;
@@ -87,71 +89,72 @@ void changeAppCallback(App* nextApp)
 	constexpr static char TAG[] = "changeAppCallback";
 #endif
 
-	while (true)
+	changeMutex.lock();
+	if (changing)
 	{
-		changeMutex.lock();
-		if (changing)
-		{
-			changeMutex.unlock();
+		changeMutex.unlock();
 #if ChangeAppLog
-			ESP_LOGI(TAG, "already in change");
+		ESP_LOGI(TAG, "already in change");
 #endif
-			vTaskDelay(1);
-			continue;
-		}
-		break;
+		return;
 	}
 	changing = true;
 	changeMutex.unlock();
 
-	xTaskCreate([](void* param)
+	Task::addTask([](void* param) -> TickType_t
 		{
-			App* oldApp = app[appIndex];
-			oldApp->touchMutex.lock(); // POSIX标准锁的析构必须释放状态
-			oldApp->drawMutex.lock(); // 记得释放
-			lcd.clear();
-
+			App* oldApp = deletingApp;
 			App* nextApp = (App*)param;
-			if (nextApp == nullptr)
+
+			if (oldApp == nullptr)
 			{
-				// exit back
-				if (appIndex == 0)
+				oldApp = app[appIndex];
+				oldApp->touchMutex.lock(); // POSIX标准锁的析构必须释放状态
+				oldApp->drawMutex.lock(); // 记得释放
+				lcd.clear();
+
+				if (nextApp == nullptr)
 				{
-					// back to desktop
-					void newAppCallback(App * nextApp);
-					nextApp = new AppDesktop{ lcd, touch, changeAppCallback, newAppCallback };
-					nextApp->init();
-					app[appIndex] = nextApp;
+					// exit back
+					if (appIndex == 0)
+					{
+						// back to desktop
+						void newAppCallback(App * nextApp);
+						nextApp = new AppDesktop{ lcd, touch, changeAppCallback, newAppCallback };
+						nextApp->init();
+						app[appIndex] = nextApp;
 #if ChangeAppLog
-					ESP_LOGI(TAG, "no back app, new desktop @ %p", app[appIndex]);
+						ESP_LOGI(TAG, "no back app, new desktop @ %p", app[appIndex]);
 #endif
+					}
+					else
+					{
+						// back to last one
+						appIndex--;
+						app[appIndex]->focusIn();
+#if ChangeAppLog
+						ESP_LOGI(TAG, "back to last app @ %p", app[appIndex]);
+#endif
+					}
 				}
 				else
 				{
-					// back to last one
-					appIndex--;
-					app[appIndex]->focusIn();
+					// change to new app
+					nextApp->init();
+					app[appIndex] = nextApp;
 #if ChangeAppLog
-					ESP_LOGI(TAG, "back to last app @ %p", app[appIndex]);
+					ESP_LOGI(TAG, "change to app @ %p", app[appIndex]);
 #endif
 				}
-			}
-			else
-			{
-				// change to new app
-				nextApp->init();
-				app[appIndex] = nextApp;
-#if ChangeAppLog
-				ESP_LOGI(TAG, "change to app @ %p", app[appIndex]);
-#endif
+
+				// 删除旧app
+				oldApp->deinit();
+				deletingApp = oldApp;
+				return 5; // delay for draw & touch
 			}
 
-			// 删除旧app
-			oldApp->deinit();
-			while (!oldApp->isDeleteAble())
-				vTaskDelay(1);
+			if (!oldApp->isDeleteAble()) return 5; // continue to wait
 
-			vTaskDelay(1);
 			oldApp->drawMutex.unlock();
 			oldApp->touchMutex.unlock();
 
@@ -159,12 +162,13 @@ void changeAppCallback(App* nextApp)
 			ESP_LOGI(TAG, "delete old app @ %p", oldApp);
 #endif
 			delete oldApp;
+			deletingApp = nullptr;
 			changeMutex.lock();
 			changing = false;
 			changeMutex.unlock();
-			vTaskDelete(nullptr);
+			return Task::infinityTime;
 		}
-	, "changeAppThread", 4096, nextApp, 4, nullptr);
+	, "change app", nextApp);
 }
 
 void newAppCallback(App* nextApp)
@@ -187,7 +191,7 @@ void newAppCallback(App* nextApp)
 	changing = true;
 	changeMutex.unlock();
 
-	xTaskCreate([](void* param)
+	Task::addTask([](void* param) -> TickType_t
 		{
 			App* oldApp = app[appIndex];
 			oldApp->touchMutex.lock(); // 旧app要锁住
@@ -222,9 +226,9 @@ void newAppCallback(App* nextApp)
 			oldApp->drawMutex.unlock();
 			oldApp->touchMutex.unlock();
 
-			vTaskDelete(nullptr);
+			return Task::infinityTime;
 		}
-	, "newAppThread", 4096, nextApp, 4, nullptr);
+	, "new app", nextApp);
 }
 
 void app_main(void)
@@ -232,6 +236,7 @@ void app_main(void)
 	spi = SPI{ SPI2_HOST, {GPIO_NUM_45}, {GPIO_NUM_13}, {GPIO_NUM_14} };
 	lcd = LCD{ spi, {GPIO_NUM_21}, {GPIO_NUM_47}, {GPIO_NUM_48}, &screenBuffer };
 
+	Task::init();
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	nvsInit();
 	setenv("TZ", "CST-8", 1);
@@ -240,7 +245,7 @@ void app_main(void)
 	mountMem();
 
 	GPIO{ GPIO_NUM_3 }.setPull(GPIO::Pull::GPIO_PULLUP_ONLY);
-	xTaskCreate([](void*) { vTaskDelay(500); mountSd(spi, { GPIO_NUM_3 }); vTaskDelete(nullptr); }, "mount sd", 4096, nullptr, 1, nullptr);
+	Task::addTask([](void*) -> TickType_t { mountSd(spi, { GPIO_NUM_3 }); return Task::infinityTime; }, "mount sd", nullptr, 500);
 
 	fontChinese = Font::load("system/chinese.font");
 	if (fontChinese == nullptr)
@@ -288,9 +293,7 @@ void app_main(void)
 			{
 				app[appIndex]->back();
 			}
-			else
-			{
-				xTaskCreate([](void*)
+			else Task::addTask([](void*) -> TickType_t
 				{
 					while (!app[appIndex]->drawMutex.try_lock())
 						vTaskDelay(1);
@@ -300,10 +303,8 @@ void app_main(void)
 					lcd.init();
 					lcd.waitForDisplay();
 					app[appIndex]->drawMutex.unlock();
-					vTaskDelete(nullptr);
-				}
-				, "lcdReset", 4096, nullptr, 4, nullptr);
-			}
+					return Task::infinityTime;
+				}, "reinit lcd");
 		}
 	};
 

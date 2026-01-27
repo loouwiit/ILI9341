@@ -2,6 +2,7 @@
 #include "map.hpp"
 #include "block.hpp"
 #include "esp_random.h"
+#include "task.hpp"
 
 constexpr static char TAG[] = "AppTetris";
 
@@ -32,22 +33,15 @@ void AppTetris::init()
 		nextBlocks[i].drawPosition = { (short)(blockSize * (9 + (i % 4) * 4.5f)), (short)(blockSize * (i / 4 * 4.5f)) };
 	}
 	swapBlockRegin.start = nextBlocks[0].drawPosition;
-	swapBlockRegin.end = swapBlockRegin.start + Vector2s{ blockSize, blockSize } *6; // 判定稍微大一些
+	swapBlockRegin.end = swapBlockRegin.start + Vector2s{ blockSize, blockSize } * 6; // 判定稍微大一些
 
 	for (int i = 0; i < BlockTypeCount; i++)
 		newNextBlocks[i] = (BlockType)i;
 
 	restart();
 
-	if (pdTRUE == xTaskCreate(downThread, "tetris", 4096, this, 2, nullptr))
-	{
-		downThreadRunning = true;
-	}
-	else
-	{
-		ESP_LOGE(TAG, "out of memory, down thread creat failed");
-		downThreadRunning = false;
-	}
+	nextClockDownTime = 0;
+	Task::addTask(downThread, "tetris", this, ClockDownTime);
 
 	botton[0].fonts = &fontsFullWidth;
 	botton[2].fonts = &fontsFullWidth;
@@ -318,24 +312,21 @@ void AppTetris::resetClockDownTime()
 	nextClockDownTime = clock() + ClockDownTime;
 }
 
-void AppTetris::downThread(void* param)
+TickType_t AppTetris::downThread(void* param)
 {
 	AppTetris& self = *(AppTetris*)param;
-	self.nextClockDownTime = clock() + self.ClockDownTime;
-	while (self.running)
-	{
-		if (!self.survive)
-		{
-			vTaskDelay(1000);
-			continue;
-		}
 
-		// 没有锁，可能有bug
-		if (self.nextClockDownTime < clock()) self.clockDown();
-		vTaskDelay(10);
+	if (!self.running)
+	{
+		self.downThreadRunning = false;
+		return Task::infinityTime;
 	}
-	self.downThreadRunning = false;
-	vTaskDelete(nullptr);
+
+	if (!self.survive) return 1000;
+
+	// 没有锁，可能有bug
+	if (self.nextClockDownTime < clock()) self.clockDown();
+	return 10;
 }
 
 void AppTetris::updateWillBlock()

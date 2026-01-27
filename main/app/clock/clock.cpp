@@ -3,6 +3,8 @@
 #include <esp_log.h>
 #include <esp_task.h>
 
+#include "task.hpp"
+
 constexpr char TAG[] = "AppClock";
 
 void AppClock::init()
@@ -12,32 +14,22 @@ void AppClock::init()
 
 	App::init();
 
-	if (xTaskCreate(
-		[](void* param)
+	Task::addTask([](void* param) -> TickType_t
 		{
 			AppClock& appClock = *(AppClock*)param;
-			time_t lastTime = 0;
-			time_t nowTime = 0;
-			while (appClock.running)
-			{
-				vTaskDelay(10);
-				nowTime = time(nullptr);
-				if (nowTime == lastTime)
-					continue;
+			time_t nowTime = time(nullptr);
 
-				appClock.updateTime(nowTime);
-				lastTime = nowTime;
+			if (!appClock.running)
+			{
+				appClock.deleteAble = true;
+				ESP_LOGI(TAG, "deinit at %s", asctime(localtime(&nowTime)));
+				return Task::infinityTime;
 			}
-			appClock.deleteAble = true;
-			ESP_LOGI(TAG, "deinit at %s", asctime(localtime(&nowTime)));
-			vTaskDelete(nullptr);
-		}
-	, "appClock", 4096, this, 1, nullptr) != pdTRUE)
-	{
-		dateText.text = "error:out of memory";
-		timeText.text = "error:out of memory";
-		deleteAble = true;
-	}
+
+			if (nowTime != appClock.showTime)
+				appClock.updateTime(nowTime);
+			return 10;
+		}, "appClock", this);
 }
 
 void AppClock::deinit()
@@ -61,11 +53,13 @@ void AppClock::touchUpdate()
 
 void AppClock::back()
 {
+	ESP_LOGI(TAG, "try exit at %s", asctime(localtime(&showTime)));
 	changeAppCallback(nullptr);
 }
 
 void AppClock::updateTime(time_t nowTime)
 {
+	showTime = nowTime;
 	tm* tm = localtime(&nowTime);
 
 	strftime(dateBuffer, sizeof(dateBuffer), "%Y/%m/%d", tm);

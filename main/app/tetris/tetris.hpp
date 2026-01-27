@@ -67,7 +67,7 @@ private:
 	clock_t nextClockDownTime = Forever;
 
 	void resetClockDownTime();
-	static void downThread(void* param);
+	static TickType_t downThread(void* param);
 	bool downThreadRunning = false;
 
 	void updateWillBlock();

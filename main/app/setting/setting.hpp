@@ -30,8 +30,6 @@ private:
 
 	constexpr static float moveThreshold2 = 100.0f;
 
-	Mutex exitMutex;
-	bool exiting = false;
 	short& offset = contents.start.y;
 	bool fingerActive[2] = { false, false };
 	Vector2s lastFingerPosition[2]{};

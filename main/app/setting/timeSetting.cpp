@@ -3,6 +3,8 @@
 #include <esp_task.h>
 #include <esp_netif_sntp.h>
 
+#include "task.hpp"
+
 constexpr static char TAG[] = "TimeSetting";
 
 void TimeSetting::init()
@@ -26,76 +28,74 @@ void TimeSetting::init()
 	ntpUpdate.clickCallbackParam = this;
 	ntpUpdate.releaseCallback = [](Finger&, void* param)
 		{
-			xTaskCreate([](void* param)
+			Task::addTask([](void* param) -> TickType_t
 				{
 					TimeSetting& self = *(TimeSetting*)param;
 
 					self.syncMutex.lock();
-					if (self.syncing)
+					if (!self.syncing)
 					{
+						self.syncing = true;
 						self.syncMutex.unlock();
-						vTaskDelete(nullptr);
+
+						self.ntpUpdate.text = AutoLnaguage{ "ntp updating time", "nft同步时间中" };
+
+						ESP_LOGI(TAG, "syncing");
+						esp_sntp_config_t sntpConfig = {
+							.smooth_sync = false,
+							.server_from_dhcp = true,
+							.wait_for_sync = true,
+							.start = true,
+							.sync_cb = NULL,
+							.renew_servers_after_new_IP = false,
+							.ip_event_to_renew = IP_EVENT_STA_GOT_IP,
+							.index_of_first_server = 1,
+							.num_of_servers = 1,
+							.servers = {"pool.ntp.org"},
+						};
+						esp_netif_sntp_init(&sntpConfig);
+
+						return 100;
 					}
-					self.syncing = true;
 					self.syncMutex.unlock();
 
-					ESP_LOGI(TAG, "syncing");
-					esp_sntp_config_t sntpConfig = {
-						.smooth_sync = false,
-						.server_from_dhcp = true,
-						.wait_for_sync = true,
-						.start = true,
-						.sync_cb = NULL,
-						.renew_servers_after_new_IP = false,
-						.ip_event_to_renew = IP_EVENT_STA_GOT_IP,
-						.index_of_first_server = 1,
-						.num_of_servers = 1,
-						.servers = {"pool.ntp.org"},
-					};
-					esp_netif_sntp_init(&sntpConfig);
-					while (ESP_ERR_TIMEOUT == esp_netif_sntp_sync_wait(100) && self.running);
+					if (ESP_ERR_TIMEOUT == esp_netif_sntp_sync_wait(100) && self.running) return 100;
 					esp_netif_sntp_deinit();
+
+					self.ntpUpdate.text = AutoLnaguage{ "ntp update time", "nft同步时间" };
 
 					self.syncMutex.lock();
 					self.syncing = false;
 					self.syncMutex.unlock();
 
-					vTaskDelete(nullptr);
-				}, "ntp", 4096, param, 2, nullptr);
+					auto nowTime = time(nullptr);
+					ESP_LOGI(TAG, "time sync to %s", asctime(localtime(&nowTime)));
+
+					return Task::infinityTime;
+				}, "ntp", param);
 		};
 
-	if (xTaskCreate(
-		[](void* param)
+	Task::addTask([](void* param)->TickType_t
 		{
 			TimeSetting& timeSetting = *(TimeSetting*)param;
-			time_t lastTime = 0;
-			time_t nowTime = 0;
-			while (timeSetting.running)
-			{
-				vTaskDelay(10);
-				nowTime = time(nullptr);
-				if (nowTime == lastTime)
-					continue;
 
-				timeSetting.updateTime(nowTime);
-				lastTime = nowTime;
+			if (!timeSetting.running)
+			{
+				timeSetting.deleteAble = !timeSetting.syncing;
+				if (timeSetting.deleteAble) return Task::infinityTime;
+				else return 10;
 			}
-			timeSetting.deleteAble = true;
-			vTaskDelete(nullptr);
-		}
-		, "timeSetting", 4096, this, 1, nullptr) != pdTRUE)
-	{
-		nowDate.text = AutoLnaguage{"error:out of memory", "错误：内存不足"};
-		nowTime.text = AutoLnaguage{"error:out of memory", "错误：内存不足"};
-		deleteAble = true;
-	}
+
+			time_t nowTime = time(nullptr);
+			if (nowTime != timeSetting.showTime)
+				timeSetting.updateTime(nowTime);
+			return 10;
+		}, "timeSetting", this);
 }
 
 void TimeSetting::deinit()
 {
 	running = false;
-	while (syncing)
-		vTaskDelay(1);
 }
 
 void TimeSetting::draw()
@@ -159,6 +159,7 @@ void TimeSetting::back()
 
 void TimeSetting::updateTime(time_t nowTime)
 {
+	showTime = nowTime;
 	tm* tm = localtime(&nowTime);
 
 	strftime(dateBuffer, sizeof(dateBuffer), "%Y/%m/%d", tm);

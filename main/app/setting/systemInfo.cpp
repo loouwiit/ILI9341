@@ -4,6 +4,8 @@
 #include "esp_flash.h"
 #include <esp_heap_trace.h>
 
+#include "task.hpp"
+
 constexpr static char TAG[] = "SystemInfo";
 
 static char traceInfoState = 'i';
@@ -68,29 +70,23 @@ void SystemInfo::init()
 
 	updateRam();
 
-	if (pdTRUE != xTaskCreate([](void* param)
+	Task::addTask([](void* param) -> TickType_t
 		{
 			SystemInfo& self = *(SystemInfo*)param;
 
-			while (self.running)
+			if (self.running)
 			{
 				self.updateRam();
 				vTaskList(self.taskListBuffer);
-				vTaskDelay(1000);
+				return 1000;
 			}
 
 			delete[] self.taskListBuffer;
 			self.taskListBuffer = nullptr;
 			self.deleteAble = true;
-			vTaskDelete(nullptr);
+			return Task::infinityTime;
 		}
-		, "systemInfo", 4096, this, 2, nullptr))
-	{
-		delete[] taskListBuffer;
-		taskListBuffer = nullptr;
-		settings[SettingSize - 1].text = AutoLnaguage{"error:out of memory", "错误：内存不足"};
-		deleteAble = true;
-	};
+	, "systemInfo", this);
 }
 
 void SystemInfo::deinit()

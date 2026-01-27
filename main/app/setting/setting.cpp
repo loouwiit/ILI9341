@@ -122,14 +122,6 @@ void AppSetting::click(Finger finger)
 
 	if (title.isClicked(finger.position))
 	{
-		exitMutex.lock();
-		if (exiting)
-		{
-			exitMutex.unlock();
-			return;
-		}
-		exiting = true;
-		exitMutex.unlock();
 		changeAppCallback(nullptr);
 		return;
 	}

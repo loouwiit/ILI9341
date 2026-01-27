@@ -14,6 +14,8 @@
 #include "buildinHtml/file.hpp"
 #include "storge/fat.hpp"
 
+#include "task.hpp"
+
 EXT_RAM_BSS_ATTR static uint8_t autoRestartTimes = 0;
 EXT_RAM_BSS_ATTR static uint8_t maxRestartTimes = 0;
 
@@ -35,6 +37,10 @@ EXT_RAM_BSS_ATTR bool serverRunning = false;
 EXT_RAM_BSS_ATTR SocketStreamWindow socketStreamWindows[SocketStreamWindowNumber]{};
 EXT_RAM_BSS_ATTR static Mutex scanMutex{};
 EXT_RAM_BSS_ATTR static size_t scanPosition = 0;
+
+EXT_RAM_BSS_ATTR TaskHandle_t serverHandle{};
+EXT_RAM_BSS_ATTR StackType_t* serverStack{};
+StaticTask_t serverTask{};
 
 EXT_RAM_BSS_ATTR TaskHandle_t coWorkerHandle[CoworkerNumber]{};
 EXT_RAM_BSS_ATTR StackType_t* coWorkerStack[CoworkerNumber]{};
@@ -62,8 +68,20 @@ void serverStart(unsigned char maxAutoRestartTimes)
 {
 	autoRestartTimes = 0;
 	maxRestartTimes = maxAutoRestartTimes;
+	if (serverRunning) return;
 	serverRunning = true;
-	xTaskCreate(server, "server", 4096, nullptr, 2, NULL);
+
+	if (serverStack == nullptr)
+		serverStack = new StackType_t[4096];
+	serverHandle = xTaskCreateStatic(server, "server", 4096, nullptr, 2, serverStack, &serverTask);
+	if (serverHandle == nullptr)
+	{
+		delete[] serverStack;
+		serverStack = nullptr;
+		serverRunning = false;
+		return;
+	}
+
 	char serverCoTaskName[13] = "coServer00";
 	size_t startedCoTask = 0;
 	for (size_t i = 0; i < CoworkerNumber; i++)
@@ -181,13 +199,21 @@ void server(void*)
 
 	close(serverListenSocket);
 
-	for (size_t i = 0; i < CoworkerNumber; i++)
+	// 如果是restart过来的就不需要释放内存
+	if (!serverRunning) for (size_t i = 0; i < CoworkerNumber; i++)
 	{
 		while (coWorkerHandle[i] != nullptr)
 			vTaskDelay(1);
 
 		delete[] coWorkerStack[i];
 		coWorkerStack[i] = nullptr;
+
+		Task::addTask([](void*)->TickType_t
+			{
+				delete[] serverStack;
+				serverStack = nullptr;
+				return Task::infinityTime;
+			}, "deleting server", nullptr, 1000);
 	}
 
 	vTaskDelete(nullptr);
@@ -706,8 +732,11 @@ void restart()
 	autoRestartTimes++;
 	if (autoRestartTimes < maxRestartTimes)
 	{
-		printf("server: restart at %d times\n", autoRestartTimes);
-		xTaskCreate(server, "serverTask", 4096, nullptr, 10, NULL);
+		Task::addTask([](void*) -> TickType_t {
+			printf("server: restart at %d times\n", autoRestartTimes);
+			serverHandle = xTaskCreateStatic(server, "server", 4096, nullptr, 2, serverStack, &serverTask);
+			return Task::infinityTime;
+			}, "server restart", nullptr, 1000);
 	}
 	else
 	{

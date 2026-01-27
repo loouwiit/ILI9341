@@ -18,6 +18,7 @@ public:
 private:
 	char dateBuffer[11] = "2000/01/01";
 	char timeBuffer[9] = "00:00:00";
+	time_t showTime{};
 
 	constexpr static Vector2s Offset = { 0, -8 };
 	constexpr static unsigned short GapSize = 24;

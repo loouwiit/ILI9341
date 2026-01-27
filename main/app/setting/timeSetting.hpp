@@ -33,6 +33,7 @@ private:
 
 	char dateBuffer[11] = "2000/01/01";
 	char timeBuffer[9] = "00:00:00";
+	time_t showTime{};
 
 	void updateTime(time_t nowTime);
 
