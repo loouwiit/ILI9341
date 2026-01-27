@@ -88,8 +88,8 @@ public:
 		if (value < 0) value = 0;
 		if (value > bar.end.x) value = bar.end.x;
 		number.number = value;
-		slide.start.x = value - (slideSize << 1);
-		slide.end.x = value + (slideSize << 1);
+		slide.start.x = value - (slideSize >> 1);
+		slide.end.x = value + (slideSize >> 1);
 	}
 
 	T getValue()
