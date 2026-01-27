@@ -4,13 +4,45 @@
 
 #include "app/input/colorInput.hpp"
 
+#include <vector>
+#include "task.hpp"
+#include "strip.hpp"
+#include <cstring>
+
+class Snapshot
+{
+public:
+	Snapshot() = default;
+	Snapshot(Snapshot&& move) { operator=(std::move(move)); }
+	Snapshot& operator=(Snapshot&& move)
+	{
+		for (uint32_t i = 0; i < AppStrip::LedCount; i++)
+			std::swap(move.color[i], color[i]);
+
+		std::swap(move.lastTime, lastTime);
+		std::swap(move.id, id);
+		return *this;
+	}
+
+	Strip::RGB color[AppStrip::LedCount]{};
+	TickType_t lastTime = 1000;
+
+	int id = 0;
+	Snapshot* next = this;
+	Snapshot* last = this;
+};
+
 EXT_RAM_BSS_ATTR Strip strip{};
-using Snapshot = Strip::RGB[AppStrip::LedCount];
-EXT_RAM_BSS_ATTR Snapshot shapshot{};
+EXT_RAM_BSS_ATTR bool stripTaskTunning = false;
+EXT_RAM_BSS_ATTR Snapshot* snapshot = nullptr;
+EXT_RAM_BSS_ATTR TickType_t snapshotNextChangeTime = Task::infinityTime;
+constexpr TickType_t MaxStripTaskSleepTime = 1000;
 
 void AppStrip::init()
 {
 	App::init();
+
+	stripTaskTunning = false;
 
 	title.position = { LCD::ScreenSize.x / 2, 0 };
 	title.position.x -= title.computeSize().x / 2;
@@ -20,7 +52,8 @@ void AppStrip::init()
 
 	contents[0] = &title;
 	contents[1] = &stripText;
-	contents[2] = &ledLayar;
+	contents[2] = &stepLayar;
+	contents[3] = &ledLayar;
 
 	updateState();
 
@@ -30,22 +63,118 @@ void AppStrip::init()
 			AppStrip& self = *(AppStrip*)param;
 			if (strip.empty())
 			{
-				// 启动strip
+				// 启动strip驱动
 				strip = Strip{ {GpioNum, GPIO::Mode::GPIO_MODE_OUTPUT}, LedCount, led_model_t::LED_MODEL_WS2812 };
-				strip.load(shapshot, AppStrip::LedCount);
-				strip.flush();
-				self.contents.elementCount = 3;
+				strip.clear();
+				if (snapshot == nullptr)
+					snapshot = new Snapshot{};
+				self.updateState();
 			}
 			else
 			{
 				strip.clear();
 				strip = Strip{};
+
+				while (snapshot->next->id != 0) snapshot = snapshot->next;
+				while (snapshot->id != 0)
+				{
+					snapshot = snapshot->last;
+					delete snapshot->next;
+				}
+				delete snapshot;
+				snapshot = nullptr;
 			}
 			self.updateState();
 		};
 
-	ledLayar.start.y = 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 1;
-	ledLayar.end.y = ledLayar.start.y + 16 * TextSize;
+	stepLayar[0] = &stepText;
+	stepLayar[1] = &stepLeft;
+	stepLayar[2] = &stepRight;
+	stepLayar[3] = &stepAdd;
+	stepLayar[4] = &stepRemove;
+
+	stepText.text = stepTextBuffer;
+
+	stepLeft.computeSize();
+	stepLeft.clickCallbackParam = this;
+	stepLeft.releaseCallback = [](Finger&, void* param)
+		{
+			snapshot = snapshot->last;
+
+			auto& self = *(AppStrip*)param;
+			for (uint32_t i = 0; i < LedCount; i++)
+				self.leds[i].color = strip[i] = snapshot->color[i];
+			strip.flush();
+			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
+		};
+
+	stepRight.computeSize();
+	stepRight.clickCallbackParam = this;
+	stepRight.releaseCallback = [](Finger&, void* param)
+		{
+			snapshot = snapshot->next;
+
+			auto& self = *(AppStrip*)param;
+			for (uint32_t i = 0; i < LedCount; i++)
+				self.leds[i].color = strip[i] = snapshot->color[i];
+			strip.flush();
+			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
+		};
+
+	stepAdd.computeSize();
+	stepAdd.clickCallbackParam = this;
+	stepAdd.releaseCallback = [](Finger&, void* param)
+		{
+			auto* newSnapshot = new Snapshot{};
+			newSnapshot->last = snapshot;
+			newSnapshot->next = snapshot->next;
+			newSnapshot->next->last = newSnapshot;
+			newSnapshot->last->next = newSnapshot;
+			newSnapshot->id = newSnapshot->last->id + 1;
+			for (auto* nowSnapshot = newSnapshot->next; nowSnapshot->id != 0; nowSnapshot = nowSnapshot->next)
+				nowSnapshot->id++;
+
+			snapshot = snapshot->next;
+
+			auto& self = *(AppStrip*)param;
+			for (uint32_t i = 0; i < LedCount; i++)
+				self.leds[i].color = strip[i] = snapshot->color[i];
+			strip.flush();
+			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
+		};
+
+	stepRemove.computeSize();
+	stepRemove.clickCallbackParam = this;
+	stepRemove.releaseCallback = [](Finger&, void* param)
+		{
+			if (snapshot->id == 0 && snapshot->next->id == 0)
+			{
+				// 清除但不delete
+				*snapshot = Snapshot{};
+				auto& self = *(AppStrip*)param;
+				for (uint32_t i = 0; i < LedCount; i++)
+					self.leds[i].color = strip[i] = snapshot->color[i];
+				strip.flush();
+				return;
+			}
+
+			snapshot->last->next = snapshot->next;
+			snapshot->next->last = snapshot->last;
+
+			auto* deleteSnapshot = snapshot;
+			snapshot = snapshot->next->id != 0 ? snapshot->next : snapshot->last;
+
+			for (auto* nowSnapshot = deleteSnapshot->next; nowSnapshot->id != 0; nowSnapshot = nowSnapshot->next)
+				nowSnapshot->id--;
+			delete deleteSnapshot;
+
+			auto& self = *(AppStrip*)param;
+			for (uint32_t i = 0; i < LedCount; i++)
+				self.leds[i].color = strip[i] = snapshot->color[i];
+			strip.flush();
+			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
+		};
+
 	for (uint32_t i = 0; i < LedCount; i++)
 	{
 		ledLayar[2 * i] = &ledBoards[i];
@@ -74,14 +203,14 @@ void AppStrip::init()
 					{
 						auto& self = **(AppStrip**)param;
 						int index = (AppStrip**)param - self.ledParams;
-						strip[index] = shapshot[index] = ((AppColorInput*)self.appColorInput)->getColor();
+						strip[index] = snapshot->color[index] = ((AppColorInput*)self.appColorInput)->getColor();
 						strip.flush();
 					};
 				appColorInput->finishCallback = [](void* param)
 					{
 						auto& self = **(AppStrip**)param;
 						int index = (AppStrip**)param - self.ledParams;
-						strip[index] = shapshot[index] = ((AppColorInput*)self.appColorInput)->getColor();
+						strip[index] = snapshot->color[index] = ((AppColorInput*)self.appColorInput)->getColor();
 						strip.flush();
 						self.leds[index].color = ((AppColorInput*)self.appColorInput)->getColor();
 					};
@@ -89,6 +218,19 @@ void AppStrip::init()
 				self.newAppCallback(appColorInput);
 			};
 	}
+}
+
+void AppStrip::deinit()
+{
+	// background service
+	if (!strip.empty())
+	{
+		stripTaskTunning = true;
+		snapshot = snapshot->last;
+		snapshotNextChangeTime = 0;
+		Task::addTask(stripThreadMain, "strip service");
+	}
+	App::deinit();
 }
 
 void AppStrip::draw()
@@ -158,16 +300,18 @@ void AppStrip::updateState()
 {
 	if (strip.empty())
 	{
-		stripText.text = AutoLnaguage{ "strip:off","灯带：关" };
+		stripText.text = AutoLnaguage{ "strip:off","灯带:关" };
 		contents.elementCount = 2;
 	}
 	else
 	{
-		stripText.text = AutoLnaguage{ "strip:on","灯带：开" };
-		contents.elementCount = 3;
+		stripText.text = AutoLnaguage{ "strip:on","灯带:开" };
+		contents.elementCount = 4;
 
 		for (uint32_t i = 0; i < LedCount; i++)
-			leds[i].color = (LCD::Color)strip[i];
+			leds[i].color = snapshot->color[i] = (LCD::Color)strip[i];
+
+		sprintf(stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
 	}
 	stripText.computeSize();
 }
@@ -186,4 +330,29 @@ void AppStrip::releaseDetect()
 		if (ledLayar.start.x > 0)
 			ledLayar.start.x = 0;
 	}
+}
+
+TickType_t AppStrip::stripThreadMain(void*)
+{
+	if (!stripTaskTunning)
+		return Task::infinityTime;
+
+	auto nowTime = xTaskGetTickCount();
+	if (snapshotNextChangeTime < nowTime)
+	{
+		snapshot = snapshot->next;
+		snapshotNextChangeTime = nowTime + snapshot->lastTime;
+		strip.load(snapshot->color, LedCount);
+		strip.flush();
+	}
+
+	TickType_t sleepTime = 0;
+	if (nowTime < snapshotNextChangeTime)
+		sleepTime = snapshotNextChangeTime - nowTime;
+	else sleepTime = 1; // 最少睡1tick
+
+	if (sleepTime > MaxStripTaskSleepTime)
+		sleepTime = MaxStripTaskSleepTime; // 最多睡MaxStripTaskSleepTime
+
+	return sleepTime;
 }
