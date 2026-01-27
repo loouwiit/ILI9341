@@ -32,33 +32,53 @@ public:
 	{
 	public:
 		Led() = default;
-		Led(Led&) = default;
-		Led(Led&&) = default;
-		Led& operator=(Led&) = default;
-		Led& operator=(Led&&) = default;
 
 		RGB operator=(RGB rgb)
 		{
+			color.rgb = rgb;
 			led_strip_set_pixel(handle, index, rgb.R, rgb.G, rgb.B);
 			return rgb;
 		}
 
 		RGBW operator=(RGBW rgbw)
 		{
+			color.rgbw = rgbw;
 			led_strip_set_pixel_rgbw(handle, index, rgbw.r, rgbw.g, rgbw.b, rgbw.w);
 			return rgbw;
 		}
 
 		HSV operator=(HSV hsv)
 		{
+			color.hsv = hsv;
 			led_strip_set_pixel_hsv(handle, index, hsv.h, hsv.s, hsv.v);
 			return hsv;
+		}
+
+		operator RGB()
+		{
+			return color.rgb;
+		}
+
+		operator RGBW()
+		{
+			return color.rgbw;
+		}
+
+		operator HSV()
+		{
+			return color.hsv;
 		}
 
 	private:
 		friend class Strip;
 
 		Led(led_strip_handle_t handle, uint32_t index) :handle{ handle }, index{ index } {}
+
+		union {
+			RGB rgb;
+			RGBW rgbw;
+			HSV hsv;
+		} color{};
 
 		led_strip_handle_t handle = nullptr;
 		uint32_t index = 0;
@@ -67,15 +87,12 @@ public:
 	Strip() = default;
 	Strip(Strip&& move)
 	{
-		auto temp = move.handle;
-		move.handle = Strip::handle;
-		Strip::handle = temp;
-	};
+		operator=(std::move(move));
+	}
 	Strip& operator=(Strip&& move)
 	{
-		auto temp = move.handle;
-		move.handle = Strip::handle;
-		Strip::handle = temp;
+		std::swap(move.handle, handle);
+		std::swap(move.leds, leds);
 		return *this;
 	}
 	Strip(GPIO gpio, uint32_t ledCount, led_model_t model, led_color_component_format_t format = LED_STRIP_COLOR_COMPONENT_FMT_GRB)
@@ -95,11 +112,24 @@ public:
 		rmt_config.flags.with_dma = true;               // DMA feature is available on ESP target like ESP32-S3
 
 		// LED Strip object handle
-		ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &handle));
+		if (auto ret = led_strip_new_rmt_device(&strip_config, &rmt_config, &handle))
+			ESP_ERROR_CHECK(ret);
+		else
+		{
+			leds = new Led[ledCount];
+			for (uint32_t i = 0; i < ledCount; i++)
+			{
+				leds[i].handle = handle;
+				leds[i].index = i;
+			}
+		}
 	}
 
 	~Strip()
 	{
+		delete[] leds;
+		leds = nullptr;
+
 		if (handle == nullptr) return;
 		led_strip_del(handle);
 		handle = nullptr;
@@ -120,11 +150,12 @@ public:
 		led_strip_clear(handle);
 	}
 
-	Led operator [](uint32_t i)
+	Led& operator [](uint32_t i)
 	{
-		return { handle,i };
+		return leds[i];
 	}
 
 private:
 	led_strip_handle_t handle = nullptr;
+	Led* leds = nullptr;
 };

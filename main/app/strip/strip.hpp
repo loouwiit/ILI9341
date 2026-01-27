@@ -22,22 +22,28 @@ private:
 	constexpr static short GapSize = 8;
 	constexpr static short ContentXOffset = 20;
 	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
+	constexpr static short BoardSize = 3;
+
+	constexpr static auto gpioNum = GPIO_NUM_1;
+	constexpr static uint32_t ledCount = 15;
 
 	constexpr static unsigned char ContensSize = 3;
 	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{"strip", "灯带"}, TitleSize };
 	LCD::Text stripText{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 0}, AutoLnaguage{"strip:error", "灯带：错误"}, TextSize, LCD::Color::White, BackgroundColor };
+	LCD::Layar<LayarClassicSize::Huge> ledLayar{ ledCount * 2 };
+	LCD::Rectangle ledBoards[ledCount]{};
+	LCD::Rectangle leds[ledCount]{};
+	AppStrip* ledParams[ledCount]{};
 
-	constexpr static auto gpioNum = GPIO_NUM_1;
-	constexpr static uint32_t ledCount = 15;
 	void updateState();
 
 	App* appColorInput = nullptr;
 
 	constexpr static float moveThreshold2 = 100.0f;
 
-	short& offset = contents.start.y;
 	bool fingerActive[2] = { false, false };
+	bool fingerMoveLeds[2]{};
 	Vector2s lastFingerPosition[2]{};
 	Vector2s fingerMoveTotol[2]{};
 
