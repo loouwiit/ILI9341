@@ -5,6 +5,8 @@
 #include "app/input/colorInput.hpp"
 
 EXT_RAM_BSS_ATTR Strip strip{};
+using Snapshot = Strip::RGB[AppStrip::LedCount];
+EXT_RAM_BSS_ATTR Snapshot shapshot{};
 
 void AppStrip::init()
 {
@@ -29,8 +31,9 @@ void AppStrip::init()
 			if (strip.empty())
 			{
 				// 启动strip
-				strip = Strip{ {gpioNum, GPIO::Mode::GPIO_MODE_OUTPUT}, ledCount, led_model_t::LED_MODEL_WS2812 };
-				strip.clear();
+				strip = Strip{ {GpioNum, GPIO::Mode::GPIO_MODE_OUTPUT}, LedCount, led_model_t::LED_MODEL_WS2812 };
+				strip.load(shapshot, AppStrip::LedCount);
+				strip.flush();
 				self.contents.elementCount = 3;
 			}
 			else
@@ -43,7 +46,7 @@ void AppStrip::init()
 
 	ledLayar.start.y = 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 1;
 	ledLayar.end.y = ledLayar.start.y + 16 * TextSize;
-	for (uint32_t i = 0; i < ledCount; i++)
+	for (uint32_t i = 0; i < LedCount; i++)
 	{
 		ledLayar[2 * i] = &ledBoards[i];
 		ledLayar[2 * i + 1] = &leds[i];
@@ -71,14 +74,15 @@ void AppStrip::init()
 					{
 						auto& self = **(AppStrip**)param;
 						int index = (AppStrip**)param - self.ledParams;
-						strip[index] = ((AppColorInput*)self.appColorInput)->getColor();
+						strip[index] = shapshot[index] = ((AppColorInput*)self.appColorInput)->getColor();
 						strip.flush();
 					};
 				appColorInput->finishCallback = [](void* param)
 					{
 						auto& self = **(AppStrip**)param;
 						int index = (AppStrip**)param - self.ledParams;
-						strip[index] = ((AppColorInput*)self.appColorInput)->getColor();
+						strip[index] = shapshot[index] = ((AppColorInput*)self.appColorInput)->getColor();
+						strip.flush();
 						self.leds[index].color = ((AppColorInput*)self.appColorInput)->getColor();
 					};
 
@@ -162,7 +166,7 @@ void AppStrip::updateState()
 		stripText.text = AutoLnaguage{ "strip:on","灯带：开" };
 		contents.elementCount = 3;
 
-		for (uint32_t i = 0; i < ledCount; i++)
+		for (uint32_t i = 0; i < LedCount; i++)
 			leds[i].color = (LCD::Color)strip[i];
 	}
 	stripText.computeSize();

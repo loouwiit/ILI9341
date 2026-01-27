@@ -155,6 +155,18 @@ public:
 		return leds[i];
 	}
 
+	void save(RGB* rgbs, uint32_t count)
+	{
+		for (uint32_t i = 0; i < count; i++)
+			rgbs[i] = (RGB)leds[i];
+	}
+
+	void load(RGB* rgbs, uint32_t count)
+	{
+		for (uint32_t i = 0; i < count; i++)
+			leds[i] = rgbs[i];
+	}
+
 private:
 	led_strip_handle_t handle = nullptr;
 	Led* leds = nullptr;

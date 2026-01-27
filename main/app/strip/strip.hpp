@@ -6,6 +6,9 @@
 class AppStrip final : public App
 {
 public:
+	constexpr static auto GpioNum = GPIO_NUM_1;
+	constexpr static uint32_t LedCount = 15;
+
 	AppStrip(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, newAppCallback) {}
 
 	virtual void init() override final;
@@ -24,17 +27,14 @@ private:
 	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
 	constexpr static short BoardSize = 3;
 
-	constexpr static auto gpioNum = GPIO_NUM_1;
-	constexpr static uint32_t ledCount = 15;
-
 	constexpr static unsigned char ContensSize = 3;
 	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{"strip", "灯带"}, TitleSize };
 	LCD::Text stripText{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 0}, AutoLnaguage{"strip:error", "灯带：错误"}, TextSize, LCD::Color::White, BackgroundColor };
-	LCD::Layar<LayarClassicSize::Huge> ledLayar{ ledCount * 2 };
-	LCD::Rectangle ledBoards[ledCount]{};
-	LCD::Rectangle leds[ledCount]{};
-	AppStrip* ledParams[ledCount]{};
+	LCD::Layar<LayarClassicSize::Huge> ledLayar{ LedCount * 2 };
+	LCD::Rectangle ledBoards[LedCount]{};
+	LCD::Rectangle leds[LedCount]{};
+	AppStrip* ledParams[LedCount]{};
 
 	void updateState();
 
