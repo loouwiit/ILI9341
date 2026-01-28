@@ -63,7 +63,7 @@ void AppStrip::init()
 	contents[0] = &title;
 	contents[1] = &stripText;
 	contents[2] = &stepLayar;
-	contents[3] = &lastTimeText;
+	contents[3] = &lastTimeLayar;
 	contents[4] = &lastTimeBar;
 	contents[5] = &ledLayar;
 
@@ -192,6 +192,36 @@ void AppStrip::init()
 				self.leds[i].color = strip[i] = snapshot->color[i];
 			strip.flush();
 			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
+			self.lastTimeBar.setValue(snapshot->lastTime / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
+		};
+
+	lastTimeLayar[0] = &lastTimeText;
+	lastTimeLayar[1] = &lastTimeAdd;
+	lastTimeLayar[2] = &lastTimeSub;
+
+	lastTimeAdd.computeSize();
+	lastTimeAdd.clickCallbackParam = this;
+	lastTimeAdd.releaseCallback = [](Finger&, void* param)
+		{
+			snapshot->lastTime += LastTimeStep;
+			if (snapshot->lastTime > 1250)
+				snapshot->lastTime = 1250;
+
+			auto& self = *(AppStrip*)param;
+			self.lastTimeBar.setValue(snapshot->lastTime / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
+		};
+
+	lastTimeSub.computeSize();
+	lastTimeSub.clickCallbackParam = this;
+	lastTimeSub.releaseCallback = [](Finger&, void* param)
+		{
+			if (snapshot->lastTime > LastTimeStep)
+				snapshot->lastTime -= LastTimeStep;
+			else snapshot->lastTime = 0;
+
+			auto& self = *(AppStrip*)param;
 			self.lastTimeBar.setValue(snapshot->lastTime / 5);
 			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
 		};
