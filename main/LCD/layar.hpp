@@ -46,11 +46,30 @@ public:
 			start.y <= point.y && point.y < end.y;
 	}
 
+	virtual bool isClicked(Vector2s point, Clickable& target) override final
+	{
+		if (this == &target) // 自己
+			return isClicked(point);
+
+		// 子对象
+		point -= start;
+		for (unsigned char i = 0; i < elementCount; i++)
+			if (elements[i]->isClicked(point, target)) return true;
+		return false;
+	}
+
 	virtual void finger(Finger finger) override final
 	{
 		finger.position -= start; // offset
 		for (unsigned char i = 0; i < elementCount; i++)
 			elements[i]->finger(finger);
+	}
+
+	virtual void finger(Finger finger, Clickable& target) override final
+	{
+		finger.position -= start; // offset
+		for (unsigned char i = 0; i < elementCount; i++)
+			elements[i]->finger(finger, target);
 	}
 
 	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
