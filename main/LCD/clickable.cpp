@@ -23,5 +23,5 @@ void Clickable::finger(Finger finger)
 void Clickable::finger(Finger finger, Clickable& target)
 {
 	if (this == &target)
-		Clickable::finger(finger);
+		this->finger(finger);
 }
