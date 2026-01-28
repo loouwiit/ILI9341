@@ -53,7 +53,9 @@ void AppStrip::init()
 	contents[0] = &title;
 	contents[1] = &stripText;
 	contents[2] = &stepLayar;
-	contents[3] = &ledLayar;
+	contents[3] = &lastTimeText;
+	contents[4] = &lastTimeBar;
+	contents[5] = &ledLayar;
 
 	updateState();
 
@@ -106,6 +108,8 @@ void AppStrip::init()
 				self.leds[i].color = strip[i] = snapshot->color[i];
 			strip.flush();
 			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
+			self.lastTimeBar.setValue(snapshot->lastTime / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
 		};
 
 	stepRight.computeSize();
@@ -119,6 +123,8 @@ void AppStrip::init()
 				self.leds[i].color = strip[i] = snapshot->color[i];
 			strip.flush();
 			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
+			self.lastTimeBar.setValue(snapshot->lastTime / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
 		};
 
 	stepAdd.computeSize();
@@ -141,6 +147,8 @@ void AppStrip::init()
 				self.leds[i].color = strip[i] = snapshot->color[i];
 			strip.flush();
 			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
+			self.lastTimeBar.setValue(snapshot->lastTime / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
 		};
 
 	stepRemove.computeSize();
@@ -173,6 +181,18 @@ void AppStrip::init()
 				self.leds[i].color = strip[i] = snapshot->color[i];
 			strip.flush();
 			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
+			self.lastTimeBar.setValue(snapshot->lastTime / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
+		};
+
+	lastTimeText.text = lastTimeTextBuffer;
+	lastTimeBar.clickCallbackParam = this;
+	lastTimeBar.holdCallback = [](Finger&, void* param)
+		{
+			auto& self = *(AppStrip*)param;
+
+			snapshot->lastTime = self.lastTimeBar.getValue() / 10 * 50;
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
 		};
 
 	for (uint32_t i = 0; i < LedCount; i++)
@@ -243,52 +263,75 @@ void AppStrip::touchUpdate()
 {
 	Finger finger[2] = { touch[0],touch[1] };
 
-	if (finger[0].state == Finger::State::Press)
+	if (finger[0].state == Finger::State::Press) do
 	{
 		fingerActive[0] = true;
+
+		if ((fingerClickTime[0] = contents.isClicked(finger[0].position, lastTimeBar))) break;
+
 		lastFingerPosition[0] = finger[0].position;
 		fingerMoveTotol[0] = {};
 		fingerMoveLeds[0] = contents.isClicked(finger[0].position, ledLayar);
-	}
-	else if (finger[0].state == Finger::State::Realease)
-	{
-		if (abs2(fingerMoveTotol[0]) < moveThreshold2)
-			click(finger[0]);
-		fingerActive[0] = false;
-		releaseDetect();
-	}
+	} while (false);
 
-	if (finger[1].state == Finger::State::Press)
+	if (fingerActive[0]) do
 	{
-		fingerActive[1] = true;
-		lastFingerPosition[1] = finger[1].position;
-		fingerMoveTotol[1] = {};
-		fingerMoveLeds[1] = contents.isClicked(finger[1].position, ledLayar);
-	}
-	else if (finger[1].state == Finger::State::Realease)
-	{
-		if (abs2(fingerMoveTotol[1]) < moveThreshold2)
-			click(finger[1]);
-		fingerActive[1] = false;
-		releaseDetect();
-	}
+		if (fingerClickTime[0])
+		{
+			contents.finger(finger[0], lastTimeBar);
+			break;
+		}
 
-	if (fingerActive[0])
-	{
 		auto movement = finger[0].position - lastFingerPosition[0];
 		fingerMoveTotol[0] += movement;
 		if (fingerMoveLeds[0]) ledLayar.start.x += movement.x;
 		else contents.start.y += movement.y;
 		lastFingerPosition[0] = finger[0].position;
-	}
-	if (fingerActive[1])
+	} while (false);
+
+	if (finger[0].state == Finger::State::Realease) do
 	{
+		if (fingerClickTime[0]) break;
+		if (abs2(fingerMoveTotol[0]) < moveThreshold2)
+			click(finger[0]);
+		fingerActive[0] = false;
+		releaseDetect();
+	} while (false);
+
+	if (finger[1].state == Finger::State::Press) do
+	{
+		fingerActive[1] = true;
+
+		if ((fingerClickTime[1] = contents.isClicked(finger[1].position, lastTimeBar))) break;
+
+		lastFingerPosition[1] = finger[1].position;
+		fingerMoveTotol[1] = {};
+		fingerMoveLeds[1] = contents.isClicked(finger[1].position, ledLayar);
+	} while (false);
+
+	if (fingerActive[1]) do
+	{
+		if (fingerClickTime[1])
+		{
+			contents.finger(finger[1], lastTimeBar);
+			break;
+		}
+
 		auto movement = finger[1].position - lastFingerPosition[1];
 		fingerMoveTotol[1] += movement;
 		if (fingerMoveLeds[1]) ledLayar.start.x += movement.x;
 		else contents.start.y += movement.y;
 		lastFingerPosition[1] = finger[1].position;
-	}
+	} while (false);
+
+	if (finger[1].state == Finger::State::Realease) do
+	{
+		if (fingerClickTime[1]) break;
+		if (abs2(fingerMoveTotol[1]) < moveThreshold2)
+			click(finger[1]);
+		fingerActive[1] = false;
+		releaseDetect();
+	} while (false);
 }
 
 void AppStrip::back()
@@ -306,12 +349,14 @@ void AppStrip::updateState()
 	else
 	{
 		stripText.text = AutoLnaguage{ "strip:on","灯带:开" };
-		contents.elementCount = 4;
+		contents.elementCount = ContensSize;
 
 		for (uint32_t i = 0; i < LedCount; i++)
 			leds[i].color = snapshot->color[i] = (LCD::Color)strip[i];
 
 		sprintf(stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
+		lastTimeBar.setValue(snapshot->lastTime / 5);
+		sprintf(lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
 	}
 	stripText.computeSize();
 }

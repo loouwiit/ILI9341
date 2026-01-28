@@ -27,8 +27,8 @@ private:
 	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
 	constexpr static short BoardSize = 3;
 
-	constexpr static unsigned char ContensSize = 4;
-	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };
+	constexpr static unsigned char ContensSize = 6;
+	LCD::Layar<LayarClassicSize::Middle> contents{ ContensSize };
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{"strip", "灯带"}, TitleSize };
 	LCD::Text stripText{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 0}, AutoLnaguage{"strip:error", "灯带:错误"}, TextSize, LCD::Color::White, BackgroundColor };
 
@@ -40,7 +40,12 @@ private:
 	LCD::Text stepAdd{ {(short)(stepRight.position.x + stepRight.computeSize().x + GapSize),0}, "+", TextSize, LCD::Color::White, BackgroundColor, &fontsFullWidth };
 	LCD::Text stepRemove{ {(short)(stepAdd.position.x + stepAdd.computeSize().x + GapSize),0}, "-", TextSize, LCD::Color::White, BackgroundColor, &fontsFullWidth };
 
-	LCD::Layar<LayarClassicSize::Huge> ledLayar{ Vector2s{0,16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 2},Vector2s{(short)LCD::ScreenSize.x, 16 * TextSize}, LedCount * 2 };
+	char lastTimeTextBuffer[14];
+	LCD::Text lastTimeText{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 2}, AutoLnaguage{ "time:xxxxms", "时长:xxxxms" }, TextSize, LCD::Color::White, BackgroundColor };
+	constexpr static short SlideSize = 16 * TextSize;
+	LCD::Bar<int> lastTimeBar{ Vector2s{ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 3} + Vector2s{SlideSize, SlideSize} / 2, 250, SlideSize - 10, SlideSize, LCD::ScreenSize.x, BackgroundColor, LCD::Color::White }; // bar中number是败笔
+
+	LCD::Layar<LayarClassicSize::Huge> ledLayar{ Vector2s{0,16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 4},Vector2s{(short)LCD::ScreenSize.x, 16 * TextSize}, LedCount * 2 };
 	LCD::Rectangle ledBoards[LedCount]{};
 	LCD::Rectangle leds[LedCount]{};
 	AppStrip* ledParams[LedCount]{};
@@ -53,6 +58,7 @@ private:
 
 	bool fingerActive[2] = { false, false };
 	bool fingerMoveLeds[2]{};
+	bool fingerClickTime[2]{};
 	Vector2s lastFingerPosition[2]{};
 	Vector2s fingerMoveTotol[2]{};
 
