@@ -7,7 +7,7 @@ class Bar final : public Element<Color, Size>
 {
 public:
 	Bar(Vector2s position = {}, short barLength = 100, short barHight = 20, short slideSize = 30, short textGap = 10, Color backGroundColor = Color::Black, Color slideColor = Color::White) :
-		slideSize{ slideSize }
+		position{ position }, slideSize{ slideSize }
 	{
 		bar.start = { 0,(short)(-barHight / 2) };
 		bar.end = { barLength,(short)(barHight / 2) };
