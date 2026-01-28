@@ -248,7 +248,7 @@ void AppStrip::touchUpdate()
 		fingerActive[0] = true;
 		lastFingerPosition[0] = finger[0].position;
 		fingerMoveTotol[0] = {};
-		fingerMoveLeds[0] = ledLayar.start.y < finger[0].position.y && finger[0].position.y < ledLayar.end.y;
+		fingerMoveLeds[0] = contents.isClicked(finger[0].position, ledLayar);
 	}
 	else if (finger[0].state == Finger::State::Realease)
 	{
@@ -263,7 +263,7 @@ void AppStrip::touchUpdate()
 		fingerActive[1] = true;
 		lastFingerPosition[1] = finger[1].position;
 		fingerMoveTotol[1] = {};
-		fingerMoveLeds[1] = ledLayar.start.y < finger[1].position.y && finger[1].position.y < ledLayar.end.y;
+		fingerMoveLeds[1] = contents.isClicked(finger[1].position, ledLayar);
 	}
 	else if (finger[1].state == Finger::State::Realease)
 	{
