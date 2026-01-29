@@ -48,7 +48,7 @@ private:
 	LCD::Text lastTimeSub{ {stepRemove.position.x,0}, "-", TextSize, LCD::Color::White, BackgroundColor, &fontsFullWidth };
 
 	constexpr static short SlideSize = 16 * TextSize;
-	LCD::Bar<int> lastTimeBar{ Vector2s{ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 3} + Vector2s{SlideSize, SlideSize} / 2, 250, SlideSize - 10, SlideSize, LCD::ScreenSize.x, BackgroundColor, LCD::Color::White }; // bar中number是败笔
+	LCD::Bar<int> lastTimeBar{ Vector2s{ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 3} + Vector2s{SlideSize, SlideSize} / 2, 250, SlideSize - 10, SlideSize, BackgroundColor, LCD::Color::White };
 
 	LCD::Layar<LayarClassicSize::Huge> ledLayar{ Vector2s{0,16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 4},Vector2s{(short)LCD::ScreenSize.x, 16 * TextSize}, LedCount * 2 };
 	LCD::Rectangle ledBoards[LedCount]{};

@@ -6,7 +6,7 @@ template<ColorTemplate Color, Vector2us Size, class T>
 class Bar final : public Element<Color, Size>
 {
 public:
-	Bar(Vector2s position = {}, short barLength = 100, short barHight = 20, short slideSize = 30, short textGap = 10, Color backGroundColor = Color::Black, Color slideColor = Color::White) :
+	Bar(Vector2s position = {}, short barLength = 100, short barHight = 20, short slideSize = 30, Color backGroundColor = Color::Black, Color slideColor = Color::White) :
 		position{ position }, slideSize{ slideSize }
 	{
 		bar.start = { 0,(short)(-barHight / 2) };
@@ -16,16 +16,12 @@ public:
 		slide.start = Vector2s{ (short)(-slideSize / 2),(short)(-slideSize / 2) };
 		slide.end = Vector2s{ (short)(slideSize / 2),(short)(slideSize / 2) };
 		slide.color = slideColor;
-
-		number.position = { (short)(barLength + slideSize / 2 + textGap),0 };
-		number.position.y -= number.computeSize().y / 2;
-		number.computeSize();
 	}
 
 	virtual bool isClicked(Vector2s point) override final
 	{
 		point -= position;
-		return bar.isClicked(point) || slide.isClicked(point) || number.isClicked(point);
+		return bar.isClicked(point) || slide.isClicked(point);
 	}
 
 	virtual void finger(Finger finger) override final
@@ -57,14 +53,14 @@ public:
 			auto diff = finger.position.x - lastFingerPosition.x;
 			lastFingerPosition = finger.position;
 
-			if (diff < -number.number)
-				diff = -number.number;
-			if (diff > bar.end.x - number.number)
-				diff = bar.end.x - number.number;
+			if (diff < -number)
+				diff = -number;
+			if (diff > bar.end.x - number)
+				diff = bar.end.x - number;
 
 			if (diff == 0) break;
 
-			number.number += diff;
+			number += diff;
 			slide.start.x += diff;
 			slide.end.x += diff;
 
@@ -79,7 +75,6 @@ public:
 		offset += position;
 		bar.drawTo(target, offset);
 		slide.drawTo(target, offset);
-		number.drawTo(target, offset);
 		return bar.end;
 	}
 
@@ -87,14 +82,19 @@ public:
 	{
 		if (value < 0) value = 0;
 		if (value > bar.end.x) value = bar.end.x;
-		number.number = value;
+		number = value;
 		slide.start.x = value - (slideSize >> 1);
 		slide.end.x = value + (slideSize >> 1);
 	}
 
 	T getValue()
 	{
-		return number.number;
+		return number;
+	}
+
+	short getSlideSize()
+	{
+		return slideSize;
 	}
 
 	Color& barColor = bar.color;
@@ -105,7 +105,7 @@ private:
 	Rectangle<Color, Size> bar{};
 	short slideSize = 20;
 	Rectangle<Color, Size> slide{};
-	Number<Color, Size, T> number{ {} };
+	T number{};
 
 	bool activeToMove = false;
 	Vector2s lastFingerPosition{};

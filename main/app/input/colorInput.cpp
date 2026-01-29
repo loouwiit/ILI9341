@@ -6,9 +6,10 @@ constexpr static char TAG[] = "AppColorInput";
 
 void AppColorInput::init()
 {
-	content[0] = &bars;
-	content[1] = &colorPreviewBoard;
-	content[2] = &colorPreview;
+	content[0] = &colorPreviewBoard;
+	content[1] = &colorPreview;
+	content[2] = &bars;
+	content[3] = &numbers;
 
 	colorPreview.clickCallbackParam = this;
 	colorPreview.releaseCallback = [](Finger& finger, void* param)
@@ -21,10 +22,6 @@ void AppColorInput::init()
 	bars[1] = &bar[1];
 	bars[2] = &bar[2];
 
-	bar[0].position = BarFirstPosition + BarGap * 0;
-	bar[1].position = BarFirstPosition + BarGap * 1;
-	bar[2].position = BarFirstPosition + BarGap * 2;
-
 	bar[0].barColor = BackgroundColor;
 	bar[1].barColor = BackgroundColor;
 	bar[2].barColor = BackgroundColor;
@@ -33,7 +30,7 @@ void AppColorInput::init()
 	bar[0].holdCallback = [](Finger& finger, void* param)
 		{
 			AppColorInput& self = *(AppColorInput*)param;
-			self.color.R = self.bar[0].getValue();
+			self.color.R = self.number[0].number = self.bar[0].getValue();
 			self.colorPreview.color = self.color;
 			self.changeCallback(self.callbackParam);
 		};
@@ -41,7 +38,7 @@ void AppColorInput::init()
 	bar[1].holdCallback = [](Finger& finger, void* param)
 		{
 			AppColorInput& self = *(AppColorInput*)param;
-			self.color.G = self.bar[1].getValue();
+			self.color.G = self.number[1].number = self.bar[1].getValue();
 			self.colorPreview.color = self.color;
 			self.changeCallback(self.callbackParam);
 		};
@@ -49,10 +46,18 @@ void AppColorInput::init()
 	bar[2].holdCallback = [](Finger& finger, void* param)
 		{
 			AppColorInput& self = *(AppColorInput*)param;
-			self.color.B = self.bar[2].getValue();
+			self.color.B = self.number[2].number = self.bar[2].getValue();
 			self.colorPreview.color = self.color;
 			self.changeCallback(self.callbackParam);
 		};
+
+	numbers[0] = &number[0];
+	numbers[1] = &number[1];
+	numbers[2] = &number[2];
+
+	number[0].position.y -= number[0].computeSize().y / 2;
+	number[1].position.y -= number[1].computeSize().y / 2;
+	number[2].position.y -= number[2].computeSize().y / 2;
 }
 
 void AppColorInput::draw()

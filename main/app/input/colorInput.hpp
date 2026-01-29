@@ -44,11 +44,14 @@ private:
 	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
 
 	Color888 color{};
-	LCD::Layar<LayarClassicSize::Small>content{ 3 };
+	LCD::Layar<LayarClassicSize::Small>content{ 4 };
 
 	LCD::Rectangle colorPreview{ ColorPreviewPosition,ColorPreviewSize, color };
 	LCD::Rectangle colorPreviewBoard{ ColorPreviewPosition - Vector2s{ColorPreviewBoardSize,ColorPreviewBoardSize},ColorPreviewSize + Vector2s{ColorPreviewBoardSize,ColorPreviewBoardSize} * 2, BackgroundColor };
-	LCD::Layar<LayarClassicSize::Small>bars{ 3 };
 
-	LCD::Bar<uint8_t> bar[3]{ {{}, 0xFF},{{}, 0xFF},{{}, 0xFF} };
+	LCD::Layar<LayarClassicSize::Small>bars{ BarFirstPosition,{}, 3 };
+	LCD::Bar<uint8_t> bar[3]{ {BarGap * 0, 0xFF},{BarGap * 1, 0xFF},{ BarGap * 2, 0xFF} };
+
+	LCD::Layar<LayarClassicSize::Small>numbers{ BarFirstPosition + Vector2s{0xFF + 3, 0} + Vector2s{bar[0].getSlideSize(),0} / 2,{}, 3 };
+	LCD::Number<uint8_t> number[3]{ {{0, (short)(BarGap.y * 0)}},{{0, (short)(BarGap.y * 1)}},{{0, (short)(BarGap.y * 2)}} };
 };
