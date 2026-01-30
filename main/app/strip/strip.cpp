@@ -1,50 +1,14 @@
 #include "app/strip/strip.hpp"
-
-#include "../../strip.hpp"
-
 #include "app/input/colorInput.hpp"
 
-#include <vector>
 #include "task.hpp"
-#include "strip.hpp"
 #include <cstring>
-
-class Snapshot
-{
-public:
-	Snapshot() = default;
-	Snapshot(Snapshot&& move) { operator=(std::move(move)); }
-	Snapshot(Snapshot& copy) { operator=(copy); }
-	Snapshot& operator=(Snapshot&& move)
-	{
-		for (uint32_t i = 0; i < AppStrip::LedCount; i++)
-			std::swap(move.color[i], color[i]);
-
-		std::swap(move.lastTime, lastTime);
-		std::swap(move.id, id);
-		return *this;
-	}
-	Snapshot& operator=(Snapshot& copy)
-	{
-		for (uint32_t i = 0; i < AppStrip::LedCount; i++)
-			color[i] = copy.color[i];
-
-		lastTime = copy.lastTime;
-		id = copy.id;
-		return *this;
-	}
-
-	Strip::RGB color[AppStrip::LedCount]{};
-	TickType_t lastTime = 1000;
-
-	int id = 0;
-	Snapshot* next = this;
-	Snapshot* last = this;
-};
+#include "strip/strip.hpp"
+#include "strip/snapshot.hpp"
 
 EXT_RAM_BSS_ATTR Strip strip{};
 EXT_RAM_BSS_ATTR bool stripTaskTunning = false;
-EXT_RAM_BSS_ATTR Snapshot* snapshot = nullptr;
+EXT_RAM_BSS_ATTR Strip::Snapshot* snapshot = nullptr;
 EXT_RAM_BSS_ATTR TickType_t snapshotNextChangeTime = Task::infinityTime;
 constexpr TickType_t MaxStripTaskSleepTime = 1000;
 
@@ -79,7 +43,7 @@ void AppStrip::init()
 				strip = Strip{ {GpioNum, GPIO::Mode::GPIO_MODE_OUTPUT}, LedCount, led_model_t::LED_MODEL_WS2812 };
 				strip.clear();
 				if (snapshot == nullptr)
-					snapshot = new Snapshot{};
+					snapshot = new Strip::Snapshot{};
 				self.updateState();
 			}
 			else
@@ -141,7 +105,7 @@ void AppStrip::init()
 	stepAdd.clickCallbackParam = this;
 	stepAdd.releaseCallback = [](Finger&, void* param)
 		{
-			auto* newSnapshot = new Snapshot{ *snapshot };
+			auto* newSnapshot = new Strip::Snapshot{ *snapshot };
 			newSnapshot->last = snapshot;
 			newSnapshot->next = snapshot->next;
 			newSnapshot->next->last = newSnapshot;
@@ -169,7 +133,7 @@ void AppStrip::init()
 			if (snapshot->id == 0 && snapshot->next->id == 0)
 			{
 				// 清除但不delete
-				*snapshot = Snapshot{};
+				*snapshot = Strip::Snapshot{};
 				auto& self = *(AppStrip*)param;
 				for (uint32_t i = 0; i < LedCount; i++)
 					self.leds[i].color = strip[i] = snapshot->color[i];

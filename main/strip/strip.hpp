@@ -84,6 +84,8 @@ public:
 		uint32_t index = 0;
 	};
 
+	class Snapshot;
+
 	Strip() = default;
 	Strip(Strip&& move)
 	{

@@ -2,7 +2,7 @@
 
 #define defineString(x) #x
 
-#include "app.hpp"
+#include "app/app.hpp"
 #include "LCD/autoLanguage.hpp"
 
 class SystemInfo final : public App

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app.hpp"
+#include "app/app.hpp"
 
 class TouchTest final : public App
 {

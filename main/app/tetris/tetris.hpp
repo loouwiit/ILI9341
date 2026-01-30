@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app.hpp"
+#include "app/app.hpp"
 #include "time.h"
 
 class AppTetris final : public App

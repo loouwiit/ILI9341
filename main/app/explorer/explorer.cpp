@@ -2,8 +2,8 @@
 
 #include <cstring>
 
-#include "picture/picture.hpp"
-#include "textEditor/textEditor.hpp"
+#include "app/picture/picture.hpp"
+#include "app/textEditor/textEditor.hpp"
 
 void AppExplorer::init()
 {

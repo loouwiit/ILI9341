@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app.hpp"
+#include "app/app.hpp"
 #include "LCD/bar.hpp"
 
 class AppColorInput final : public App

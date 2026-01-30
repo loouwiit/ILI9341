@@ -5,9 +5,9 @@
 
 #include "LCD/ILI9341.hpp"
 #include "LCD/FT6X36.hpp"
-#include "app.hpp"
+#include "app/app.hpp"
+#include "app/desktop/desktop.hpp"
 #include "task.hpp"
-#include "desktop/desktop.hpp"
 
 #include "storge/fat.hpp"
 #include "storge/mem.hpp"

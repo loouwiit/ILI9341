@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app.hpp"
+#include "app/app.hpp"
 #include "LCD/autoLanguage.hpp"
 #include "esp_wifi_types_generic.h"
 

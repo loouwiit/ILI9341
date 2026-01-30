@@ -2,13 +2,13 @@
 
 #include <esp_log.h>
 
-#include "setting/setting.hpp"
-#include "clock/clock.hpp"
-#include "tracker/tracker.hpp"
-#include "server/server.hpp"
-#include "explorer/explorer.hpp"
-#include "tetris/tetris.hpp"
-#include "strip/strip.hpp"
+#include "app/setting/setting.hpp"
+#include "app/clock/clock.hpp"
+#include "app/tracker/tracker.hpp"
+#include "app/server/server.hpp"
+#include "app/explorer/explorer.hpp"
+#include "app/tetris/tetris.hpp"
+#include "app/strip/strip.hpp"
 
 constexpr char TAG[] = "AppDesktop";
 

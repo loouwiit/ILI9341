@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app.hpp"
+#include "app/app.hpp"
 #include "wifi/socketStream.hpp"
 
 class AppTracker final : public App

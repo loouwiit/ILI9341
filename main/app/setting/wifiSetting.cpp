@@ -4,7 +4,7 @@
 
 #include "wifi/wifi.hpp"
 #include "wifi/mdns.hpp"
-#include "input/textInput.hpp"
+#include "app/input/textInput.hpp"
 
 constexpr char TAG[] = "WifiSetting";
 
