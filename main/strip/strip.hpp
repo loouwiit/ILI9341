@@ -85,6 +85,7 @@ public:
 	};
 
 	class Snapshot;
+	class Manager;
 
 	Strip() = default;
 	Strip(Strip&& move)
@@ -95,9 +96,11 @@ public:
 	{
 		std::swap(move.handle, handle);
 		std::swap(move.leds, leds);
+		std::swap(move.ledCount, ledCount);
 		return *this;
 	}
-	Strip(GPIO gpio, uint32_t ledCount, led_model_t model, led_color_component_format_t format = LED_STRIP_COLOR_COMPONENT_FMT_GRB)
+	Strip(GPIO gpio, uint32_t ledCount, led_model_t model, led_color_component_format_t format = LED_STRIP_COLOR_COMPONENT_FMT_GRB) :
+		ledCount{ ledCount }
 	{
 		// LED strip general initialization, according to your led board design
 		led_strip_config_t strip_config{};
@@ -137,6 +140,11 @@ public:
 		handle = nullptr;
 	}
 
+	auto getCount()
+	{
+		return ledCount;
+	}
+
 	bool empty()
 	{
 		return handle == nullptr;
@@ -157,19 +165,8 @@ public:
 		return leds[i];
 	}
 
-	void save(RGB* rgbs, uint32_t count)
-	{
-		for (uint32_t i = 0; i < count; i++)
-			rgbs[i] = (RGB)leds[i];
-	}
-
-	void load(RGB* rgbs, uint32_t count)
-	{
-		for (uint32_t i = 0; i < count; i++)
-			leds[i] = rgbs[i];
-	}
-
 private:
 	led_strip_handle_t handle = nullptr;
 	Led* leds = nullptr;
+	uint32_t ledCount = 0;
 };

@@ -69,6 +69,4 @@ private:
 
 	void click(Finger finger);
 	void releaseDetect();
-
-	static TickType_t stripThreadMain(void*);
 };

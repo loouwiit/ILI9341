@@ -3,20 +3,16 @@
 
 #include "task.hpp"
 #include <cstring>
-#include "strip/strip.hpp"
-#include "strip/snapshot.hpp"
+#include "strip/manager.hpp"
 
 EXT_RAM_BSS_ATTR Strip strip{};
-EXT_RAM_BSS_ATTR bool stripTaskTunning = false;
-EXT_RAM_BSS_ATTR Strip::Snapshot* snapshot = nullptr;
-EXT_RAM_BSS_ATTR TickType_t snapshotNextChangeTime = Task::infinityTime;
-constexpr TickType_t MaxStripTaskSleepTime = 1000;
+EXT_RAM_BSS_ATTR Strip::Manager stripManager{ strip };
 
 void AppStrip::init()
 {
 	App::init();
 
-	stripTaskTunning = false;
+	stripManager.stop();
 
 	title.position = { LCD::ScreenSize.x / 2, 0 };
 	title.position.x -= title.computeSize().x / 2;
@@ -42,23 +38,14 @@ void AppStrip::init()
 				// 启动strip驱动
 				strip = Strip{ {GpioNum, GPIO::Mode::GPIO_MODE_OUTPUT}, LedCount, led_model_t::LED_MODEL_WS2812 };
 				strip.clear();
-				if (snapshot == nullptr)
-					snapshot = new Strip::Snapshot{};
+				stripManager.init();
 				self.updateState();
 			}
 			else
 			{
+				stripManager.deinit();
 				strip.clear();
 				strip = Strip{};
-
-				while (snapshot->next->id != 0) snapshot = snapshot->next;
-				while (snapshot->id != 0)
-				{
-					snapshot = snapshot->last;
-					delete snapshot->next;
-				}
-				delete snapshot;
-				snapshot = nullptr;
 			}
 			self.updateState();
 		};
@@ -75,89 +62,64 @@ void AppStrip::init()
 	stepLeft.clickCallbackParam = this;
 	stepLeft.releaseCallback = [](Finger&, void* param)
 		{
-			snapshot = snapshot->last;
+			stripManager.last();
 
 			auto& self = *(AppStrip*)param;
+
 			for (uint32_t i = 0; i < LedCount; i++)
-				self.leds[i].color = strip[i] = snapshot->color[i];
-			strip.flush();
-			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
-			self.lastTimeBar.setValue(snapshot->lastTime / 5);
-			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
+				self.leds[i].color = stripManager[i];
+
+			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, stripManager.getId());
+			self.lastTimeBar.setValue(stripManager.getLastTime() / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, stripManager.getLastTime());
 		};
 
 	stepRight.computeSize();
 	stepRight.clickCallbackParam = this;
 	stepRight.releaseCallback = [](Finger&, void* param)
 		{
-			snapshot = snapshot->next;
+			stripManager.next();
 
 			auto& self = *(AppStrip*)param;
+
 			for (uint32_t i = 0; i < LedCount; i++)
-				self.leds[i].color = strip[i] = snapshot->color[i];
-			strip.flush();
-			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
-			self.lastTimeBar.setValue(snapshot->lastTime / 5);
-			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
+				self.leds[i].color = stripManager[i];
+
+			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, stripManager.getId());
+			self.lastTimeBar.setValue(stripManager.getLastTime() / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, stripManager.getLastTime());
 		};
 
 	stepAdd.computeSize();
 	stepAdd.clickCallbackParam = this;
 	stepAdd.releaseCallback = [](Finger&, void* param)
 		{
-			auto* newSnapshot = new Strip::Snapshot{ *snapshot };
-			newSnapshot->last = snapshot;
-			newSnapshot->next = snapshot->next;
-			newSnapshot->next->last = newSnapshot;
-			newSnapshot->last->next = newSnapshot;
-
-			newSnapshot->id++;
-			for (auto* nowSnapshot = newSnapshot->next; nowSnapshot->id != 0; nowSnapshot = nowSnapshot->next)
-				nowSnapshot->id++;
-
-			snapshot = snapshot->next;
+			stripManager.add();
 
 			auto& self = *(AppStrip*)param;
+
 			for (uint32_t i = 0; i < LedCount; i++)
-				self.leds[i].color = strip[i] = snapshot->color[i];
-			strip.flush();
-			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
-			self.lastTimeBar.setValue(snapshot->lastTime / 5);
-			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
+				self.leds[i].color = stripManager[i];
+
+			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, stripManager.getId());
+			self.lastTimeBar.setValue(stripManager.getLastTime() / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, stripManager.getLastTime());
 		};
 
 	stepRemove.computeSize();
 	stepRemove.clickCallbackParam = this;
 	stepRemove.releaseCallback = [](Finger&, void* param)
 		{
-			if (snapshot->id == 0 && snapshot->next->id == 0)
-			{
-				// 清除但不delete
-				*snapshot = Strip::Snapshot{};
-				auto& self = *(AppStrip*)param;
-				for (uint32_t i = 0; i < LedCount; i++)
-					self.leds[i].color = strip[i] = snapshot->color[i];
-				strip.flush();
-				return;
-			}
-
-			snapshot->last->next = snapshot->next;
-			snapshot->next->last = snapshot->last;
-
-			auto* deleteSnapshot = snapshot;
-			snapshot = snapshot->next->id != 0 ? snapshot->next : snapshot->last;
-
-			for (auto* nowSnapshot = deleteSnapshot->next; nowSnapshot->id != 0; nowSnapshot = nowSnapshot->next)
-				nowSnapshot->id--;
-			delete deleteSnapshot;
+			stripManager.remove();
 
 			auto& self = *(AppStrip*)param;
+
 			for (uint32_t i = 0; i < LedCount; i++)
-				self.leds[i].color = strip[i] = snapshot->color[i];
-			strip.flush();
-			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
-			self.lastTimeBar.setValue(snapshot->lastTime / 5);
-			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
+				self.leds[i].color = stripManager[i];
+
+			sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, stripManager.getId());
+			self.lastTimeBar.setValue(stripManager.getLastTime() / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, stripManager.getLastTime());
 		};
 
 	lastTimeLayar[0] = &lastTimeText;
@@ -168,26 +130,30 @@ void AppStrip::init()
 	lastTimeAdd.clickCallbackParam = this;
 	lastTimeAdd.releaseCallback = [](Finger&, void* param)
 		{
-			snapshot->lastTime += LastTimeStep;
-			if (snapshot->lastTime > 1250)
-				snapshot->lastTime = 1250;
+			auto time = stripManager.getLastTime();
+			time += LastTimeStep;
+			if (time > 1250)
+				time = 1250;
+			stripManager.setLastTime(time);
 
 			auto& self = *(AppStrip*)param;
-			self.lastTimeBar.setValue(snapshot->lastTime / 5);
-			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
+			self.lastTimeBar.setValue(time / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, time);
 		};
 
 	lastTimeSub.computeSize();
 	lastTimeSub.clickCallbackParam = this;
 	lastTimeSub.releaseCallback = [](Finger&, void* param)
 		{
-			if (snapshot->lastTime > LastTimeStep)
-				snapshot->lastTime -= LastTimeStep;
-			else snapshot->lastTime = 0;
+			auto time = stripManager.getLastTime();
+			if (time > LastTimeStep)
+				time -= LastTimeStep;
+			else time = 0;
+			stripManager.setLastTime(time);
 
 			auto& self = *(AppStrip*)param;
-			self.lastTimeBar.setValue(snapshot->lastTime / 5);
-			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
+			self.lastTimeBar.setValue(time / 5);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, time);
 		};
 
 	lastTimeText.text = lastTimeTextBuffer;
@@ -196,8 +162,8 @@ void AppStrip::init()
 		{
 			auto& self = *(AppStrip*)param;
 
-			snapshot->lastTime = self.lastTimeBar.getValue() / 10 * 50;
-			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
+			stripManager.setLastTime(self.lastTimeBar.getValue() / 10 * 50);
+			sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, stripManager.getLastTime());
 		};
 
 	for (uint32_t i = 0; i < LedCount; i++)
@@ -228,14 +194,14 @@ void AppStrip::init()
 					{
 						auto& self = **(AppStrip**)param;
 						int index = (AppStrip**)param - self.ledParams;
-						strip[index] = snapshot->color[index] = ((AppColorInput*)self.appColorInput)->getColor();
+						strip[index] = stripManager[index] = ((AppColorInput*)self.appColorInput)->getColor();
 						strip.flush();
 					};
 				appColorInput->finishCallback = [](void* param)
 					{
 						auto& self = **(AppStrip**)param;
 						int index = (AppStrip**)param - self.ledParams;
-						strip[index] = snapshot->color[index] = ((AppColorInput*)self.appColorInput)->getColor();
+						strip[index] = stripManager[index] = ((AppColorInput*)self.appColorInput)->getColor();
 						strip.flush();
 						self.leds[index].color = ((AppColorInput*)self.appColorInput)->getColor();
 					};
@@ -249,12 +215,7 @@ void AppStrip::deinit()
 {
 	// background service
 	if (!strip.empty())
-	{
-		stripTaskTunning = true;
-		snapshot = snapshot->last;
-		snapshotNextChangeTime = 0;
-		Task::addTask(stripThreadMain, "strip service");
-	}
+		stripManager.start();
 	App::deinit();
 }
 
@@ -357,11 +318,11 @@ void AppStrip::updateState()
 		contents.elementCount = ContensSize;
 
 		for (uint32_t i = 0; i < LedCount; i++)
-			leds[i].color = snapshot->color[i] = (LCD::Color)strip[i];
+			leds[i].color = stripManager[i] = strip[i];
 
-		sprintf(stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, snapshot->id);
-		lastTimeBar.setValue(snapshot->lastTime / 5);
-		sprintf(lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, snapshot->lastTime);
+		sprintf(stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, stripManager.getId());
+		lastTimeBar.setValue(stripManager.getLastTime() / 5);
+		sprintf(lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, stripManager.getLastTime());
 	}
 	stripText.computeSize();
 }
@@ -380,29 +341,4 @@ void AppStrip::releaseDetect()
 		if (ledLayar.start.x > 0)
 			ledLayar.start.x = 0;
 	}
-}
-
-TickType_t AppStrip::stripThreadMain(void*)
-{
-	if (!stripTaskTunning)
-		return Task::infinityTime;
-
-	auto nowTime = xTaskGetTickCount();
-	if (snapshotNextChangeTime < nowTime)
-	{
-		snapshot = snapshot->next;
-		snapshotNextChangeTime = nowTime + snapshot->lastTime;
-		strip.load(snapshot->color, LedCount);
-		strip.flush();
-	}
-
-	TickType_t sleepTime = 0;
-	if (nowTime < snapshotNextChangeTime)
-		sleepTime = snapshotNextChangeTime - nowTime;
-	else sleepTime = 1; // 最少睡1tick
-
-	if (sleepTime > MaxStripTaskSleepTime)
-		sleepTime = MaxStripTaskSleepTime; // 最多睡MaxStripTaskSleepTime
-
-	return sleepTime;
 }
