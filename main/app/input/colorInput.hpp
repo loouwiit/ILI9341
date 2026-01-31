@@ -30,9 +30,9 @@ public:
 	{
 		AppColorInput::color = color;
 		colorPreview.color = color;
-		bar[0].setValue(color.R);
-		bar[1].setValue(color.G);
-		bar[2].setValue(color.B);
+		bar[0].setValue(number[0].number = color.R);
+		bar[1].setValue(number[1].number = color.G);
+		bar[2].setValue(number[2].number = color.B);
 	}
 
 private:
