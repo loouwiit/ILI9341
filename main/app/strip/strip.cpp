@@ -188,7 +188,7 @@ void AppStrip::init()
 				int index = (AppStrip**)param - self.ledParams;
 				auto* appColorInput = new AppColorInput{ self.lcd,self.touch,self.changeAppCallback,self.newAppCallback };
 				self.appColorInput = appColorInput;
-				appColorInput->setColor(self.leds[index].color);
+				appColorInput->setColor(stripManager[index]);
 				appColorInput->callbackParam = param;
 				appColorInput->changeCallback = [](void* param)
 					{
