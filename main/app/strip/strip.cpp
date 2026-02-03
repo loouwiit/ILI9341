@@ -1,5 +1,6 @@
 #include "app/strip/strip.hpp"
 #include "app/input/colorInput.hpp"
+#include "app/explorer/explorer.hpp"
 
 #include "task.hpp"
 #include <cstring>
@@ -22,10 +23,12 @@ void AppStrip::init()
 
 	contents[0] = &title;
 	contents[1] = &stripText;
-	contents[2] = &stepLayar;
-	contents[3] = &lastTimeLayar;
-	contents[4] = &lastTimeBar;
-	contents[5] = &ledLayar;
+	contents[2] = &loadText;
+	contents[3] = &saveText;
+	contents[4] = &stepLayar;
+	contents[5] = &lastTimeLayar;
+	contents[6] = &lastTimeBar;
+	contents[7] = &ledLayar;
 
 	updateState();
 
@@ -53,19 +56,84 @@ void AppStrip::init()
 			}
 			else
 			{
-				if (self.fileNeedWrite)
-				{
-					OFile file{};
-					file.open(ConfigFilePath);
-					if (file.isOpen() && stripManager.save(file) != 0)
-						self.fileNeedWrite = false;
-				}
+				OFile file{};
+				file.open(ConfigFilePath);
+				if (file.isOpen())
+					stripManager.save(file);
 
 				stripManager.deinit();
 				strip.clear();
 				strip = Strip{};
 			}
 			self.updateState();
+		};
+
+	loadText.computeSize();
+	loadText.clickCallbackParam = this;
+	loadText.releaseCallback = [](Finger&, void* param)
+		{
+			AppStrip& self = *(AppStrip*)param;
+			auto app = new AppExplorer{ self.lcd,self.touch, self.changeAppCallback, self.newAppCallback };
+			app->setTitle(AutoLnaguage{ "load file","加载文件" });
+			app->callBackParam = param;
+			app->openFileCallback = [](const char* path, void* param)
+				{
+					AppStrip& self = *(AppStrip*)param;
+					self.changeAppCallback(nullptr);
+
+					if (path == nullptr) return;
+
+					IFile file{};
+					file.open(path);
+					if (file.isOpen())
+					{
+						stripManager.load(file);
+						stripManager.apply();
+
+						for (uint32_t i = 0; i < LedCount; i++)
+							self.leds[i].color = stripManager[i];
+
+						sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, stripManager.getId());
+						self.lastTimeBar.setValue(stripManager.getLastTime() / 5);
+						sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, stripManager.getLastTime());
+					}
+				};
+
+			self.newAppCallback(app);
+		};
+
+	saveText.computeSize();
+	saveText.clickCallbackParam = this;
+	saveText.releaseCallback = [](Finger&, void* param)
+		{
+			AppStrip& self = *(AppStrip*)param;
+			auto app = new AppExplorer{ self.lcd,self.touch, self.changeAppCallback, self.newAppCallback };
+			app->setTitle(AutoLnaguage{ "save file","保存文件" });
+			app->callBackParam = param;
+			app->openFileCallback = [](const char* path, void* param)
+				{
+					AppStrip& self = *(AppStrip*)param;
+					self.changeAppCallback(nullptr);
+
+					if (path == nullptr) return;
+
+					OFile file{};
+					file.open(path);
+					if (file.isOpen())
+					{
+						stripManager.save(file);
+						stripManager.apply();
+
+						for (uint32_t i = 0; i < LedCount; i++)
+							self.leds[i].color = stripManager[i];
+
+						sprintf(self.stepTextBuffer, AutoLnaguage{ "step:%d", "步骤:%d" }, stripManager.getId());
+						self.lastTimeBar.setValue(stripManager.getLastTime() / 5);
+						sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, stripManager.getLastTime());
+					}
+				};
+
+			self.newAppCallback(app);
 		};
 
 	stepLayar[0] = &stepText;
