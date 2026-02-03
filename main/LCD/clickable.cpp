@@ -13,7 +13,7 @@ void Clickable::finger(Finger finger)
 		switch (finger.state)
 		{
 		case State::Press: pressCallback(finger, clickCallbackParam); break;
-		case State::Contact: holdCallback(finger, clickCallbackParam); break;
+		case State::Hold: holdCallback(finger, clickCallbackParam); break;
 		case State::Realease: releaseCallback(finger, clickCallbackParam); break;
 		case State::None: break;
 		}

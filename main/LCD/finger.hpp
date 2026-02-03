@@ -10,6 +10,8 @@ public:
 		Realease = 0x01,
 		Contact = 0x02,
 		None = 0x03,
+
+		Hold = Contact,
 	};
 
 	State state = State::None;
