@@ -124,7 +124,11 @@ void AppExplorer::touchUpdate()
 void AppExplorer::back()
 {
 	if (!floorBack())
+	{
+		if (openFileCallback != nullptr)
+			openFileCallback(nullptr, callBackParam);
 		changeAppCallback(nullptr);
+	}
 }
 
 void AppExplorer::resetPosition()
