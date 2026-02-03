@@ -24,6 +24,8 @@ public:
 	void* callBackParam = nullptr;
 
 private:
+	constexpr static char TAG[] = "AppExplorer";
+
 	constexpr static unsigned char TitleSize = 3;
 	constexpr static unsigned char TextSize = 2;
 	constexpr static short GapSize = 8;
@@ -37,9 +39,13 @@ private:
 	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };
 
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{ "explorer", "文件浏览" }, TitleSize };
-	LCD::Text path{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 0}, nullptr, TextSize, FloorColor, BackgroundColor };
+
+	LCD::Layar<LayarClassicSize::Pair> pathLayar{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 0},{(short)(LCD::ScreenSize.x), 16 * TextSize}, 2 };
+	LCD::Text path{ {} , nullptr, TextSize, FloorColor, BackgroundColor };
+	LCD::Text newFile{ {}, "+", TextSize, FloorColor, BackgroundColor, &fontsFullWidth };
+
 	constexpr static unsigned char FileLayarSize = LayarClassicSize::Huge;
-	LCD::Layar<FileLayarSize> fileLayar{ 0 };
+	LCD::Layar<FileLayarSize> fileLayar{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 1},{(short)(LCD::ScreenSize.x), 16 * TextSize}, 0 };
 	LCD::Text files[FileLayarSize]{};
 
 	char* fileName[FileLayarSize]{};
@@ -51,6 +57,8 @@ private:
 	struct ClickCallbackParam_t { AppExplorer* self = nullptr; unsigned char index = 0; };
 	ClickCallbackParam_t clickCallbackParam[FileLayarSize]{};
 
+	char* appTextInputBuffer = nullptr;
+
 	void resetPosition();
 	void updateFloor();
 	bool floorBack();
@@ -60,9 +68,8 @@ private:
 
 	constexpr static float moveThreshold2 = 100.0f;
 
-	short& offset = contents.start.y;
-	bool viewMoveActive[2] = { false, false };
-	bool pathMoveActive[2] = { false, false };
+	bool fingerActive[2] = { false, false };
+	bool fingerActiveMovePath[2] = { false, false };
 	Vector2s lastFingerPosition[2]{};
 	Vector2s fingerMoveTotol[2]{};
 

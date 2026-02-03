@@ -4,13 +4,14 @@
 
 #include "app/picture/picture.hpp"
 #include "app/textEditor/textEditor.hpp"
+#include "app/input/textInput.hpp"
 
 void AppExplorer::init()
 {
 	App::init();
 
 	contents[0] = &title;
-	contents[1] = &path;
+	contents[1] = &pathLayar;
 	contents[2] = &fileLayar;
 
 	title.position.x = LCD::ScreenSize.x / 2;
@@ -19,13 +20,74 @@ void AppExplorer::init()
 	title.clickCallbackParam = this;
 	title.releaseCallback = [](Finger&, void* param) { AppExplorer& self = *(AppExplorer*)param; self.back(); };
 
+	pathLayar[0] = &path;
+	pathLayar[1] = &newFile;
+
 	path.text = nowFloorPath;
 	path.computeSize();
 	path.clickCallbackParam = this;
 	path.releaseCallback = [](Finger&, void* param) { AppExplorer& self = *(AppExplorer*)param; self.updateFloor(); };
 
-	fileLayar.start.x = ContentXOffset;
-	fileLayar.start.y = 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 1;
+	newFile.position.x = path.getSize().x + GapSize;
+	newFile.computeSize();
+	newFile.clickCallbackParam = this;
+	newFile.releaseCallback = [](Finger&, void* param)
+		{
+			auto& self = *(AppExplorer*)param;
+			auto* app = new AppTextInput{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+
+			self.appTextInputBuffer = new char[256] {};
+			app->setInputBuffer(self.appTextInputBuffer);
+			app->checker = [](char* string)->bool
+				{
+					for (auto i = 0; i < 255;i++)
+					{
+						if (string[i] == '\0') return true;
+						if (string[i] == '/' || string[i] == '\\')
+						{
+							if (string[i + 1] == '\0') return true;
+							else return false;
+						}
+					}
+					return true;
+				};
+			app->finishCallbackParam = param;
+			app->finishCallback = [](void* param)
+				{
+					auto& self = *(AppExplorer*)param;
+					auto& path = self.appTextInputBuffer;
+					auto pathLength = strlen(path);
+
+					if (path[pathLength - 1] == '/' || path[pathLength - 1] == '\\') do
+					{
+						// floor
+						path[pathLength - 1] = '\0';
+						pathLength--;
+						if (pathLength == 0) break;
+
+						char* buffer = new char[self.nowFloorPointer + 5 + pathLength + 1];
+						strcpy(buffer, self.realFloorPath);
+						buffer[self.nowFloorPointer + 5] = '/';
+						strcpy(buffer + self.nowFloorPointer + 5, path);
+						ESP_LOGI(TAG, "new floor %s", buffer);
+						if (!testFloor(buffer)) newFloor(buffer);
+						delete[] buffer;
+					} while (false);
+					else do
+					{
+						if (pathLength == 0) break;
+
+						OFile file{};
+						ESP_LOGI(TAG, "new file %s%s", self.realFloorPath, path);
+						self.floor.openFile(path, pathLength, file); // 有底层封装就是好
+					} while (false);
+					delete[] self.appTextInputBuffer;
+					self.appTextInputBuffer = nullptr;
+					self.updateFloor();
+				};
+
+			self.newAppCallback(app);
+		};
 
 	for (unsigned char i = 0; i < FileLayarSize; i++)
 	{
@@ -72,54 +134,57 @@ void AppExplorer::touchUpdate()
 {
 	Finger finger[2] = { touch[0],touch[1] };
 
-	if (finger[0].state == Finger::State::Press)
+	if (finger[0].state == Finger::State::Press) do
 	{
-		pathMoveActive[0] = path.isClicked(finger[0].position);
-		viewMoveActive[0] = !pathMoveActive[0];
+		fingerActive[0] = true;
+
 		lastFingerPosition[0] = finger[0].position;
 		fingerMoveTotol[0] = {};
-	}
-	else if (finger[0].state == Finger::State::Realease && (viewMoveActive[0] || pathMoveActive[0]))
-	{
-		if (abs2(fingerMoveTotol[0]) < moveThreshold2)
-			click(finger[0]);
-		if (viewMoveActive[0]) releaseDetect();
-		pathMoveActive[0] = false;
-		viewMoveActive[0] = false;
-	}
+		fingerActiveMovePath[0] = contents.isClicked(finger[0].position, path);
+	} while (false);
 
-	if (finger[1].state == Finger::State::Press)
-	{
-		pathMoveActive[1] = path.isClicked(finger[1].position);
-		viewMoveActive[1] = !pathMoveActive[1];
-		lastFingerPosition[1] = finger[1].position;
-		fingerMoveTotol[1] = {};
-	}
-	else if (finger[1].state == Finger::State::Realease && (viewMoveActive[1] || pathMoveActive[1]))
-	{
-		if (abs2(fingerMoveTotol[1]) < moveThreshold2)
-			click(finger[1]);
-		if (viewMoveActive[1]) releaseDetect();
-		pathMoveActive[1] = false;
-		viewMoveActive[1] = false;
-	}
-
-	if (viewMoveActive[0] || pathMoveActive[0])
+	if (fingerActive[0]) do
 	{
 		auto movement = finger[0].position - lastFingerPosition[0];
 		fingerMoveTotol[0] += movement;
-		if (viewMoveActive[0]) offset += movement.y;
-		if (pathMoveActive[0]) { path.position.x += movement.x; path.computeSize(); }
+		if (fingerActiveMovePath[0]) pathLayar.start.x += movement.x;
+		else contents.start.y += movement.y;
 		lastFingerPosition[0] = finger[0].position;
-	}
-	if (viewMoveActive[1] || pathMoveActive[1])
+	} while (false);
+
+	if (finger[0].state == Finger::State::Realease) do
+	{
+		if (abs2(fingerMoveTotol[0]) < moveThreshold2)
+			click(finger[0]);
+		fingerActive[0] = false;
+		releaseDetect();
+	} while (false);
+
+	if (finger[1].state == Finger::State::Press) do
+	{
+		fingerActive[1] = true;
+
+		lastFingerPosition[1] = finger[1].position;
+		fingerMoveTotol[1] = {};
+		fingerActiveMovePath[1] = contents.isClicked(finger[1].position, pathLayar);
+	} while (false);
+
+	if (fingerActive[1]) do
 	{
 		auto movement = finger[1].position - lastFingerPosition[1];
 		fingerMoveTotol[1] += movement;
-		if (viewMoveActive[1]) offset += movement.y;
-		if (pathMoveActive[1]) { path.position.x += movement.x; path.computeSize(); }
+		if (fingerActiveMovePath[1]) pathLayar.start.x += movement.x;
+		else contents.start.y += movement.y;
 		lastFingerPosition[1] = finger[1].position;
-	}
+	} while (false);
+
+	if (finger[1].state == Finger::State::Realease) do
+	{
+		if (abs2(fingerMoveTotol[1]) < moveThreshold2)
+			click(finger[1]);
+		fingerActive[1] = false;
+		releaseDetect();
+	} while (false);
 }
 
 void AppExplorer::back()
@@ -142,9 +207,8 @@ void AppExplorer::setTitle(const char* title)
 
 void AppExplorer::resetPosition()
 {
-	offset = 0;
-	path.position.x = ContentXOffset;
-	path.computeSize();
+	contents.start.y = 0;
+	pathLayar.start.x = ContentXOffset;
 }
 
 void AppExplorer::updateFloor()
@@ -194,6 +258,8 @@ bool AppExplorer::floorBack()
 	nowFloorPath[nowFloorPointer] = '\0';
 	resetPosition();
 	updateFloor();
+	newFile.position.x = path.computeSize().x + GapSize;
+	newFile.computeSize();
 	return true;
 }
 
@@ -215,6 +281,8 @@ void AppExplorer::clickCallback(unsigned char index)
 	nowFloorPath[nowFloorPointer] = '\0';
 	floor.open(realFloorPath);
 	resetPosition();
+	newFile.position.x = path.computeSize().x + GapSize;
+	newFile.computeSize();
 	updateFloor();
 }
 
@@ -270,9 +338,9 @@ void AppExplorer::releaseDetect()
 {
 	if (touch[0].state != Finger::State::Contact && touch[1].state != Finger::State::Contact)
 	{
-		if (offset > 0)
-			offset = 0;
+		if (contents.start.y > 0)
+			contents.start.y = 0;
+		if (pathLayar.start.x > ContentXOffset)
+			pathLayar.start.x = ContentXOffset;
 	}
 }
-
-
