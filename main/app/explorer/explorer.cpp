@@ -13,6 +13,7 @@ void AppExplorer::init()
 	contents[1] = &path;
 	contents[2] = &fileLayar;
 
+	title.position.x = LCD::ScreenSize.x / 2;
 	title.position.x -= title.computeSize().x / 2;
 	title.computeSize();
 	title.clickCallbackParam = this;
@@ -129,6 +130,14 @@ void AppExplorer::back()
 			openFileCallback(nullptr, callBackParam);
 		changeAppCallback(nullptr);
 	}
+}
+
+void AppExplorer::setTitle(const char* title)
+{
+	this->title.text = title;
+	this->title.position.x = LCD::ScreenSize.x / 2;
+	this->title.position.x -= this->title.computeSize().x / 2;
+	this->title.computeSize();
 }
 
 void AppExplorer::resetPosition()

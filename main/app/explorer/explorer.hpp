@@ -17,6 +17,8 @@ public:
 	virtual void touchUpdate() override final;
 	virtual void back() override final;
 
+	void setTitle(const char* title);
+
 	using CallbackFunction_t = void(*)(const char* path, void* param); // safe for changeAppCallback & newAppCallback
 	CallbackFunction_t openFileCallback = nullptr;
 	void* callBackParam = nullptr;
