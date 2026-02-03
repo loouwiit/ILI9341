@@ -158,32 +158,16 @@ bool newFile(const char* path)
 	if (testFile(path))
 		return false;
 
-	FILE* file;
-	file = fopen(path, "w");
-	if (file != nullptr)
-	{
-		fclose(file);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	OFile file{};
+	if (file.open(path)) return true;
+	else return false;
 }
 
 bool testFile(const char* path)
 {
-	FILE* file;
-	file = fopen(path, "r");
-	if (file != nullptr)
-	{
-		fclose(file);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	IFile file{};
+	if (file.open(path)) return true;
+	else return false;
 }
 
 bool moveFile(const char* oldPath, const char* newPath)

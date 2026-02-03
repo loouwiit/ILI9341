@@ -2,6 +2,8 @@
 
 #include <esp_vfs.h>
 
+#include <fcntl.h>
+
 #include "mutex.hpp"
 #include "stringCompare.hpp"
 #include "nonCopyAble.hpp"
@@ -853,11 +855,13 @@ int memOpen(const char* path, int flags, int mode)
 #if MemDebug && MemProcessDebug
 	printf("memOpen\n");
 #endif
+	bool creatFile = flags & O_CREAT;
 
 	size_t pathLenght = strlen(path);
 	MemFileHead* file = memRoot.findFile(path, pathLenght);
 	if (file == nullptr)
 	{
+		if (!creatFile) return MemFileSystemError::NotExistFile;
 		if (!memRoot.makeFile(path, pathLenght))
 			return MemFileSystemError::Error;
 		file = memRoot.findFile(path, pathLenght);
