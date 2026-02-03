@@ -55,6 +55,9 @@ private:
 	LCD::Rectangle leds[LedCount]{};
 	AppStrip* ledParams[LedCount]{};
 
+	constexpr static char ConfigFilePath[] = "/root/mem/strip.cfg";
+	bool fileNeedWrite = false;
+
 	void updateState();
 
 	App* appColorInput = nullptr;

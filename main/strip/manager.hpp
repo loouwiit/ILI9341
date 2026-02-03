@@ -19,6 +19,9 @@ public:
 	void start();
 	void stop();
 
+	uint32_t load(IFile& file);
+	uint32_t save(OFile& file);
+
 	int getId();
 	TickType_t getLastTime();
 	void setLastTime(TickType_t lastTime);
@@ -32,6 +35,8 @@ public:
 	void remove();
 
 private:
+	constexpr static char TAG[] = "Strip::Manager";
+	constexpr static char FileMagicString[] = "Strip\n";
 	constexpr static TickType_t MaxStripTaskSleepTime = 1000;
 
 	Strip& strip;

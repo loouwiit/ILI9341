@@ -39,10 +39,28 @@ void AppStrip::init()
 				strip = Strip{ {GpioNum, GPIO::Mode::GPIO_MODE_OUTPUT}, LedCount, led_model_t::LED_MODEL_WS2812 };
 				strip.clear();
 				stripManager.init();
-				self.updateState();
+
+				if (testFile(ConfigFilePath))
+				{
+					IFile file{};
+					file.open(ConfigFilePath);
+					if (file.isOpen())
+					{
+						stripManager.load(file);
+						stripManager.apply();
+					}
+				}
 			}
 			else
 			{
+				if (self.fileNeedWrite)
+				{
+					OFile file{};
+					file.open(ConfigFilePath);
+					if (file.isOpen() && stripManager.save(file) != 0)
+						self.fileNeedWrite = false;
+				}
+
 				stripManager.deinit();
 				strip.clear();
 				strip = Strip{};
@@ -63,6 +81,7 @@ void AppStrip::init()
 	stepLeft.releaseCallback = [](Finger&, void* param)
 		{
 			stripManager.last();
+			stripManager.apply();
 
 			auto& self = *(AppStrip*)param;
 
@@ -79,6 +98,7 @@ void AppStrip::init()
 	stepRight.releaseCallback = [](Finger&, void* param)
 		{
 			stripManager.next();
+			stripManager.apply();
 
 			auto& self = *(AppStrip*)param;
 
@@ -95,6 +115,7 @@ void AppStrip::init()
 	stepAdd.releaseCallback = [](Finger&, void* param)
 		{
 			stripManager.add();
+			stripManager.apply();
 
 			auto& self = *(AppStrip*)param;
 
@@ -111,6 +132,7 @@ void AppStrip::init()
 	stepRemove.releaseCallback = [](Finger&, void* param)
 		{
 			stripManager.remove();
+			stripManager.apply();
 
 			auto& self = *(AppStrip*)param;
 

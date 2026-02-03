@@ -1,5 +1,7 @@
 #include "manager.hpp"
 
+#include "stringCompare.hpp"
+
 bool Strip::Manager::isInited()
 {
 	return snapshot != nullptr;
@@ -48,6 +50,77 @@ void Strip::Manager::stop()
 	stripTask = nullptr;
 }
 
+uint32_t Strip::Manager::load(IFile& file)
+{
+	if (!file.isOpen()) return 0;
+
+	char buffer[sizeof(FileMagicString)]{};
+	file.read(&buffer, sizeof(FileMagicString));
+	if (!stringCompare(buffer, sizeof(buffer), FileMagicString, sizeof(FileMagicString)))
+	{
+		ESP_LOGE(TAG, "magic string don't macth, readed:%s", buffer);
+		return 0;
+	}
+
+	decltype(strip.ledCount) fileLedCount = 0;
+	file.read(&fileLedCount, sizeof(fileLedCount));
+
+	Snapshot fileIn{ fileLedCount };
+
+	while (snapshot->id != 0)
+		snapshot = snapshot->next;
+
+	auto* head = snapshot; // head
+
+	decltype(Snapshot::id) count = 0;
+	file.read(&count, sizeof(count));
+	if (count < 0)
+	{
+		ESP_LOGE(TAG, "load count = %d < 0!", count);
+		return 0;
+	}
+	ESP_LOGI(TAG, "load count = %d", count);
+
+	decltype(count) i = 0;
+	while (i < count)
+	{
+		file >> fileIn;
+		*snapshot = fileIn;
+		snapshot->id = i;
+		i++;
+		if (snapshot->next == head && i != count) add();
+		else next();
+	}
+
+
+	return count;
+}
+
+uint32_t Strip::Manager::save(OFile& file)
+{
+	if (!file.isOpen()) return 0;
+
+	file.write(&FileMagicString, sizeof(FileMagicString));
+	file.write(&strip.ledCount, sizeof(strip.ledCount));
+
+	auto* pointer = snapshot;
+	while (pointer->id != 0)
+		pointer = pointer->next;
+	auto count = pointer->last->id + 1;
+
+	file.write(&count, sizeof(count));
+
+	file << *pointer;
+	pointer = pointer->next;
+	while (pointer->id != 0)
+	{
+		file << *pointer;
+		pointer = pointer->next;
+	}
+
+	return count;
+}
+
 int Strip::Manager::getId()
 {
 	return snapshot->id;
@@ -77,13 +150,11 @@ void Strip::Manager::apply()
 void Strip::Manager::last()
 {
 	snapshot = snapshot->last;
-	apply();
 }
 
 void Strip::Manager::next()
 {
 	snapshot = snapshot->next;
-	apply();
 }
 
 void Strip::Manager::add()
@@ -99,7 +170,6 @@ void Strip::Manager::add()
 		nowSnapshot->id++;
 
 	next();
-	apply();
 }
 
 void Strip::Manager::remove()
@@ -120,7 +190,6 @@ void Strip::Manager::remove()
 	for (auto* nowSnapshot = deleteSnapshot->next; nowSnapshot->id != 0; nowSnapshot = nowSnapshot->next)
 		nowSnapshot->id--;
 	delete deleteSnapshot;
-	apply();
 }
 
 TickType_t Strip::Manager::stripThreadMain(void* param)
@@ -135,6 +204,7 @@ TickType_t Strip::Manager::stripThreadMain(void* param)
 	{
 		self.snapshotNextChangeTime = nowTime + self.snapshot->lastTime;
 		self.next();
+		self.apply();
 	}
 
 	TickType_t sleepTime = 0;

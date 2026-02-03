@@ -62,13 +62,13 @@ public:
 
 	void read(IFile& file)
 	{
-		file.read(&color, sizeof(color[0]) * ledCount);
+		file.read(color, sizeof(color[0]) * ledCount);
 		file.read(&lastTime, sizeof(lastTime));
 	}
 
 	void write(OFile& file)
 	{
-		file.write(&color, sizeof(color[0]) * ledCount);
+		file.write(color, sizeof(color[0]) * ledCount);
 		file.write(&lastTime, sizeof(lastTime));
 	}
 
