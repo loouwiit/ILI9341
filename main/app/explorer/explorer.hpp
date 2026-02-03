@@ -17,6 +17,10 @@ public:
 	virtual void touchUpdate() override final;
 	virtual void back() override final;
 
+	using CallbackFunction_t = void(*)(const char* path, void* param); // safe for changeAppCallback & newAppCallback
+	CallbackFunction_t openFileCallback = nullptr;
+	void* callBackParam = nullptr;
+
 private:
 	constexpr static unsigned char TitleSize = 3;
 	constexpr static unsigned char TextSize = 2;

@@ -209,6 +209,20 @@ void AppExplorer::openFile(unsigned char index)
 {
 	char* fileName = this->fileName[index];
 	auto fileNameLength = strlen(fileName);
+
+	if (openFileCallback != nullptr)
+	{
+		auto floorLength = strlen(realFloorPath); // /root/xxx/floor/
+
+		char* buffer = new char[fileNameLength + floorLength + 1]; // one for \0
+		memcpy(buffer, realFloorPath, floorLength);
+		memcpy(buffer + floorLength, fileName, fileNameLength + 1); // with \0
+
+		openFileCallback(buffer, callBackParam);
+		delete[] buffer;
+		return;
+	}
+
 	if (strcmp(fileName + fileNameLength - 4, ".pic") == 0)
 	{
 		AppPicture* picture = new AppPicture{ lcd,touch, changeAppCallback, newAppCallback };
