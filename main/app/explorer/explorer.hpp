@@ -18,6 +18,7 @@ public:
 	virtual void back() override final;
 
 	void setTitle(const char* title);
+	void setTitleBuffer(const char* titleBuffer);
 
 	using CallbackFunction_t = void(*)(const char* path, void* param); // safe for changeAppCallback & newAppCallback
 	CallbackFunction_t openFileCallback = nullptr;
@@ -38,7 +39,9 @@ private:
 	constexpr static unsigned char ContensSize = 3;
 	LCD::Layar<LayarClassicSize::Small> contents{ ContensSize };
 
-	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{ "explorer", "文件浏览" }, TitleSize };
+	const char* titleBuffer = nullptr;
+	const char* defaultTitle = AutoLnaguage{ "explorer", "文件浏览" };
+	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, defaultTitle, TitleSize };
 
 	LCD::Layar<LayarClassicSize::Pair> pathLayar{ {ContentXOffset, 16 * TitleSize + GapSize + (16 * TextSize + GapSize) * 0},{(short)(LCD::ScreenSize.x), 16 * TextSize}, 2 };
 	LCD::Text path{ {} , nullptr, TextSize, FloorColor, BackgroundColor };

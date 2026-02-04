@@ -121,6 +121,8 @@ void AppExplorer::deinit()
 		delete[] fileName[i];
 		files[i].text = fileName[i] = nullptr;
 	}
+	delete titleBuffer;
+	titleBuffer = nullptr;
 	deleteAble = true;
 }
 
@@ -199,7 +201,25 @@ void AppExplorer::back()
 
 void AppExplorer::setTitle(const char* title)
 {
-	this->title.text = title;
+	delete[] titleBuffer;
+
+	auto* buffer = new char[strlen(title) + 1];
+	strcpy(buffer, title);
+
+	titleBuffer = buffer;
+
+	this->title.text = titleBuffer;
+	this->title.position.x = LCD::ScreenSize.x / 2;
+	this->title.position.x -= this->title.computeSize().x / 2;
+	this->title.computeSize();
+}
+
+void AppExplorer::setTitleBuffer(const char* titleBuffer)
+{
+	delete[] this->titleBuffer;
+	this->titleBuffer = nullptr;
+
+	this->title.text = titleBuffer != nullptr ? titleBuffer : defaultTitle;
 	this->title.position.x = LCD::ScreenSize.x / 2;
 	this->title.position.x -= this->title.computeSize().x / 2;
 	this->title.computeSize();
