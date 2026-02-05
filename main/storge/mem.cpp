@@ -61,7 +61,7 @@ class MemFileHead : public MemBlockLinker<MemFileHead>, public MemDirent
 {
 public:
 	//内部文件，直接全部public
-	struct stat st;
+	struct stat st {};
 	off_t& size = st.st_size;
 
 	MemFileDataBlock* dataBlock = nullptr;
@@ -130,6 +130,7 @@ public:
 ssize_t memWrite(int fd, const void* data, size_t size);
 int memOpen(const char* path, int flags, int mode);
 int memFstat(int fd, struct stat* st);
+int memStat(const char* path, struct stat* st);
 int memClose(int fd);
 ssize_t memRead(int fd, void* dst, size_t size);
 off_t memSeek(int fd, off_t size, int mod);
@@ -154,7 +155,8 @@ MemFileHead::MemFileHead()
 {
 	dirent.d_type = (unsigned char)FileType::File;
 	dirent.d_name[0] = '\0';
-	this->size = 0;
+	st.st_mode = _IFREG;
+	st.st_size = 0;
 }
 
 MemFileHead::~MemFileHead()
@@ -828,6 +830,7 @@ bool mountMem()
 	memFs.write = memWrite;
 	memFs.read = memRead;
 	memFs.fstat = memFstat;
+	memFs.stat = memStat;
 	memFs.close = memClose;
 	memFs.lseek = memSeek;
 	memFs.rename = memRename;
@@ -892,6 +895,64 @@ int memFstat(int fd, struct stat* st)
 	if (memFileDescriptions[fd].file == nullptr) return MemFileSystemError::NotOpenedFileDescription;
 	*st = memFileDescriptions[fd].file->st;
 	return 0;
+}
+
+int memStat(const char* path, struct stat* st)
+{
+	auto pathLenght = strlen(path);
+
+	if (path[pathLenght - 1] == '/')
+	{
+		pathLenght -= 1;
+		if (pathLenght == 0) return MemFileSystemError::UnReachablePath; //路径无效
+	}
+	if (path[0] == '/')
+	{
+		path++;
+		pathLenght -= 1;
+		if (pathLenght == 0) return MemFileSystemError::UnReachablePath; //路径无效
+	}
+
+	constexpr size_t negtive = (size_t)-1;
+	size_t divide = pathLenght - 1;
+	MemFloorHead* floor = &memRoot;
+
+	// root/path/file
+	//              ^
+	while (divide != negtive)
+	{
+		if (path[divide] == '/')
+		{
+			// root/path/file
+			//          ^
+			floor = floor->findFloor(path, divide);
+			if (floor == nullptr) return MemFileSystemError::UnReachablePath; //路径无效
+			break;
+		}
+		divide--;
+	}
+
+	divide++;
+	// root/path/file
+	//           ^
+
+
+	auto* file = floor->findChildFile(path + divide, pathLenght - divide);
+	if (file != nullptr)
+	{
+		// file
+		*st = file->st;
+		return 0;
+	}
+	else if (floor->findChildFloor(path + divide, pathLenght - divide) != nullptr)
+	{
+		// floor
+		*st = {};
+		st->st_mode = _IFDIR;
+		st->st_size = 0;
+		return 0;
+	}
+	return MemFileSystemError::NotExistFile;
 }
 
 ssize_t memWrite(int fd, const void* data, size_t size)
