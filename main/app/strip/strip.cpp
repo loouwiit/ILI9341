@@ -74,7 +74,7 @@ void AppStrip::init()
 		{
 			AppStrip& self = *(AppStrip*)param;
 			auto app = new AppExplorer{ self.lcd,self.touch, self.changeAppCallback, self.newAppCallback };
-			app->setTitle(AutoLnaguage{ "load file","加载文件" });
+			app->setTitleBuffer(AutoLnaguage{ "load file","加载文件" });
 			app->callBackParam = param;
 			app->openFileCallback = [](const char* path, void* param)
 				{
@@ -108,7 +108,7 @@ void AppStrip::init()
 		{
 			AppStrip& self = *(AppStrip*)param;
 			auto app = new AppExplorer{ self.lcd,self.touch, self.changeAppCallback, self.newAppCallback };
-			app->setTitle(AutoLnaguage{ "save file","保存文件" });
+			app->setTitleBuffer(AutoLnaguage{ "save file","保存文件" });
 			app->callBackParam = param;
 			app->openFileCallback = [](const char* path, void* param)
 				{
