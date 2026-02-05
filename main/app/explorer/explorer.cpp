@@ -1,5 +1,7 @@
 #include "explorer.hpp"
 
+#include "property.hpp"
+
 #include <cstring>
 
 #include "app/picture/picture.hpp"
@@ -100,6 +102,12 @@ void AppExplorer::init()
 		files[i].scale = TextSize;
 		files[i].text = fileName[i] = new char[256];
 		files[i].clickCallbackParam = &clickCallbackParam[i];
+		files[i].holdCallback = [](Finger&, void* param)
+			{
+				auto& self = *((ClickCallbackParam_t*)param)->self;
+				auto index = ((ClickCallbackParam_t*)param)->index;
+				self.holdCallback(index);
+			};
 		files[i].releaseCallback = [](Finger&, void* param)
 			{
 				auto& self = *((ClickCallbackParam_t*)param)->self;
@@ -110,6 +118,11 @@ void AppExplorer::init()
 		fileLayar[i] = &files[i];
 	}
 
+	updateFloor();
+}
+
+void AppExplorer::focusIn()
+{
 	updateFloor();
 }
 
@@ -139,6 +152,7 @@ void AppExplorer::touchUpdate()
 	if (finger[0].state == Finger::State::Press) do
 	{
 		fingerActive[0] = true;
+		fingerHoldTick[0] = xTaskGetTickCount() + holdTickThreshold;
 
 		lastFingerPosition[0] = finger[0].position;
 		fingerMoveTotol[0] = {};
@@ -157,7 +171,11 @@ void AppExplorer::touchUpdate()
 	if (finger[0].state == Finger::State::Realease) do
 	{
 		if (abs2(fingerMoveTotol[0]) < moveThreshold2)
-			click(finger[0]);
+		{
+			if (xTaskGetTickCount() > fingerHoldTick[0])
+				click({ Finger::State::Hold, finger[0].position });
+			else click(finger[0]);
+		}
 		fingerActive[0] = false;
 		releaseDetect();
 	} while (false);
@@ -165,6 +183,7 @@ void AppExplorer::touchUpdate()
 	if (finger[1].state == Finger::State::Press) do
 	{
 		fingerActive[1] = true;
+		fingerHoldTick[1] = xTaskGetTickCount() + holdTickThreshold;
 
 		lastFingerPosition[1] = finger[1].position;
 		fingerMoveTotol[1] = {};
@@ -183,7 +202,11 @@ void AppExplorer::touchUpdate()
 	if (finger[1].state == Finger::State::Realease) do
 	{
 		if (abs2(fingerMoveTotol[1]) < moveThreshold2)
-			click(finger[1]);
+		{
+			if (xTaskGetTickCount() > fingerHoldTick[1])
+				click({ Finger::State::Hold, finger[1].position });
+			else click(finger[1]);
+		}
 		fingerActive[1] = false;
 		releaseDetect();
 	} while (false);
@@ -281,6 +304,24 @@ bool AppExplorer::floorBack()
 	newFile.position.x = path.computeSize().x + GapSize;
 	newFile.computeSize();
 	return true;
+}
+
+void AppExplorer::holdCallback(unsigned char index)
+{
+	auto* app = new AppProperty{ lcd, touch, changeAppCallback, newAppCallback };
+
+	char* fileName = this->fileName[index];
+	auto fileNameLength = strlen(fileName);
+	auto floorLength = strlen(realFloorPath); // /root/xxx/floor/
+
+	char* buffer = new char[fileNameLength + floorLength + 1]; // one for \0
+	memcpy(buffer, realFloorPath, floorLength);
+	memcpy(buffer + floorLength, fileName, fileNameLength + 1); // with \0
+	app->setPath(buffer);
+
+	delete[] buffer;
+
+	newAppCallback(app);
 }
 
 void AppExplorer::clickCallback(unsigned char index)

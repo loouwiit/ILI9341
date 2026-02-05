@@ -11,6 +11,7 @@ public:
 	AppExplorer(LCD& lcd, FT6X36& touch, Callback_t changeAppCallback, Callback_t newAppCallback) : App(lcd, touch, changeAppCallback, newAppCallback) {}
 
 	virtual void init() override final;
+	virtual void focusIn() override final;
 	virtual void deinit() override final;
 
 	virtual void draw() override final;
@@ -65,12 +66,15 @@ private:
 	void resetPosition();
 	void updateFloor();
 	bool floorBack();
+	void holdCallback(unsigned char index);
 	void clickCallback(unsigned char index);
 	void openFile(unsigned char index);
 	void updateText(unsigned char index, const char* text, Floor::Type type);
 
 	constexpr static float moveThreshold2 = 100.0f;
+	constexpr static TickType_t holdTickThreshold = 500;
 
+	TickType_t fingerHoldTick[2]{ (TickType_t)-1,(TickType_t)-1 };
 	bool fingerActive[2] = { false, false };
 	bool fingerActiveMovePath[2] = { false, false };
 	Vector2s lastFingerPosition[2]{};
