@@ -177,7 +177,7 @@ bool moveFile(const char* oldPath, const char* newPath)
 
 bool removeFile(const char* path)
 {
-	return remove(path) == 0;
+	return unlink(path) == 0;
 }
 
 bool newFloor(const char* path)
@@ -200,7 +200,7 @@ bool testFloor(const char* path)
 
 bool removeFloor(const char* path)
 {
-	return remove(path);
+	return rmdir(path) == 0;
 }
 
 //FileBase
