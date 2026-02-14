@@ -92,6 +92,14 @@ uint32_t Strip::Manager::load(IFile& file)
 		else next();
 	}
 
+	while (snapshot->next->id != 0)
+		next();
+
+	auto lastId = count - 1;
+	while (snapshot->id != lastId)
+		remove();
+
+	next();
 
 	return count;
 }
