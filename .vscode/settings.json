@@ -88,7 +88,8 @@
     "typeinfo": "cpp",
     "*.inc": "cpp",
     "led_strip_interface.h": "c",
-    "cerrno": "cpp"
+    "cerrno": "cpp",
+    "stdio.h": "c"
   },
   "cmake.configureOnOpen": false,
   "idf.espIdfPath": "/home/lo/Develop/ESP/v5.5.2/esp-idf",
@@ -108,5 +109,6 @@
     "--background-index",
     "--query-driver=**",
     "--compile-commands-dir=/home/lo/Develop/ESP/ILI9341/build"
-  ]
+  ],
+  "idf.currentSetup": "/home/lo/Develop/ESP/v5.5.2/esp-idf"
 }
