@@ -13,6 +13,8 @@
 #include "storge/mem.hpp"
 #include "storge/sd.hpp"
 
+#include "audio/audio.hpp"
+
 #define ChangeAppLog false
 
 extern "C" void app_main(void);
@@ -246,6 +248,8 @@ void app_main(void)
 
 	GPIO{ GPIO_NUM_3 }.setPull(GPIO::Pull::GPIO_PULLUP_ONLY);
 	Task::addTask([](void*) -> TickType_t { mountSd(spi, { GPIO_NUM_3 }); return Task::infinityTime; }, "mount sd", nullptr, 500);
+
+	audioTest("music/music-16b-2c-44100hz.mp3");
 
 	fontChinese = Font::load("system/chinese.font");
 	if (fontChinese == nullptr)

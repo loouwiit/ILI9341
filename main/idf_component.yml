@@ -16,3 +16,4 @@ dependencies:
   #   public: true
   espressif/mdns: '*'
   espressif/led_strip: '*'
+  espressif/esp_audio_codec: '*'
