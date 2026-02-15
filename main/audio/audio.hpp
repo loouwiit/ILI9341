@@ -110,6 +110,9 @@ void iisInit()
 
 	/* 在写入数据之前，先启用 TX 通道 */
 	i2s_channel_enable(tx_handle);
+
+	// 调节 gain
+	GPIO{ GPIO::GPIO_NUM::GPIO_NUM_41 } = true;
 }
 
 void iisDeinit()
