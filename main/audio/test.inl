@@ -23,7 +23,7 @@ void audioTest(const char* path)
 
 		if (size == 0) break;
 
-		auto transmitSize = iis.transmit(frameBuffer, size);
+		auto transmitSize = iis.transmit(frameBuffer, size, portMAX_DELAY);
 		ESP_LOGI(TAG, "transmited %d", transmitSize);
 	}
 

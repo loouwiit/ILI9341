@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include "driver/i2s_std.h"
+#include <driver/i2s_std.h>
 
 #include "gpio.hpp"
 
@@ -48,6 +48,13 @@ public:
 		tx_handle = nullptr;
 	}
 
+	void setCallback(i2s_isr_callback_t callback, void* param)
+	{
+		i2s_event_callbacks_t cbs{};
+		cbs.on_sent = callback;
+		i2s_channel_register_event_callback(tx_handle, &cbs, param);
+	}
+
 	void changeSampleRate(uint32_t sampleRate)
 	{
 		i2s_channel_disable(tx_handle);
@@ -55,10 +62,10 @@ public:
 		i2s_channel_reconfig_std_clock(tx_handle, &std_cfg.clk_cfg);
 	}
 
-	size_t transmit(const void* buffer, size_t size)
+	size_t transmit(const void* buffer, size_t size, uint32_t timeOut = 1000)
 	{
 		size_t written = 0;
-		auto ret = i2s_channel_write(tx_handle, buffer, size, &written, 1000);
+		auto ret = i2s_channel_write(tx_handle, buffer, size, &written, timeOut);
 		ESP_ERROR_CHECK(ret);
 
 		return written;
