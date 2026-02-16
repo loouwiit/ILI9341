@@ -16,7 +16,7 @@ public:
 	IIS(GPIO BCLK, GPIO DOUT, GPIO WS, uint32_t sampleRate)
 	{
 		i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO, I2S_ROLE_MASTER);
-		chan_cfg.allow_pd = true;
+		// chan_cfg.allow_pd = true; // E (10696) i2s_common: i2s_new_channel(968): register back up is not supported
 
 		i2s_new_channel(&chan_cfg, &tx_handle, NULL);
 
