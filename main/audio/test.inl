@@ -18,10 +18,10 @@ void audioTest(const char* path)
 	mp3Loader(frameBuffer, FrameBufferLength, &info);
 	mp3Loader.reset();
 
-	ESP_LOGI(TAG, "sample rate = %dHz, bits = %dbit", info.sample_rate, info.bits_per_sample, info.bitrate);
+	ESP_LOGI(TAG, "sample rate = %dHz, bits = %dbit, %d channal", info.sample_rate, info.bits_per_sample, info.channel);
 
 	GPIO{ GPIO::GPIO_NUM::GPIO_NUM_41 } = true;
-	IIS iis{ GPIO_NUM_38, GPIO_NUM_39, GPIO_NUM_40, info.sample_rate, i2s_data_bit_width_t::I2S_DATA_BIT_WIDTH_32BIT };
+	IIS iis{ GPIO_NUM_38, GPIO_NUM_39, GPIO_NUM_40, info.sample_rate, info.channel == 2 ? i2s_data_bit_width_t::I2S_DATA_BIT_WIDTH_32BIT : i2s_data_bit_width_t::I2S_DATA_BIT_WIDTH_16BIT };
 
 	while (true)
 	{
