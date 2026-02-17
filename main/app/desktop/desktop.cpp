@@ -26,10 +26,19 @@ void AppDesktop::init()
 		applications[i] = &applicationRectangle[i];
 		applications[ApplicationSize + i] = &applicationText[i];
 	}
+	App::init();
+}
+
+void AppDesktop::focusIn()
+{
+	running = true;
+	drawLocked = false;
 }
 
 void AppDesktop::draw()
 {
+	while (drawLocked && running) vTaskDelay(1);
+	drawLocked = true;
 	lcd.clear();
 	lcd.draw(applications);
 }
@@ -70,6 +79,7 @@ void AppDesktop::touchUpdate()
 		fingerMoveTotol[0] += movement;
 		offset += movement.x;
 		lastFingerPosition[0] = finger[0].position;
+		if (movement.x != 0) drawLocked = false;
 	}
 	if (fingerActive[1])
 	{
@@ -77,6 +87,7 @@ void AppDesktop::touchUpdate()
 		fingerMoveTotol[1] += movement;
 		offset += movement.x;
 		lastFingerPosition[1] = finger[1].position;
+		if (movement.x != 0) drawLocked = false;
 	}
 }
 
@@ -122,6 +133,7 @@ void AppDesktop::click(Finger finger)
 	for (unsigned char i = 0; i < ApplicationSize;i++) if (applicationRectangle[i].isClicked(finger.position))
 	{
 		ESP_LOGI(TAG, "start %s", ApplicationName[i].english);
+		running = false;
 		newAppCallback(appFactory(i));
 	}
 }
