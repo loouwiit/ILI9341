@@ -21,6 +21,4 @@ private:
 	constexpr static auto TAG = "AppAudio";
 
 	App* explorer = nullptr;
-
-	static void deamonMain(void* param);
 };

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include <esp_mp3_dec.h>
 #include <esp_audio_dec.h>
 
@@ -30,6 +32,11 @@ public:
 		delete[] rawBuffer;
 		rawIn.buffer = rawBuffer = nullptr;
 		close();
+	}
+
+	bool isOpen()
+	{
+		return audioFile.isOpen();
 	}
 
 	bool open(const char* path)
