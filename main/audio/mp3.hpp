@@ -20,16 +20,15 @@ public:
 
 	MP3()
 	{
-		rawIn.buffer = new uint8_t[RawBufferLength];
-		rawIn.frame_recover = esp_audio_dec_recovery_t::ESP_AUDIO_DEC_RECOVERY_NONE;
+		rawBuffer = new uint8_t[RawBufferLength];
 		esp_mp3_dec_open(nullptr, 0, &handle);
 	}
 
 	~MP3()
 	{
 		esp_mp3_dec_close(handle);
-		delete[] rawIn.buffer;
-		rawIn.buffer = nullptr;
+		delete[] rawBuffer;
+		rawIn.buffer = rawBuffer = nullptr;
 		close();
 	}
 
@@ -58,8 +57,7 @@ public:
 
 	size_t load(void* buffer, size_t bufferSize, esp_audio_dec_info_t* info = nullptr)
 	{
-		rawIn.len = audioFile.read(rawIn.buffer, RawBufferLength);
-		audioFile.setOffset(-rawIn.len, FileBase::OffsetMode::Current);
+		loadBuffer();
 
 		esp_audio_dec_out_frame_t frameOut{};
 		frameOut.buffer = (uint8_t*)buffer;
@@ -77,7 +75,7 @@ public:
 		}
 
 		// ESP_LOGI(TAG, "decode %d from %d", frameOut.decoded_size, rawIn.consumed);
-		audioFile.setOffset(rawIn.consumed, FileBase::OffsetMode::Current);
+		updateBuffer(rawIn.consumed);
 
 		return frameOut.decoded_size;
 	}
@@ -92,9 +90,31 @@ private:
 
 	IFile audioFile{};
 
-	constexpr static size_t RawBufferLength = 1536;
+	constexpr static size_t RawBufferLength = 4096;
+	uint8_t* rawBuffer = nullptr;
 	esp_audio_dec_in_raw_t rawIn{};
 
 	using Mp3Handle_t = void*;
 	Mp3Handle_t handle = nullptr;
+
+	void loadBuffer()
+	{
+		if (rawIn.len > rawIn.consumed) return;
+
+		if (audioFile.eof()) return;
+
+		auto length = rawIn.len;
+		memcpy(rawBuffer, rawIn.buffer, length);
+
+		length += audioFile.read(rawBuffer + length, RawBufferLength - length);
+
+		rawIn.buffer = rawBuffer;
+		rawIn.len = length;
+	}
+
+	void updateBuffer(size_t consumed)
+	{
+		rawIn.len -= consumed;
+		rawIn.buffer += consumed;
+	}
 };
