@@ -39,12 +39,14 @@ public:
 			ESP_LOGE(TAG, "open %s failed", path);
 			return false;
 		}
+		rawIn.len = 0;
 		esp_mp3_dec_reset(handle);
 		return true;
 	}
 
 	void close()
 	{
+		rawIn.len = 0;
 		esp_mp3_dec_reset(handle);
 		audioFile.close();
 	}
