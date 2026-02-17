@@ -18,7 +18,7 @@ void audioTest(const char* path)
 	mp3Loader.load(frameBuffer, FrameBufferLength, &info);
 	mp3Loader.reset();
 
-	ESP_LOGI(TAG, "sample rate = %dHz, bits = %dbit, %d channal", info.sample_rate, info.bits_per_sample, info.bitrate, info.channel);
+	ESP_LOGI(TAG, "sample rate = %dHz, bits = %dbit, %d channal, bitRate = %dkb/s", info.sample_rate, info.bits_per_sample, info.channel, info.bitrate / 1024);
 
 	if (info.sample_rate == 0)
 	{
