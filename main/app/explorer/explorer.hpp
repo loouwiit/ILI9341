@@ -18,6 +18,8 @@ public:
 	virtual void touchUpdate() override final;
 	virtual void back() override final;
 
+	void exit();
+
 	void setTitle(const char* title);
 	void setTitleBuffer(const char* titleBuffer);
 

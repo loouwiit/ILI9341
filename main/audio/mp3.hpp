@@ -35,9 +35,7 @@ public:
 
 	bool open(const char* path)
 	{
-		Floor root{};
-		root.open(PerfixRoot);
-		if (!root.openFile(path, strlen(path), audioFile))
+		if (!audioFile.open(path))
 		{
 			ESP_LOGE(TAG, "open %s failed", path);
 			return false;
@@ -78,7 +76,7 @@ public:
 			else ESP_LOGE(TAG, "error %d", ret);
 		}
 
-		ESP_LOGI(TAG, "decode %d from %d", frameOut.decoded_size, rawIn.consumed);
+		// ESP_LOGI(TAG, "decode %d from %d", frameOut.decoded_size, rawIn.consumed);
 		audioFile.setOffset(rawIn.consumed, FileBase::OffsetMode::Current);
 
 		return frameOut.decoded_size;

@@ -14,11 +14,13 @@ public:
 	// virtual void deinit() override final;
 
 	virtual void draw() override final {}
-	virtual void touchUpdate() override final { back(); }
+	virtual void touchUpdate() override final;
 	virtual void back() override final { changeAppCallback(nullptr); }
 
 private:
 	constexpr static auto TAG = "AppAudio";
+
+	App* explorer = nullptr;
 
 	static void deamonMain(void* param);
 };

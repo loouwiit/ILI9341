@@ -222,6 +222,11 @@ void AppExplorer::back()
 	}
 }
 
+void AppExplorer::exit()
+{
+	changeAppCallback(nullptr);
+}
+
 void AppExplorer::setTitle(const char* title)
 {
 	delete[] titleBuffer;
