@@ -91,7 +91,8 @@ private:
 
 	IFile audioFile{};
 
-	constexpr static size_t RawBufferLength = 4096;
+	constexpr static size_t LoadMaxLength = 4 * 1024;
+	constexpr static size_t RawBufferLength = LoadMaxLength + 512;
 	uint8_t* rawBuffer = nullptr;
 	esp_audio_dec_in_raw_t rawIn{};
 
@@ -107,7 +108,9 @@ private:
 		auto length = rawIn.len;
 		memcpy(rawBuffer, rawIn.buffer, length);
 
-		length += audioFile.read(rawBuffer + length, RawBufferLength - length);
+		length += audioFile.read(rawBuffer + length, std::min(RawBufferLength - length, (unsigned long)LoadMaxLength));
+
+		ESP_LOGI(TAG, "buffer loaded from %d to %d", rawIn.len, length);
 
 		rawIn.buffer = rawBuffer;
 		rawIn.len = length;
