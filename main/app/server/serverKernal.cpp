@@ -73,7 +73,7 @@ void serverStart(unsigned char maxAutoRestartTimes)
 
 	if (serverStack == nullptr)
 		serverStack = new StackType_t[4096];
-	serverHandle = xTaskCreateStatic(server, "server", 4096, nullptr, 2, serverStack, &serverTask);
+	serverHandle = xTaskCreateStatic(server, "server", 4096, nullptr, Task::Priority::Deamon, serverStack, &serverTask);
 	if (serverHandle == nullptr)
 	{
 		delete[] serverStack;
@@ -89,7 +89,7 @@ void serverStart(unsigned char maxAutoRestartTimes)
 		if (coWorkerStack[i] != nullptr) continue;
 		coWorkerStack[i] = new StackType_t[4096];
 		sprintf(serverCoTaskName, "coServer%02d", i);
-		coWorkerHandle[i] = xTaskCreateStatic(serverCoworker, serverCoTaskName, 4096, (void*)i, 2, coWorkerStack[i], &coWorkerTasks[i]);
+		coWorkerHandle[i] = xTaskCreateStatic(serverCoworker, serverCoTaskName, 4096, (void*)i, Task::Priority::Deamon, coWorkerStack[i], &coWorkerTasks[i]);
 		if (coWorkerHandle[i] != nullptr)
 			startedCoTask++;
 		else
@@ -734,7 +734,7 @@ void restart()
 	{
 		Task::addTask([](void*) -> TickType_t {
 			printf("server: restart at %d times\n", autoRestartTimes);
-			serverHandle = xTaskCreateStatic(server, "server", 4096, nullptr, 2, serverStack, &serverTask);
+			serverHandle = xTaskCreateStatic(server, "server", 4096, nullptr, Task::Priority::Deamon, serverStack, &serverTask);
 			return Task::infinityTime;
 			}, "server restart", nullptr, 1000);
 	}

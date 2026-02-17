@@ -6,6 +6,18 @@
 class Task
 {
 public:
+	class Priority
+	{
+	public:
+		constexpr static UBaseType_t Deamon = 2;
+		constexpr static UBaseType_t Verylow = 3;
+		constexpr static UBaseType_t Low = 4;
+		constexpr static UBaseType_t Normal = 5;
+		constexpr static UBaseType_t High = 6;
+		constexpr static UBaseType_t Veryhigh = 7;
+		constexpr static UBaseType_t RealTime = 8;
+	};
+
 	constexpr static TickType_t infinityTime = portMAX_DELAY;
 	constexpr static TickType_t maxSleepTime = 100;
 

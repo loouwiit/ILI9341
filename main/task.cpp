@@ -17,7 +17,7 @@ void Task::init()
 	if (daemonStack == nullptr)
 		daemonStack = new StackType_t[4096];
 
-	daemonHandle = xTaskCreateStatic(daemonMain, "taskDaemon", 4096, nullptr, 2, daemonStack, &daemonTasks);
+	daemonHandle = xTaskCreateStatic(daemonMain, "taskDaemon", 4096, nullptr, Task::Priority::Deamon, daemonStack, &daemonTasks);
 	if (daemonHandle == nullptr)
 	{
 		ESP_LOGE(TAG, "init failed");

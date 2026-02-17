@@ -17,7 +17,7 @@ void AppAudio::init()
 	if (audioDeamonStack != nullptr) return;
 
 	auto* appExplorer = new AppExplorer{ lcd, touch, changeAppCallback, newAppCallback };
-	appExplorer->setTitleBuffer(AutoLnaguage{"play audio", "播放音乐"});
+	appExplorer->setTitleBuffer(AutoLnaguage{ "play audio", "播放音乐" });
 	appExplorer->callBackParam = appExplorer;
 	appExplorer->openFileCallback = [](const char* path, void* param)
 		{
@@ -33,7 +33,7 @@ void AppAudio::init()
 
 			audioDeamonTask = (StaticTask_t*)heap_caps_malloc(sizeof(StaticTask_t), MALLOC_CAP_INTERNAL);
 
-			audioDeamonHandle = xTaskCreateStatic(deamonMain, "audio deamon", 4096, pathToDeamon, 2, audioDeamonStack, audioDeamonTask);
+			audioDeamonHandle = xTaskCreateStatic(deamonMain, "audio deamon", 4096, pathToDeamon, Task::Priority::RealTime, audioDeamonStack, audioDeamonTask);
 
 			self.exit();
 		};

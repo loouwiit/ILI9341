@@ -311,6 +311,6 @@ void app_main(void)
 	app[0] = new AppDesktop{ lcd, touch, changeAppCallback, newAppCallback };
 	app[0]->init();
 
-	xTaskCreate(drawThread, "draw", 4096, nullptr, 2, nullptr);
-	xTaskCreate(touchThread, "touch", 4096, nullptr, 2, nullptr);
+	xTaskCreate(drawThread, "draw", 4096, nullptr, Task::Priority::High, nullptr);
+	xTaskCreate(touchThread, "touch", 4096, nullptr, Task::Priority::Veryhigh, nullptr);
 }

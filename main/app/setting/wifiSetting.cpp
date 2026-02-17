@@ -6,6 +6,8 @@
 #include "wifi/mdns.hpp"
 #include "app/input/textInput.hpp"
 
+#include "task.hpp"
+
 constexpr char TAG[] = "WifiSetting";
 
 static char apSettingSsidTextBuffer[6 + 32 + 1] = "ssid:";
@@ -44,7 +46,7 @@ void WifiSetting::init()
 	}
 
 	coThreadQueue = xQueueCreate(CoThreadQueueLength, sizeof(CoThreadFunction_t));
-	if (xTaskCreate(coThread, "wifiSettingCothread", 4096, this, 2, nullptr) != pdTRUE)
+	if (xTaskCreate(coThread, "wifiSettingCothread", 4096, this, Task::Priority::Verylow, nullptr) != pdTRUE)
 	{
 		wifiScanText.text = AutoLnaguage{ "error:out of memory", "错误：内存不足" };
 		deleteAble = true;

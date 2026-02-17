@@ -6,12 +6,14 @@
 #include "wifi/wifi.hpp"
 #include "app/setting/wifiSetting.hpp"
 
+#include "task.hpp"
+
 constexpr static char TAG[] = "tracker";
 
 void AppTracker::init()
 {
 	App::init();
-	xTaskCreate(serverThread, "appTracker", 4096, this, 2, nullptr);
+	xTaskCreate(serverThread, "appTracker", 4096, this, Task::Priority::Low, nullptr);
 }
 
 void AppTracker::focusIn()
