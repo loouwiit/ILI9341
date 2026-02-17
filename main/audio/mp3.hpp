@@ -52,7 +52,13 @@ public:
 		audioFile.close();
 	}
 
-	size_t load(void* buffer, size_t bufferSize)
+	void reset()
+	{
+		audioFile.setOffset(0, FileBase::OffsetMode::Begin);
+		esp_mp3_dec_reset(handle);
+	}
+
+	size_t load(void* buffer, size_t bufferSize, esp_audio_dec_info_t* info = nullptr)
 	{
 		rawIn.len = audioFile.read(rawIn.buffer, RawBufferLength);
 		audioFile.setOffset(-rawIn.len, FileBase::OffsetMode::Current);
@@ -61,9 +67,10 @@ public:
 		frameOut.buffer = (uint8_t*)buffer;
 		frameOut.len = bufferSize;
 
-		esp_audio_dec_info_t info{};
+		esp_audio_dec_info_t infoDefault{};
+		if (info == nullptr) info = &infoDefault;
 
-		auto ret = esp_mp3_dec_decode(handle, &rawIn, &frameOut, &info);
+		auto ret = esp_mp3_dec_decode(handle, &rawIn, &frameOut, info);
 		if (ret != ESP_AUDIO_ERR_OK)
 		{
 			if (ret == ESP_AUDIO_ERR_BUFF_NOT_ENOUGH)
@@ -77,9 +84,9 @@ public:
 		return frameOut.decoded_size;
 	}
 
-	auto operator()(void* buffer, size_t bufferSize)
+	auto operator()(void* buffer, size_t bufferSize, esp_audio_dec_info_t* info = nullptr)
 	{
-		return load(buffer, bufferSize);
+		return load(buffer, bufferSize, info);
 	}
 
 private:

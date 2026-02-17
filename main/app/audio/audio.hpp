@@ -19,4 +19,6 @@ public:
 
 private:
 	constexpr static auto TAG = "AppAudio";
+
+	static void deamonMain(void* param);
 };
