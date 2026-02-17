@@ -52,6 +52,7 @@ public:
 	void reset()
 	{
 		audioFile.setOffset(0, FileBase::OffsetMode::Begin);
+		rawIn.len = 0;
 		esp_mp3_dec_reset(handle);
 	}
 
