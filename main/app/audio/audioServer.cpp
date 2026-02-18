@@ -4,6 +4,8 @@
 
 constexpr static auto TAG = "audioServer";
 
+bool AudioServer::autoDeinit = false;
+
 char AudioServer::path[256]{};
 MP3* AudioServer::mp3Loader{};
 uint8_t* AudioServer::frameBuffer{};
@@ -83,6 +85,11 @@ void AudioServer::deinit()
 	audioServerHandle = nullptr;
 }
 
+void AudioServer::setAutoDeinit(bool status)
+{
+	autoDeinit = status;
+}
+
 const char* AudioServer::getFilePath()
 {
 	return path;
@@ -146,6 +153,8 @@ void AudioServer::serverMain(void*)
 		// finish
 		mp3Loader->close();
 		pause();
+
+		if (autoDeinit) deinit();
 	}
 
 	// delete self

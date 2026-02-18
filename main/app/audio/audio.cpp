@@ -48,7 +48,8 @@ void AppAudio::init()
 			self.newAppCallback(appExplorer);
 		};
 
-	audioOpened = AudioServer::isInited(); // 假定上一次状态，从而激活deamon的reload
+	AudioServer::setAutoDeinit(false);
+	audioOpened = true; // 假定上一次状态，从而激活deamon的reload
 	// 该任务应该由server完成，此处需要重构
 	updatePauseStatus();
 	pauseText.computeSize();
@@ -143,6 +144,7 @@ TickType_t AppAudio::deamonTask(void* param)
 	if (!self.running)
 	{
 		self.deleteAble = true;
+		AudioServer::setAutoDeinit(true);
 		ESP_LOGI(TAG, "deamon stoped");
 		return Task::infinityTime;
 	}
@@ -154,6 +156,8 @@ TickType_t AppAudio::deamonTask(void* param)
 	auto opened = AudioServer::isOpened();
 	if (opened != self.audioOpened)
 	{
+		if (!AudioServer::isInited())
+			AudioServer::init();
 		AudioServer::openFile(AudioServer::getFilePath());
 		self.audioOpened = AudioServer::isOpened();
 	}

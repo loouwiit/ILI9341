@@ -11,6 +11,7 @@ public:
 	static bool isInited();
 	static void init();
 	static void deinit();
+	static void setAutoDeinit(bool status);
 
 	static const char* getFilePath();
 	static bool isOpened();
@@ -18,6 +19,8 @@ public:
 
 private:
 	constexpr static size_t FrameBufferLength = 8192;
+
+	EXT_RAM_BSS_ATTR static bool autoDeinit;
 
 	EXT_RAM_BSS_ATTR static char path[256];
 	EXT_RAM_BSS_ATTR static MP3* mp3Loader;
