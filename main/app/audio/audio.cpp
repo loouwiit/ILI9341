@@ -163,8 +163,12 @@ TickType_t AppAudio::deamonTask(void* param)
 		{
 			if (!AudioServer::isInited())
 				AudioServer::init();
-			AudioServer::openFile(AudioServer::getFilePath());
-			self.audioOpened = AudioServer::isOpened();
+			auto path = AudioServer::getFilePath();
+			if (path[0] != '\0')
+			{
+				AudioServer::openFile(path);
+				self.audioOpened = AudioServer::isOpened();
+			}
 		}
 	}
 
