@@ -4,17 +4,17 @@
 class AudioServer
 {
 public:
+	static void pause();
+	static void resume();
 	static bool isPaused();
-	static void turnOff();
-	static void turnOn();
 
 	static bool isInited();
 	static void init();
 	static void deinit();
 
-	static const char* getPlayingPath();
-	static bool isPlaying();
-	static void play(const char* path);
+	static const char* getFilePath();
+	static bool isOpened();
+	static void openFile(const char* path);
 
 private:
 	constexpr static size_t FrameBufferLength = 8192;

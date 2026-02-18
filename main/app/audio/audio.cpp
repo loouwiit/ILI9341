@@ -19,7 +19,7 @@ void AppAudio::init()
 	title.clickCallbackParam = this;
 	title.releaseCallback = [](Finger&, void* param) { auto& self = *(AppAudio*)param; self.changeAppCallback(nullptr); };
 
-	auto filePointer = AudioServer::getPlayingPath();
+	auto filePointer = AudioServer::getFilePath();
 	auto now = filePointer;
 	while (*now != '\0') now++;
 	while (*now != '/' && *now != '\\' && now >= filePointer) now--;
@@ -46,7 +46,8 @@ void AppAudio::init()
 			self.newAppCallback(appExplorer);
 		};
 
-	pause();
+	updatePauseStatus();
+	pauseText.computeSize();
 	pauseText.clickCallbackParam = this;
 	pauseText.releaseCallback = [](Finger&, void* param)
 		{
@@ -73,10 +74,10 @@ void AppAudio::playAudio(const char* path)
 
 	if (!AudioServer::isInited())
 		AudioServer::init();
-	AudioServer::play(path);
+	AudioServer::openFile(path);
 	resume();
 
-	auto filePointer = AudioServer::getPlayingPath();
+	auto filePointer = AudioServer::getFilePath();
 	auto now = filePointer;
 	while (*now != '\0') now++;
 	while (*now != '/' && *now != '\\' && now >= filePointer) now--;
@@ -85,8 +86,24 @@ void AppAudio::playAudio(const char* path)
 	audioFileText.computeSize();
 }
 
+void AppAudio::updatePauseStatus()
+{
+	if (!AudioServer::isOpened())
+	{
+		pauseText.text = "|>";
+		return;
+	}
+
+	if (AudioServer::isPaused())
+		pauseText.text = "|>";
+	else pauseText.text = "||";
+}
+
 void AppAudio::switchPause()
 {
+	if (!AudioServer::isOpened())
+		return;
+
 	if (AudioServer::isPaused())
 		resume();
 	else pause();
@@ -94,14 +111,12 @@ void AppAudio::switchPause()
 
 void AppAudio::pause()
 {
-	AudioServer::turnOff();
-	pauseText.text = "|>";
-	pauseText.computeSize();
+	AudioServer::pause();
+	updatePauseStatus();
 }
 
 void AppAudio::resume()
 {
-	AudioServer::turnOn();
-	pauseText.text = "||";
-	pauseText.computeSize();
+	AudioServer::resume();
+	updatePauseStatus();
 }

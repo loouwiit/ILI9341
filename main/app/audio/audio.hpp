@@ -34,9 +34,10 @@ private:
 	char audioFileBuffer[256]{};
 	LCD::Text audioFileText{ audioText.position + Vector2s{(short)audioText.computeSize().x, 0}, audioFileBuffer, TextSize, LCD::Color::White, BackgroundColor };
 
-	LCD::Text pauseText{ audioText.position + Vector2s{0,(short)(audioText.computeSize().y + GapSize)}, "pause:error", TextSize, LCD::Color::White, BackgroundColor };
+	LCD::Text pauseText{ audioText.position + Vector2s{0,(short)(audioText.computeSize().y + GapSize)}, "|>", TextSize, LCD::Color::White, BackgroundColor };
 
 	void playAudio(const char* path);
+	void updatePauseStatus();
 	void switchPause();
 	void pause();
 	void resume();

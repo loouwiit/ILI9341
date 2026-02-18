@@ -16,12 +16,7 @@ TaskHandle_t AudioServer::audioServerHandle{};
 StackType_t* AudioServer::audioServerStack{};
 StaticTask_t* AudioServer::audioServerTask{}; // must in internal ram
 
-bool AudioServer::isPaused()
-{
-	return audioPause;
-}
-
-void AudioServer::turnOff()
+void AudioServer::pause()
 {
 	audioPause = true;
 	SD.setMode(GPIO::Mode::GPIO_MODE_OUTPUT);
@@ -30,12 +25,17 @@ void AudioServer::turnOff()
 		iis.stop();
 }
 
-void AudioServer::turnOn()
+void AudioServer::resume()
 {
 	SD.setMode(GPIO::Mode::GPIO_MODE_DISABLE);
 	audioPause = false;
 	vTaskResume(audioServerHandle);
 	iis.start();
+}
+
+bool AudioServer::isPaused()
+{
+	return audioPause;
 }
 
 bool AudioServer::isInited()
@@ -50,7 +50,7 @@ void AudioServer::init()
 	mp3Loader = new MP3{};
 
 	GPIO{ GPIO::GPIO_NUM::GPIO_NUM_41, GPIO::Mode::GPIO_MODE_OUTPUT } = true; // gain
-	turnOff();
+	pause();
 
 	iis = { GPIO_NUM_38, GPIO_NUM_39, GPIO_NUM_40, 44100, i2s_data_bit_width_t::I2S_DATA_BIT_WIDTH_16BIT, i2s_slot_mode_t::I2S_SLOT_MODE_MONO };
 
@@ -69,7 +69,7 @@ void AudioServer::init()
 		audioServerStack = nullptr;
 		delete[] frameBuffer;
 		frameBuffer = nullptr;
-		turnOff();
+		pause();
 		GPIO{ GPIO::GPIO_NUM::GPIO_NUM_41 }.setMode(GPIO::Mode::GPIO_MODE_DISABLE); // gain
 		iis = {};
 		delete mp3Loader;
@@ -83,20 +83,20 @@ void AudioServer::deinit()
 	audioServerHandle = nullptr;
 }
 
-const char* AudioServer::getPlayingPath()
+const char* AudioServer::getFilePath()
 {
 	return path;
 }
 
-bool AudioServer::isPlaying()
+bool AudioServer::isOpened()
 {
-	return isInited() && mp3Loader->isOpen() && !audioPause;
+	return isInited() && mp3Loader->isOpen();
 }
 
-void AudioServer::play(const char* path)
+void AudioServer::openFile(const char* path)
 {
 	ESP_LOGI(TAG, "open %s", path);
-	turnOff();
+	pause();
 	strcpy(AudioServer::path, path);
 	if (!mp3Loader->open(path)) return;
 
@@ -145,12 +145,12 @@ void AudioServer::serverMain(void*)
 
 		// finish
 		mp3Loader->close();
-		turnOff();
+		pause();
 	}
 
 	// delete self
 
-	turnOff();
+	pause();
 	GPIO{ GPIO::GPIO_NUM::GPIO_NUM_41 }.setMode(GPIO::Mode::GPIO_MODE_DISABLE); // gain
 
 	iis = {};
