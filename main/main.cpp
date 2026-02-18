@@ -13,6 +13,8 @@
 #include "storge/mem.hpp"
 #include "storge/sd.hpp"
 
+#include "app/audio/audioServer.hpp"
+
 #define ChangeAppLog false
 
 extern "C" void app_main(void);
@@ -236,6 +238,7 @@ void app_main(void)
 	spi = SPI{ SPI2_HOST, {GPIO_NUM_45}, {GPIO_NUM_13}, {GPIO_NUM_14} };
 	lcd = LCD{ spi, {GPIO_NUM_21}, {GPIO_NUM_47}, {GPIO_NUM_48}, &screenBuffer };
 
+	AudioServer::turnOff();
 	Task::init();
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	nvsInit();

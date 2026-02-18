@@ -11,7 +11,7 @@ class IIS
 public:
 	IIS() = default;
 	IIS(IIS&& move) { operator=(std::move(move)); }
-	IIS& operator=(IIS&& move) { std::swap(move.tx_handle, tx_handle); return *this; }
+	IIS& operator=(IIS&& move) { std::swap(move.tx_handle, tx_handle); std::swap(move.std_cfg, std_cfg); return *this; }
 
 	IIS(GPIO BCLK, GPIO DOUT, GPIO WS, uint32_t sampleRate, i2s_data_bit_width_t bitWidth)
 	{
@@ -60,6 +60,16 @@ public:
 		i2s_channel_disable(tx_handle);
 		std_cfg.clk_cfg.sample_rate_hz = sampleRate;
 		i2s_channel_reconfig_std_clock(tx_handle, &std_cfg.clk_cfg);
+		i2s_channel_enable(tx_handle);
+	}
+
+	void changeBitWidth(i2s_data_bit_width_t bit_width)
+	{
+		i2s_channel_disable(tx_handle);
+		std_cfg.slot_cfg.data_bit_width = bit_width;
+		std_cfg.slot_cfg.ws_width = bit_width;
+		i2s_channel_reconfig_std_slot(tx_handle, &std_cfg.slot_cfg);
+		i2s_channel_enable(tx_handle);
 	}
 
 	size_t transmit(const void* buffer, size_t size, uint32_t timeOut = 1000)

@@ -8,8 +8,6 @@
 
 void AppAudio::init()
 {
-	if (AudioServer::isPlaying()) return;
-
 	auto* appExplorer = new AppExplorer{ lcd, touch, changeAppCallback, newAppCallback };
 	appExplorer->setTitleBuffer(AutoLnaguage{ "play audio", "播放音乐" });
 	appExplorer->callBackParam = appExplorer;
