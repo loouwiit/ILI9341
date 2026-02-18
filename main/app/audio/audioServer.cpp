@@ -112,7 +112,7 @@ void AudioServer::openFile(const char* path)
 	mp3Loader->load(frameBuffer, FrameBufferLength, &info);
 	mp3Loader->reset();
 
-	ESP_LOGI(TAG, "sample rate = %dHz, bits = %dbit, %d channal, bitRate = %dkbps", info.sample_rate, info.bits_per_sample, info.channel, info.bitrate / 1024);
+	ESP_LOGI(TAG, "sample rate = %dHz, bits = %dbit, %d channal, bitRate = %dkbps", info.sample_rate, info.bits_per_sample, info.channel, info.bitrate / 1000);
 
 	if (info.sample_rate == 0)
 	{
