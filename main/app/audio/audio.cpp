@@ -8,6 +8,8 @@
 
 void AppAudio::init()
 {
+	App::init();
+
 	contents[0] = &title;
 	contents[1] = &audioText;
 	contents[2] = &audioFileText;
@@ -19,12 +21,12 @@ void AppAudio::init()
 	title.clickCallbackParam = this;
 	title.releaseCallback = [](Finger&, void* param) { auto& self = *(AppAudio*)param; self.changeAppCallback(nullptr); };
 
-	auto filePointer = AudioServer::getFilePath();
-	auto now = filePointer;
+	strcpy(audioPathBuffer, AudioServer::getFilePath());
+	char* now = audioPathBuffer;
 	while (*now != '\0') now++;
-	while (*now != '/' && *now != '\\' && now >= filePointer) now--;
+	while (*now != '/' && *now != '\\' && now >= audioPathBuffer) now--;
 	now++;
-	strcpy(audioFileBuffer, now);
+	audioFileText.text = now;
 	audioFileText.computeSize();
 	audioFileText.clickCallbackParam = audioText.clickCallbackParam = this;
 	audioFileText.releaseCallback = audioText.releaseCallback = [](Finger&, void* param)
@@ -46,6 +48,8 @@ void AppAudio::init()
 			self.newAppCallback(appExplorer);
 		};
 
+	audioOpened = AudioServer::isInited(); // 假定上一次状态，从而激活deamon的reload
+	// 该任务应该由server完成，此处需要重构
 	updatePauseStatus();
 	pauseText.computeSize();
 	pauseText.clickCallbackParam = this;
@@ -54,6 +58,14 @@ void AppAudio::init()
 			auto& self = *(AppAudio*)param;
 			self.switchPause();
 		};
+
+	ESP_LOGI(TAG, "deamon started");
+	Task::addTask(deamonTask, "audio", this, 100);
+}
+
+void AppAudio::deinit()
+{
+	running = false;
 }
 
 void AppAudio::draw()
@@ -75,28 +87,31 @@ void AppAudio::playAudio(const char* path)
 	if (!AudioServer::isInited())
 		AudioServer::init();
 	AudioServer::openFile(path);
+	audioOpened = AudioServer::isOpened();
+	if (!audioOpened) return;
 	resume();
 
-	auto filePointer = AudioServer::getFilePath();
-	auto now = filePointer;
+	strcpy(audioPathBuffer, AudioServer::getFilePath());
+	char* now = audioPathBuffer;
 	while (*now != '\0') now++;
-	while (*now != '/' && *now != '\\' && now >= filePointer) now--;
+	while (*now != '/' && *now != '\\' && now >= audioPathBuffer) now--;
 	now++;
-	strcpy(audioFileBuffer, now);
+	audioFileText.text = now;
 	audioFileText.computeSize();
 }
 
 void AppAudio::updatePauseStatus()
 {
-	if (!AudioServer::isOpened())
+	if (AudioServer::isPaused() || !AudioServer::isOpened())
 	{
+		audioPaused = true;
 		pauseText.text = "|>";
-		return;
 	}
-
-	if (AudioServer::isPaused())
-		pauseText.text = "|>";
-	else pauseText.text = "||";
+	else
+	{
+		audioPaused = false;
+		pauseText.text = "||";
+	}
 }
 
 void AppAudio::switchPause()
@@ -119,4 +134,29 @@ void AppAudio::resume()
 {
 	AudioServer::resume();
 	updatePauseStatus();
+}
+
+TickType_t AppAudio::deamonTask(void* param)
+{
+	auto& self = *(AppAudio*)param;
+
+	if (!self.running)
+	{
+		self.deleteAble = true;
+		ESP_LOGI(TAG, "deamon stoped");
+		return Task::infinityTime;
+	}
+
+	auto paused = AudioServer::isPaused();
+	if (paused != self.audioPaused)
+		self.updatePauseStatus();
+
+	auto opened = AudioServer::isOpened();
+	if (opened != self.audioOpened)
+	{
+		AudioServer::openFile(AudioServer::getFilePath());
+		self.audioOpened = AudioServer::isOpened();
+	}
+
+	return 100;
 }
