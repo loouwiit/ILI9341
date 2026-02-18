@@ -85,12 +85,15 @@ void AppAudio::playAudio(const char* path)
 	if (path == nullptr)
 		return;
 
-	if (!AudioServer::isInited())
-		AudioServer::init();
-	AudioServer::openFile(path);
-	audioOpened = AudioServer::isOpened();
-	if (!audioOpened) return;
-	resume();
+	{
+		Lock lock{ deamonMutex };
+		if (!AudioServer::isInited())
+			AudioServer::init();
+		AudioServer::openFile(path);
+		audioOpened = AudioServer::isOpened();
+		if (!audioOpened) return;
+		resume();
+	}
 
 	strcpy(audioPathBuffer, AudioServer::getFilePath());
 	char* now = audioPathBuffer;
@@ -153,13 +156,16 @@ TickType_t AppAudio::deamonTask(void* param)
 	if (paused != self.audioPaused)
 		self.updatePauseStatus();
 
-	auto opened = AudioServer::isOpened();
-	if (opened != self.audioOpened)
 	{
-		if (!AudioServer::isInited())
-			AudioServer::init();
-		AudioServer::openFile(AudioServer::getFilePath());
-		self.audioOpened = AudioServer::isOpened();
+		Lock lock{ self.deamonMutex };
+		auto opened = AudioServer::isOpened();
+		if (opened != self.audioOpened)
+		{
+			if (!AudioServer::isInited())
+				AudioServer::init();
+			AudioServer::openFile(AudioServer::getFilePath());
+			self.audioOpened = AudioServer::isOpened();
+		}
 	}
 
 	return 100;

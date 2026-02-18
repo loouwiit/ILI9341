@@ -46,5 +46,6 @@ private:
 	void pause();
 	void resume();
 
+	Mutex deamonMutex{};
 	static TickType_t deamonTask(void* param);
 };
