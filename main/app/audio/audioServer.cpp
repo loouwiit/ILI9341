@@ -4,6 +4,7 @@
 
 constexpr static auto TAG = "audioServer";
 
+char AudioServer::path[256]{};
 MP3* AudioServer::mp3Loader{};
 uint8_t* AudioServer::frameBuffer{};
 
@@ -14,6 +15,11 @@ bool AudioServer::audioPause = true;
 TaskHandle_t AudioServer::audioServerHandle{};
 StackType_t* AudioServer::audioServerStack{};
 StaticTask_t* AudioServer::audioServerTask{}; // must in internal ram
+
+bool AudioServer::isPaused()
+{
+	return audioPause;
+}
 
 void AudioServer::turnOff()
 {
@@ -77,6 +83,11 @@ void AudioServer::deinit()
 	audioServerHandle = nullptr;
 }
 
+const char* AudioServer::getPlayingPath()
+{
+	return path;
+}
+
 bool AudioServer::isPlaying()
 {
 	return isInited() && mp3Loader->isOpen() && !audioPause;
@@ -86,6 +97,7 @@ void AudioServer::play(const char* path)
 {
 	ESP_LOGI(TAG, "open %s", path);
 	turnOff();
+	strcpy(AudioServer::path, path);
 	if (!mp3Loader->open(path)) return;
 
 	// load info
@@ -104,8 +116,6 @@ void AudioServer::play(const char* path)
 	iis.setSampleRate(info.sample_rate);
 	iis.setBitWidth((i2s_data_bit_width_t)info.bits_per_sample);
 	iis.setSlotMode(info.channel == 2 ? i2s_slot_mode_t::I2S_SLOT_MODE_STEREO : i2s_slot_mode_t::I2S_SLOT_MODE_MONO);
-
-	turnOn();
 }
 
 void AudioServer::serverMain(void*)

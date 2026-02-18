@@ -4,6 +4,7 @@
 class AudioServer
 {
 public:
+	static bool isPaused();
 	static void turnOff();
 	static void turnOn();
 
@@ -11,12 +12,14 @@ public:
 	static void init();
 	static void deinit();
 
+	static const char* getPlayingPath();
 	static bool isPlaying();
 	static void play(const char* path);
 
 private:
 	constexpr static size_t FrameBufferLength = 8192;
 
+	EXT_RAM_BSS_ATTR static char path[256];
 	EXT_RAM_BSS_ATTR static MP3* mp3Loader;
 	EXT_RAM_BSS_ATTR static uint8_t* frameBuffer;
 
