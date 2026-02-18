@@ -119,7 +119,7 @@ private:
 
 		length += audioFile.read(rawBuffer + length, std::min(RawBufferLength - length, (unsigned long)LoadMaxLength));
 
-		ESP_LOGI(TAG, "buffer loaded from %d to %d", rawIn.len, length);
+		// ESP_LOGI(TAG, "buffer loaded from %d to %d", rawIn.len, length);
 
 		rawIn.buffer = rawBuffer;
 		rawIn.len = length;
