@@ -37,7 +37,6 @@ public:
 			},
 		};
 		i2s_channel_init_std_mode(tx_handle, &std_cfg);
-		i2s_channel_enable(tx_handle);
 	}
 
 	~IIS()
@@ -48,6 +47,30 @@ public:
 		tx_handle = nullptr;
 	}
 
+	bool isInited()
+	{
+		return tx_handle != nullptr;
+	}
+
+	bool isStarted()
+	{
+		return enabled;
+	}
+
+	void start()
+	{
+		if (isStarted()) return;
+		enabled = true;
+		i2s_channel_enable(tx_handle);
+	}
+
+	void stop()
+	{
+		if (!isStarted()) return;
+		enabled = false;
+		i2s_channel_disable(tx_handle);
+	}
+
 	void setCallback(i2s_isr_callback_t callback, void* param)
 	{
 		i2s_event_callbacks_t cbs{};
@@ -55,21 +78,23 @@ public:
 		i2s_channel_register_event_callback(tx_handle, &cbs, param);
 	}
 
-	void changeSampleRate(uint32_t sampleRate)
+	void setSampleRate(uint32_t sampleRate)
 	{
-		i2s_channel_disable(tx_handle);
 		std_cfg.clk_cfg.sample_rate_hz = sampleRate;
 		i2s_channel_reconfig_std_clock(tx_handle, &std_cfg.clk_cfg);
-		i2s_channel_enable(tx_handle);
 	}
 
-	void changeBitWidth(i2s_data_bit_width_t bit_width)
+	void setBitWidth(i2s_data_bit_width_t bit_width)
 	{
-		i2s_channel_disable(tx_handle);
 		std_cfg.slot_cfg.data_bit_width = bit_width;
 		std_cfg.slot_cfg.ws_width = bit_width;
 		i2s_channel_reconfig_std_slot(tx_handle, &std_cfg.slot_cfg);
-		i2s_channel_enable(tx_handle);
+	}
+
+	void setSlotMode(i2s_slot_mode_t mono_or_stereo)
+	{
+		std_cfg.slot_cfg.slot_mode = mono_or_stereo;
+		i2s_channel_reconfig_std_slot(tx_handle, &std_cfg.slot_cfg);
 	}
 
 	size_t transmit(const void* buffer, size_t size, uint32_t timeOut = 1000)
@@ -84,4 +109,5 @@ public:
 private:
 	i2s_chan_handle_t tx_handle{};
 	i2s_std_config_t std_cfg{};
+	bool enabled = false;
 };

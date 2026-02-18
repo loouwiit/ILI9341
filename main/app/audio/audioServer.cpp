@@ -20,14 +20,16 @@ void AudioServer::turnOff()
 	audioPause = true;
 	SD.setMode(GPIO::Mode::GPIO_MODE_OUTPUT);
 	SD = false;
+	if (iis.isInited())
+		iis.stop();
 }
 
 void AudioServer::turnOn()
 {
 	SD.setMode(GPIO::Mode::GPIO_MODE_DISABLE);
 	audioPause = false;
-	if (audioServerHandle != nullptr)
-		vTaskResume(audioServerHandle);
+	vTaskResume(audioServerHandle);
+	iis.start();
 }
 
 bool AudioServer::isInited()
@@ -99,8 +101,9 @@ void AudioServer::play(const char* path)
 		mp3Loader->close();
 	}
 
-	iis.changeSampleRate(info.sample_rate);
-	iis.changeBitWidth(info.channel == 2 ? i2s_data_bit_width_t::I2S_DATA_BIT_WIDTH_32BIT : i2s_data_bit_width_t::I2S_DATA_BIT_WIDTH_16BIT);
+	iis.setSampleRate(info.sample_rate);
+	iis.setBitWidth((i2s_data_bit_width_t)info.bits_per_sample);
+	iis.setSlotMode(info.channel == 2 ? i2s_slot_mode_t::I2S_SLOT_MODE_STEREO : i2s_slot_mode_t::I2S_SLOT_MODE_MONO);
 
 	turnOn();
 }
