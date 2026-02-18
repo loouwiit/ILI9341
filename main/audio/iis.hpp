@@ -13,7 +13,7 @@ public:
 	IIS(IIS&& move) { operator=(std::move(move)); }
 	IIS& operator=(IIS&& move) { std::swap(move.tx_handle, tx_handle); std::swap(move.std_cfg, std_cfg); return *this; }
 
-	IIS(GPIO BCLK, GPIO DOUT, GPIO WS, uint32_t sampleRate, i2s_data_bit_width_t bitWidth)
+	IIS(GPIO BCLK, GPIO DOUT, GPIO WS, uint32_t sampleRate, i2s_data_bit_width_t bitWidth, i2s_slot_mode_t mono_or_stereo)
 	{
 		i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_AUTO, I2S_ROLE_MASTER);
 		// chan_cfg.allow_pd = true; // E (10696) i2s_common: i2s_new_channel(968): register back up is not supported
@@ -22,7 +22,7 @@ public:
 
 		std_cfg.clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(sampleRate);
 
-		std_cfg.slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(bitWidth, I2S_SLOT_MODE_MONO);
+		std_cfg.slot_cfg = I2S_STD_MSB_SLOT_DEFAULT_CONFIG(bitWidth, mono_or_stereo);
 
 		std_cfg.gpio_cfg = {
 			.mclk = I2S_GPIO_UNUSED,
