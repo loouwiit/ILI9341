@@ -3,6 +3,7 @@
 # readme缺失
 * 中文支持
 * WS2812驱动
+* 播放mp3
 
 # 功能
 * wifi nat功能
