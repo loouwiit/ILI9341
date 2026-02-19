@@ -14,6 +14,7 @@ void AppAudio::init()
 	contents[1] = &audioText;
 	contents[2] = &audioFileText;
 	contents[3] = &pauseText;
+	contents[4] = &endButton;
 
 	title.position = { LCD::ScreenSize.x / 2, 0 };
 	title.position.x -= title.computeSize().x / 2;
@@ -52,12 +53,28 @@ void AppAudio::init()
 	audioOpened = true; // 假定上一次状态，从而激活deamon的reload
 	// 该任务应该由server完成，此处需要重构
 	updatePauseStatus();
+	pauseText.position -= pauseText.computeSize() / 2;
 	pauseText.computeSize();
 	pauseText.clickCallbackParam = this;
 	pauseText.releaseCallback = [](Finger&, void* param)
 		{
 			auto& self = *(AppAudio*)param;
 			self.switchPause();
+		};
+
+	endButton[0] = &endButtonBackground;
+	endButton[1] = &endButtonFrontground;
+
+	endButton.start -= endButton.getSize() / 2;
+
+	endButton.start.x += pauseText.getSize().x; // endButton.end未同步修改
+	endButton.start.x += GapSize;
+
+	endButtonBackground.clickCallbackParam = this;
+	endButtonBackground.releaseCallback = [](Finger&, void* param)
+		{
+			auto& self = *(AppAudio*)param;
+			self.end();
 		};
 
 	ESP_LOGI(TAG, "deamon started");
@@ -141,6 +158,15 @@ void AppAudio::resume()
 	updatePauseStatus();
 }
 
+void AppAudio::end()
+{
+	Lock lock{ deamonMutex };
+	audioPathBuffer[0] = '\0';
+	audioFileText.text = audioPathBuffer;
+	AudioServer::close();
+	audioOpened = false;
+}
+
 TickType_t AppAudio::deamonTask(void* param)
 {
 	auto& self = *(AppAudio*)param;
@@ -148,7 +174,9 @@ TickType_t AppAudio::deamonTask(void* param)
 	if (!self.running)
 	{
 		self.deleteAble = true;
-		AudioServer::setAutoDeinit(true);
+		if (AudioServer::isInited() && !AudioServer::isOpened())
+			AudioServer::deinit();
+		else AudioServer::setAutoDeinit(true);
 		ESP_LOGI(TAG, "deamon stoped");
 		return Task::infinityTime;
 	}

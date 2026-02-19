@@ -82,6 +82,7 @@ void AudioServer::init()
 
 void AudioServer::deinit()
 {
+	vTaskResume(audioServerHandle);
 	audioServerHandle = nullptr;
 }
 
@@ -123,6 +124,14 @@ void AudioServer::openFile(const char* path)
 	iis.setSampleRate(info.sample_rate);
 	iis.setBitWidth((i2s_data_bit_width_t)info.bits_per_sample);
 	iis.setSlotMode(info.channel == 2 ? i2s_slot_mode_t::I2S_SLOT_MODE_STEREO : i2s_slot_mode_t::I2S_SLOT_MODE_MONO);
+}
+
+void AudioServer::close()
+{
+	ESP_LOGI(TAG, "close file");
+	AudioServer::path[0] = '\0';
+	mp3Loader->close();
+	pause();
 }
 
 void AudioServer::serverMain(void*)

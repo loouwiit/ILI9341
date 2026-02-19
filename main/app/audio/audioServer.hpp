@@ -16,6 +16,7 @@ public:
 	static const char* getFilePath();
 	static bool isOpened();
 	static void openFile(const char* path);
+	static void close();
 
 private:
 	constexpr static size_t FrameBufferLength = 8192;
