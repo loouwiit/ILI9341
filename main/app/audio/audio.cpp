@@ -71,6 +71,7 @@ void AppAudio::deinit()
 
 void AppAudio::draw()
 {
+	lcd.clear();
 	lcd.draw(contents);
 }
 
