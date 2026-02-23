@@ -110,7 +110,8 @@ void AudioServer::openFile(const char* path)
 
 	// load info
 	esp_audio_dec_info_t info{};
-	mp3Loader->load(frameBuffer, FrameBufferLength, &info);
+	mp3Loader->loadBuffer();
+	mp3Loader->decode(frameBuffer, FrameBufferLength, &info);
 	mp3Loader->reset();
 
 	ESP_LOGI(TAG, "sample rate = %dHz, bits = %dbit, %d channal, bitRate = %dkbps", info.sample_rate, info.bits_per_sample, info.channel, info.bitrate / 1000);
@@ -154,7 +155,8 @@ void AudioServer::serverMain(void*)
 		{
 			if (audioPause) vTaskSuspend(nullptr);
 
-			auto size = mp3Loader->load(frameBuffer, FrameBufferLength);
+			mp3Loader->loadBuffer();
+			auto size = mp3Loader->decode(frameBuffer, FrameBufferLength);
 			if (size == 0) break;
 			iis.transmit(frameBuffer, size, portMAX_DELAY);
 		}
