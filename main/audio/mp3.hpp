@@ -64,11 +64,10 @@ public:
 		return audioIn;
 	}
 
-	using LoadSizePresets = AudioBuffer::LoadSizePresets;
-
-	void loadBuffer(size_t loadThreshold = 0, size_t loadMaxSize = LoadSizePresets::Large)
+	void loadBuffer(size_t loadSizeMax = 4096)
 	{
-		audioIn.tryLoad(loadThreshold, loadMaxSize);
+		if (audioIn.tryLoad(loadSizeMax) != 0)
+			audioIn.update();
 	}
 
 	size_t decode(void* buffer, size_t bufferSize, esp_audio_dec_info_t* info = nullptr)

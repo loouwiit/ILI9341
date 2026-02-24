@@ -4,21 +4,27 @@
 
 #include "storge/fat.hpp"
 
+#include "mutex.hpp"
+
 class AudioBuffer
 {
 public:
-	AudioBuffer(size_t bufferSize = 4096 + 512) : rawBuffer{ new uint8_t[bufferSize] }, rawBufferLength{ bufferSize } {}
+	AudioBuffer(size_t bufferSize = 4096) : bufferCapacity{ bufferSize }, fileBuffer{ new uint8_t[bufferSize] }, rawBuffer{ new uint8_t[bufferSize] } {}
 
 	~AudioBuffer()
 	{
+		bufferCapacity = 0;
+
+		delete[] fileBuffer;
+		fileBuffer = nullptr;
+
 		delete[] rawBuffer;
 		rawIn.buffer = rawBuffer = nullptr;
-		rawBufferLength = 0;
 	}
 
 	auto getBufferSize()
 	{
-		return rawBufferLength;
+		return bufferCapacity;
 	}
 
 	bool isOpen()
@@ -33,6 +39,7 @@ public:
 			ESP_LOGE(TAG, "open %s failed", path);
 			return false;
 		}
+		fileBufferSize = 0;
 		rawIn.len = 0;
 		return true;
 	}
@@ -64,45 +71,74 @@ public:
 		return rawIn;
 	}
 
-	class LoadSizePresets {
-	public:
-		constexpr static size_t Small = 512;
-		constexpr static size_t Medium = 2048;
-		constexpr static size_t Large = 4096;
-
-		constexpr static size_t Infinity = -1;
-	};
-
-	void tryLoad(size_t loadThreshold, size_t loadMaxSize)
+	size_t tryLoad(size_t loadSizeMax = 4096)
 	{
-		if (loadThreshold < rawIn.consumed)
-			loadThreshold = rawIn.consumed;
-		if (rawIn.len > loadThreshold) return;
+		if (fileBufferSize != 0) return 0;
+		// fileBufferSize == 0, update不会发生，操作fileBuffer安全
+		fileBufferStart = 0;
+		return fileBufferSize = audioFile.read(fileBuffer, std::min(bufferCapacity, loadSizeMax));
+	}
 
-		if (audioFile.eof()) return;
+	void update()
+	{
+		if (rawIn.len > rawIn.consumed) return; // 无需加载
 
-		auto length = rawIn.len;
-		memcpy(rawBuffer, rawIn.buffer, length);
+		if (fileBufferSize == 0) return; // 无法加载
 
-		length += audioFile.read(rawBuffer + length, std::min<size_t>(rawBufferLength - length, loadMaxSize));
+		if (rawIn.len > fileBufferStart) // copy加载
+		{
+			Lock lock{ bufferMutex };
+			memcpy(rawBuffer, rawIn.buffer, rawIn.len);
+			auto copySize = rawIn.consumed - rawIn.len;
+			memcpy(rawBuffer + rawIn.len, fileBuffer, copySize);
+			fileBufferStart += copySize;
+			fileBufferSize -= copySize;
+			rawIn.len += copySize;
+			rawIn.buffer = rawBuffer;
 
-		// ESP_LOGI(TAG, "buffer loaded from %d to %d", rawIn.len, length);
+			ESP_LOGI(TAG, "buffer copyed to %d", rawIn.len);
+		}
+		else // swap加载
+		{
+			Lock lock{ bufferMutex };
 
-		rawIn.buffer = rawBuffer;
-		rawIn.len = length;
+			fileBufferStart -= rawIn.len;
+			fileBufferSize += rawIn.len;
+
+			memcpy(fileBuffer + fileBufferStart, rawIn.buffer, rawIn.len);
+
+			rawIn.buffer = fileBuffer + fileBufferStart;
+			rawIn.len = fileBufferSize;
+			std::swap(rawBuffer, fileBuffer);
+			fileBufferStart = 0;
+			fileBufferSize = 0;
+
+			ESP_LOGI(TAG, "buffer swaped to %d", rawIn.len);
+		}
 	}
 
 	void consume(size_t consumed)
 	{
+		bufferMutex.lock();
 		rawIn.len -= consumed;
 		rawIn.buffer += consumed;
+		bufferMutex.unlock();
+
+		update();
 	}
 
 private:
 	constexpr static char TAG[] = "AudioBuffer";
 
 	IFile audioFile{};
+	size_t bufferCapacity{};
+
+	Mutex bufferMutex{};
+
+	uint8_t* fileBuffer = nullptr;
+	size_t fileBufferStart{};
+	size_t fileBufferSize{};
+
 	uint8_t* rawBuffer = nullptr;
-	size_t rawBufferLength{};
 	esp_audio_dec_in_raw_t rawIn{};
 };
