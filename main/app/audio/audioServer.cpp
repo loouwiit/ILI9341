@@ -104,7 +104,7 @@ void AudioServer::openFile(const char* path)
 {
 	ESP_LOGI(TAG, "open %s", path);
 	pause();
-	while (!isPaused()) vTaskDelay(1);
+	while (isOpened() && !isPaused()) vTaskDelay(1);
 	strcpy(AudioServer::path, path);
 	if (!mp3Loader->open(path)) return;
 
