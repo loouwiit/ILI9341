@@ -169,7 +169,7 @@ void AudioServer::serverMain(void*)
 			while (true)
 			{
 				// ESP_LOGI(TAG, "try transmit %d", size);
-				auto transmitedSize = iis.transmit(pointer, size, 0);
+				auto transmitedSize = iis.transmit(pointer, size, 1);
 				size -= transmitedSize;
 				pointer += transmitedSize;
 				if (size == 0) break;
