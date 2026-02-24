@@ -14,6 +14,7 @@ GPIO AudioServer::SD{ GPIO::GPIO_NUM::GPIO_NUM_42, GPIO::Mode::GPIO_MODE_DISABLE
 IIS AudioServer::iis{};
 
 bool AudioServer::audioPause = true;
+bool AudioServer::serverPaused = false;
 TaskHandle_t AudioServer::audioServerHandle{};
 StackType_t* AudioServer::audioServerStack{};
 StaticTask_t* AudioServer::audioServerTask{}; // must in internal ram
@@ -23,21 +24,19 @@ void AudioServer::pause()
 	audioPause = true;
 	SD.setMode(GPIO::Mode::GPIO_MODE_OUTPUT);
 	SD = false;
-	if (iis.isInited())
-		iis.stop();
 }
 
 void AudioServer::resume()
 {
 	SD.setMode(GPIO::Mode::GPIO_MODE_DISABLE);
-	audioPause = false;
+	serverPaused = audioPause = false;
 	vTaskResume(audioServerHandle);
 	iis.start();
 }
 
 bool AudioServer::isPaused()
 {
-	return audioPause;
+	return serverPaused;
 }
 
 bool AudioServer::isInited()
@@ -105,6 +104,7 @@ void AudioServer::openFile(const char* path)
 {
 	ESP_LOGI(TAG, "open %s", path);
 	pause();
+	while (!isPaused()) vTaskDelay(1);
 	strcpy(AudioServer::path, path);
 	if (!mp3Loader->open(path)) return;
 
@@ -139,7 +139,7 @@ void AudioServer::serverMain(void*)
 {
 	constexpr static auto TAG = "audioServer";
 
-	audioPause = true;
+	serverPaused = audioPause = true;
 	vTaskSuspend(nullptr); // 挂起自己等待唤醒
 
 	ESP_LOGI(TAG, "started");
@@ -153,12 +153,29 @@ void AudioServer::serverMain(void*)
 		// load & decode & output
 		while (true)
 		{
-			if (audioPause) vTaskSuspend(nullptr);
+			if (audioPause)
+			{
+				if (iis.isInited())
+					iis.stop();
+				serverPaused = true;
+				vTaskSuspend(nullptr);
+			}
 
 			mp3Loader->loadBuffer();
 			auto size = mp3Loader->decode(frameBuffer, FrameBufferLength);
 			if (size == 0) break;
-			iis.transmit(frameBuffer, size, portMAX_DELAY);
+
+			auto* pointer = frameBuffer;
+			while (true)
+			{
+				ESP_LOGI(TAG, "try transmit %d", size);
+				auto transmitedSize = iis.transmit(pointer, size, 0);
+				size -= transmitedSize;
+				pointer += transmitedSize;
+				if (size == 0) break;
+				ESP_LOGI(TAG, "remain %d", size);
+				mp3Loader->loadBuffer(AudioBuffer::LoadStrategy::Radical); // 未发送完全，有空闲时间进行加载
+			}
 		}
 
 		// finish

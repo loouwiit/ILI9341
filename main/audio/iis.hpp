@@ -101,7 +101,10 @@ public:
 	{
 		size_t written = 0;
 		auto ret = i2s_channel_write(tx_handle, buffer, size, &written, timeOut);
-		ESP_ERROR_CHECK(ret);
+
+		if (ret != ESP_OK &&
+			ret != ESP_ERR_TIMEOUT)
+			ESP_ERROR_CHECK(ret);
 
 		return written;
 	}

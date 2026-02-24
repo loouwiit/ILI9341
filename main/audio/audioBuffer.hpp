@@ -61,9 +61,17 @@ public:
 		return rawIn;
 	}
 
-	void tryLoad()
+	enum class LoadStrategy
 	{
-		if (rawIn.len > rawIn.consumed) return;
+		Conservative,
+		Radical,
+
+		Adaptive = Conservative
+	};
+
+	void tryLoad(LoadStrategy strategy)
+	{
+		if (strategy == LoadStrategy::Conservative && rawIn.len > rawIn.consumed) return;
 
 		if (audioFile.eof()) return;
 
@@ -72,7 +80,7 @@ public:
 
 		length += audioFile.read(rawBuffer + length, std::min(rawBufferLength - length, (unsigned long)LoadMaxLength));
 
-		// ESP_LOGI(TAG, "buffer loaded from %d to %d", rawIn.len, length);
+		ESP_LOGI(TAG, "buffer loaded from %d to %d", rawIn.len, length);
 
 		rawIn.buffer = rawBuffer;
 		rawIn.len = length;

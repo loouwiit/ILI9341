@@ -31,6 +31,7 @@ private:
 	EXT_RAM_BSS_ATTR static IIS iis;
 
 	EXT_RAM_BSS_ATTR static bool audioPause;
+	EXT_RAM_BSS_ATTR static bool serverPaused;
 	EXT_RAM_BSS_ATTR static TaskHandle_t audioServerHandle;
 	EXT_RAM_BSS_ATTR static StackType_t* audioServerStack;
 	EXT_RAM_BSS_ATTR static StaticTask_t* audioServerTask; // must in internal ram
