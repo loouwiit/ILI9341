@@ -110,7 +110,7 @@ void AudioServer::openFile(const char* path)
 
 	// load info
 	esp_audio_dec_info_t info{};
-	mp3Loader->loadBuffer();
+	mp3Loader->loadBuffer(0, MP3::LoadSizePresets::Medium);
 	mp3Loader->decode(frameBuffer, FrameBufferLength, &info);
 	mp3Loader->reset();
 
@@ -168,13 +168,13 @@ void AudioServer::serverMain(void*)
 			auto* pointer = frameBuffer;
 			while (true)
 			{
-				ESP_LOGI(TAG, "try transmit %d", size);
+				// ESP_LOGI(TAG, "try transmit %d", size);
 				auto transmitedSize = iis.transmit(pointer, size, 0);
 				size -= transmitedSize;
 				pointer += transmitedSize;
 				if (size == 0) break;
-				ESP_LOGI(TAG, "remain %d", size);
-				mp3Loader->loadBuffer(AudioBuffer::LoadStrategy::Radical); // 未发送完全，有空闲时间进行加载
+				// ESP_LOGI(TAG, "remain %d", size);
+				mp3Loader->loadBuffer(mp3Loader->getBuffer().getBufferSize() - MP3::LoadSizePresets::Small, MP3::LoadSizePresets::Small); // 未发送完全，有空闲时间进行加载
 			}
 		}
 

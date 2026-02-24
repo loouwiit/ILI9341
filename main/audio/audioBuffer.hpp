@@ -7,15 +7,18 @@
 class AudioBuffer
 {
 public:
-	constexpr static size_t LoadMaxLength = 4 * 1024;
-
-	AudioBuffer(size_t bufferSize = LoadMaxLength + 512) : rawBuffer{ new uint8_t[bufferSize] }, rawBufferLength{ bufferSize } {}
+	AudioBuffer(size_t bufferSize = 4096 + 512) : rawBuffer{ new uint8_t[bufferSize] }, rawBufferLength{ bufferSize } {}
 
 	~AudioBuffer()
 	{
 		delete[] rawBuffer;
 		rawIn.buffer = rawBuffer = nullptr;
 		rawBufferLength = 0;
+	}
+
+	auto getBufferSize()
+	{
+		return rawBufferLength;
 	}
 
 	bool isOpen()
@@ -61,26 +64,29 @@ public:
 		return rawIn;
 	}
 
-	enum class LoadStrategy
-	{
-		Conservative,
-		Radical,
+	class LoadSizePresets {
+	public:
+		constexpr static size_t Small = 512;
+		constexpr static size_t Medium = 2048;
+		constexpr static size_t Large = 4096;
 
-		Adaptive = Conservative
+		constexpr static size_t Infinity = -1;
 	};
 
-	void tryLoad(LoadStrategy strategy)
+	void tryLoad(size_t loadThreshold, size_t loadMaxSize)
 	{
-		if (strategy == LoadStrategy::Conservative && rawIn.len > rawIn.consumed) return;
+		if (loadThreshold < rawIn.consumed)
+			loadThreshold = rawIn.consumed;
+		if (rawIn.len > loadThreshold) return;
 
 		if (audioFile.eof()) return;
 
 		auto length = rawIn.len;
 		memcpy(rawBuffer, rawIn.buffer, length);
 
-		length += audioFile.read(rawBuffer + length, std::min(rawBufferLength - length, (unsigned long)LoadMaxLength));
+		length += audioFile.read(rawBuffer + length, std::min<size_t>(rawBufferLength - length, loadMaxSize));
 
-		ESP_LOGI(TAG, "buffer loaded from %d to %d", rawIn.len, length);
+		// ESP_LOGI(TAG, "buffer loaded from %d to %d", rawIn.len, length);
 
 		rawIn.buffer = rawBuffer;
 		rawIn.len = length;

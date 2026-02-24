@@ -59,9 +59,16 @@ public:
 		esp_mp3_dec_reset(handle);
 	}
 
-	void loadBuffer(AudioBuffer::LoadStrategy strategy = AudioBuffer::LoadStrategy::Adaptive)
+	auto& getBuffer()
 	{
-		audioIn.tryLoad(strategy);
+		return audioIn;
+	}
+
+	using LoadSizePresets = AudioBuffer::LoadSizePresets;
+
+	void loadBuffer(size_t loadThreshold = 0, size_t loadMaxSize = LoadSizePresets::Large)
+	{
+		audioIn.tryLoad(loadThreshold, loadMaxSize);
 	}
 
 	size_t decode(void* buffer, size_t bufferSize, esp_audio_dec_info_t* info = nullptr)
