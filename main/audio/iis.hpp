@@ -104,7 +104,7 @@ public:
 
 		if (ret != ESP_OK &&
 			ret != ESP_ERR_TIMEOUT)
-			ESP_ERROR_CHECK(ret);
+			ESP_ERROR_CHECK_WITHOUT_ABORT(ret);
 
 		return written;
 	}
