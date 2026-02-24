@@ -30,8 +30,8 @@ void AudioServer::resume()
 {
 	SD.setMode(GPIO::Mode::GPIO_MODE_DISABLE);
 	serverPaused = audioPause = false;
-	vTaskResume(audioServerHandle);
 	iis.start();
+	vTaskResume(audioServerHandle);
 }
 
 bool AudioServer::isPaused()
