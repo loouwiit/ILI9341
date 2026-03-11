@@ -11,7 +11,7 @@ class IIS
 public:
 	IIS() = default;
 	IIS(IIS&& move) { operator=(std::move(move)); }
-	IIS& operator=(IIS&& move) { std::swap(move.tx_handle, tx_handle); std::swap(move.std_cfg, std_cfg); return *this; }
+	IIS& operator=(IIS&& move) { std::swap(move.tx_handle, tx_handle); std::swap(move.std_cfg, std_cfg); std::swap(move.enabled, enabled); return *this; }
 
 	IIS(GPIO BCLK, GPIO DOUT, GPIO WS, uint32_t sampleRate, i2s_data_bit_width_t bitWidth, i2s_slot_mode_t mono_or_stereo)
 	{
