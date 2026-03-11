@@ -3,6 +3,7 @@
 #include "app/app.hpp"
 #include "LCD/autoLanguage.hpp"
 #include "esp_wifi_types_generic.h"
+#include "task.hpp"
 
 class WifiSetting final : public App
 {
@@ -75,7 +76,9 @@ private:
 	constexpr static size_t CoThreadQueueLength = 4;
 
 	QueueHandle_t coThreadQueue = nullptr;
-	static void coThread(void* param);
+
+	Thread coThread{};
+	static void coThreadMain(void* param);
 	bool coThreadDeal(CoThreadFunction_t function);
 
 	static void scanWifi(WifiSetting& self);

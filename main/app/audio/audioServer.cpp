@@ -15,9 +15,8 @@ IIS AudioServer::iis{};
 
 bool AudioServer::audioPause = true;
 bool AudioServer::serverPaused = false;
-TaskHandle_t AudioServer::audioServerHandle{};
-StackType_t* AudioServer::audioServerStack{};
-StaticTask_t* AudioServer::audioServerTask{}; // must in internal ram
+bool AudioServer::serverRunning = false;
+Thread AudioServer::audioServerThread{};
 
 void AudioServer::pause()
 {
@@ -31,7 +30,7 @@ void AudioServer::resume()
 	SD.setMode(GPIO::Mode::GPIO_MODE_DISABLE);
 	serverPaused = audioPause = false;
 	iis.start();
-	vTaskResume(audioServerHandle);
+	audioServerThread.resume();
 }
 
 bool AudioServer::isPaused()
@@ -41,7 +40,7 @@ bool AudioServer::isPaused()
 
 bool AudioServer::isInited()
 {
-	return audioServerHandle != nullptr;
+	return audioServerThread.isRunning();
 }
 
 void AudioServer::init()
@@ -57,19 +56,11 @@ void AudioServer::init()
 
 	frameBuffer = new uint8_t[FrameBufferLength];
 
-	audioServerStack = new StackType_t[4096];
-
-	audioServerTask = (StaticTask_t*)heap_caps_malloc(sizeof(StaticTask_t), MALLOC_CAP_INTERNAL);
-
-	audioServerHandle = xTaskCreateStatic(serverMain, "audio server", 4096, nullptr, Task::Priority::RealTime, audioServerStack, audioServerTask);
-	if (audioServerHandle == nullptr)
+	audioServerThread = Thread{ serverMain, "audio server",nullptr, Task::Priority::RealTime };
+	serverRunning = audioServerThread.isRunning();
+	if (!serverRunning)
 	{
-		ESP_LOGE(TAG, "server handle = nullptr!");
-		free(audioServerTask);
-		delete[] audioServerStack;
-		audioServerStack = nullptr;
-		delete[] frameBuffer;
-		frameBuffer = nullptr;
+		ESP_LOGE(TAG, "server not started!");
 		pause();
 		GPIO{ GPIO::GPIO_NUM::GPIO_NUM_41 }.setMode(GPIO::Mode::GPIO_MODE_DISABLE); // gain
 		iis = {};
@@ -81,8 +72,8 @@ void AudioServer::init()
 
 void AudioServer::deinit()
 {
-	vTaskResume(audioServerHandle);
-	audioServerHandle = nullptr;
+	serverRunning = false;
+	audioServerThread.resume();
 }
 
 void AudioServer::setAutoDeinit(bool status)
@@ -139,16 +130,16 @@ void AudioServer::serverMain(void*)
 {
 	constexpr static auto TAG = "audioServer";
 
-	serverPaused = audioPause = true;
-	vTaskSuspend(nullptr); // 挂起自己等待唤醒
+	serverRunning = serverPaused = audioPause = true;
+	audioServerThread.suspend(); // 挂起自己等待唤醒
 
 	ESP_LOGI(TAG, "started");
 
-	while (audioServerHandle != nullptr)
+	while (serverRunning)
 	{
-		while (!mp3Loader->isOpen() && audioServerHandle != nullptr)
+		while (!mp3Loader->isOpen() && serverRunning)
 			vTaskDelay(1);
-		if (audioServerHandle == nullptr) break;
+		if (!serverRunning) break;
 
 		// load & decode & output
 		while (true)
@@ -200,15 +191,5 @@ void AudioServer::serverMain(void*)
 
 	MP3::deinit();
 
-	Task::addTask([](void*) ->TickType_t
-		{
-			free(audioServerTask);
-			audioServerTask = nullptr;
-			delete[] audioServerStack;
-			audioServerStack = nullptr;
-			ESP_LOGI(TAG, "stoped");
-			return Task::infinityTime;
-		}, "delete audio server", nullptr, 100);
-
-	vTaskDelete(nullptr);
+	audioServerThread = {};
 }

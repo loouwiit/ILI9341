@@ -31,13 +31,16 @@ static LCD lcd{};
 EXT_RAM_BSS_ATTR static IIC iic{};
 EXT_RAM_BSS_ATTR static FT6X36 touch{};
 
+EXT_RAM_BSS_ATTR static Thread drawThread{};
+EXT_RAM_BSS_ATTR static Thread touchThread{};
+
 EXT_RAM_BSS_ATTR static App* app[10]{};
 EXT_RAM_BSS_ATTR static App* deletingApp = nullptr;
 EXT_RAM_BSS_ATTR static unsigned char appIndex = 0;
 EXT_RAM_BSS_ATTR static Mutex changeMutex{};
 EXT_RAM_BSS_ATTR static bool changing = false;
 
-void drawThread(void*)
+void drawThreadMain(void*)
 {
 	while (true)
 	{
@@ -55,7 +58,7 @@ void drawThread(void*)
 	vTaskDelete(nullptr);
 }
 
-void touchThread(void*)
+void touchThreadMain(void*)
 {
 	constexpr unsigned char timeOutCount = 100;
 	unsigned char count = timeOutCount;
@@ -314,6 +317,6 @@ void app_main(void)
 	app[0] = new AppDesktop{ lcd, touch, changeAppCallback, newAppCallback };
 	app[0]->init();
 
-	xTaskCreate(drawThread, "draw", 4096, nullptr, Task::Priority::High, nullptr);
-	xTaskCreate(touchThread, "touch", 4096, nullptr, Task::Priority::Veryhigh, nullptr);
+	drawThread = Thread{ drawThreadMain, "draw", nullptr, Task::Priority::High };
+	touchThread = Thread{ touchThreadMain, "touch", nullptr, Task::Priority::Veryhigh };
 }

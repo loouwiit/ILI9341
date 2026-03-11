@@ -2,6 +2,7 @@
 
 #include "app/app.hpp"
 #include "wifi/socketStream.hpp"
+#include "task.hpp"
 
 class AppTracker final : public App
 {
@@ -29,6 +30,7 @@ private:
 	void dealSocket(IOSocketStream& socketStream);
 
 	constexpr static unsigned short Port = 467;
-	static void serverThread(void* param);
 	Socket listenSocket{};
+	Thread serverThread{};
+	static void serverMain(void* param);
 };

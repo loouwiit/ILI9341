@@ -3,35 +3,25 @@
 
 Task Task::head{};
 
-EXT_RAM_BSS_ATTR static TaskHandle_t daemonHandle{};
-EXT_RAM_BSS_ATTR static StackType_t* daemonStack{};
-static StaticTask_t daemonTasks{};
+EXT_RAM_BSS_ATTR Thread daemonThread{};
 static bool daemonRunning = false;
-
-constexpr char TAG[] = "task";
 
 void Task::init()
 {
+	if (daemonRunning) return;
 	daemonRunning = true;
-
-	if (daemonStack == nullptr)
-		daemonStack = new StackType_t[4096];
-
-	daemonHandle = xTaskCreateStatic(daemonMain, "taskDaemon", 4096, nullptr, Task::Priority::Deamon, daemonStack, &daemonTasks);
-	if (daemonHandle == nullptr)
-	{
-		ESP_LOGE(TAG, "init failed");
-		delete[] daemonStack;
-		daemonStack = nullptr;
-	}
+	daemonThread = Thread{ daemonMain, "taskDaemon", nullptr, Task::Priority::Deamon, 4096 };
+	if (!daemonThread.isRunning())
+		daemonRunning = false;
 }
 
-void Task::deinit()
-{
-	daemonRunning = false;
-	for (Task* nowTask = head.next->next; nowTask->last != &head; nowTask = nowTask->next)
-		removeTask(nowTask->last);
-}
+// void Task::deinit()
+// {
+// 	daemonRunning = false;
+// 	for (Task* nowTask = head.next->next; nowTask->last != &head; nowTask = nowTask->next)
+// 		removeTask(nowTask->last);
+// 	// bug here, who release the stack?
+// }
 
 void Task::daemonMain(void* param)
 {
@@ -99,4 +89,55 @@ void Task::removeTask(Task* task)
 	task->mutex.unlock();
 
 	delete task;
+}
+
+Thread::Thread(Function_t function, const char* name, void* param, Priority priority, size_t stackSize)
+{
+	data.stack = new StackType_t[stackSize];
+	data.task = (StaticTask_t*)heap_caps_malloc(sizeof(StaticTask_t), MALLOC_CAP_INTERNAL);
+	data.handle = xTaskCreateStatic(function, name, stackSize, param, priority, data.stack, data.task);
+	if (data.handle == nullptr)
+	{
+		ESP_LOGE(TAG, "handle = nullptr! task creat failed");
+		free(data.task);
+		data.task = nullptr;
+		delete[] data.stack;
+		data.stack = nullptr;
+	}
+}
+
+Thread::~Thread()
+{
+	if (data.handle == nullptr) return;
+
+	ThreadData* saveCopy = new ThreadData;
+	*saveCopy = data;
+
+	Task::addTask([](void* param) ->TickType_t
+		{
+			auto& self = *(ThreadData*)param;
+			self.handle = nullptr;
+			free(self.task);
+			self.task = nullptr;
+			delete[] self.stack;
+			self.stack = nullptr;
+			delete& self;
+			return Task::infinityTime;
+		}, "delete thread", saveCopy, 100);
+	vTaskDelete(data.handle);
+}
+
+bool Thread::isRunning()
+{
+	return data.handle != nullptr;
+}
+
+void Thread::suspend()
+{
+	vTaskSuspend(data.handle);
+}
+
+void Thread::resume()
+{
+	vTaskResume(data.handle);
 }

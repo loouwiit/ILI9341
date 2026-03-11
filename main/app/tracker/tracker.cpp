@@ -13,7 +13,7 @@ constexpr static char TAG[] = "tracker";
 void AppTracker::init()
 {
 	App::init();
-	xTaskCreate(serverThread, "appTracker", 4096, this, Task::Priority::Low, nullptr);
+	serverThread = Thread{ serverMain, "appTracker", this, Task::Priority::Low };
 }
 
 void AppTracker::focusIn()
@@ -128,7 +128,7 @@ void AppTracker::dealSocket(IOSocketStream& socketStream)
 	socketStream.close();
 }
 
-void AppTracker::serverThread(void* param)
+void AppTracker::serverMain(void* param)
 {
 	AppTracker& self = *(AppTracker*)param;
 
@@ -145,7 +145,7 @@ void AppTracker::serverThread(void* param)
 				self.newAppCallback(wifiSetting);
 			};
 		self.deleteAble = true;
-		vTaskDelete(nullptr);
+		self.serverThread = {};
 	}
 
 	int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
@@ -155,7 +155,7 @@ void AppTracker::serverThread(void* param)
 		self.update(AutoLnaguage{ "socket creat failed", "socket创建失败" });
 		close(listen_sock);
 		self.deleteAble = true;
-		vTaskDelete(nullptr);
+		self.serverThread = {};
 	}
 
 	int opt = 1;
@@ -176,7 +176,7 @@ void AppTracker::serverThread(void* param)
 		self.update(AutoLnaguage{ "socket bind failed","socket绑定失败" });
 		close(listen_sock);
 		self.deleteAble = true;
-		vTaskDelete(nullptr);
+		self.serverThread = {};
 	}
 
 	err = listen(listen_sock, 1);
@@ -186,7 +186,7 @@ void AppTracker::serverThread(void* param)
 		self.update(AutoLnaguage{ "socket listen failed","socket监听失败" });
 		close(listen_sock);
 		self.deleteAble = true;
-		vTaskDelete(nullptr);
+		self.serverThread = {};
 		return;
 	}
 
@@ -234,5 +234,5 @@ void AppTracker::serverThread(void* param)
 
 	close(listen_sock);
 	self.deleteAble = true;
-	vTaskDelete(nullptr);
+	self.serverThread = {};
 }

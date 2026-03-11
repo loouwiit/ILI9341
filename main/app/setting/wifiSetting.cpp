@@ -46,7 +46,8 @@ void WifiSetting::init()
 	}
 
 	coThreadQueue = xQueueCreate(CoThreadQueueLength, sizeof(CoThreadFunction_t));
-	if (xTaskCreate(coThread, "wifiSettingCothread", 4096, this, Task::Priority::Verylow, nullptr) != pdTRUE)
+	coThread = Thread{ coThreadMain, "wifiSettingCothread", this, Task::Priority::Verylow };
+	if (!coThread.isRunning())
 	{
 		wifiScanText.text = AutoLnaguage{ "error:out of memory", "错误：内存不足" };
 		deleteAble = true;
@@ -489,7 +490,7 @@ void WifiSetting::loadApInfo()
 	apSettings[2].computeSize();
 }
 
-void WifiSetting::coThread(void* param)
+void WifiSetting::coThreadMain(void* param)
 {
 	WifiSetting& self = *(WifiSetting*)param;
 	QueueHandle_t& queue = self.coThreadQueue;
@@ -503,7 +504,7 @@ void WifiSetting::coThread(void* param)
 	}
 
 	self.deleteAble = true;
-	vTaskDelete(nullptr);
+	self.coThread = {};
 }
 
 bool WifiSetting::coThreadDeal(CoThreadFunction_t function)

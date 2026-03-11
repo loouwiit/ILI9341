@@ -1,5 +1,6 @@
 #include "audio/mp3.hpp"
 #include "audio/iis.hpp"
+#include "task.hpp"
 
 class AudioServer
 {
@@ -32,9 +33,8 @@ private:
 
 	EXT_RAM_BSS_ATTR static bool audioPause;
 	EXT_RAM_BSS_ATTR static bool serverPaused;
-	EXT_RAM_BSS_ATTR static TaskHandle_t audioServerHandle;
-	EXT_RAM_BSS_ATTR static StackType_t* audioServerStack;
-	EXT_RAM_BSS_ATTR static StaticTask_t* audioServerTask; // must in internal ram
+	EXT_RAM_BSS_ATTR static bool serverRunning;
+	EXT_RAM_BSS_ATTR static Thread audioServerThread;
 
 	static void serverMain(void*);
 };
