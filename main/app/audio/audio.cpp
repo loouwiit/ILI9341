@@ -20,7 +20,7 @@ void AppAudio::init()
 	title.position.x -= title.computeSize().x / 2;
 	title.computeSize();
 	title.clickCallbackParam = this;
-	title.releaseCallback = [](Finger&, void* param) { auto& self = *(AppAudio*)param; self.changeAppCallback(nullptr); };
+	title.releaseCallback = [](Finger&, void* param) { auto& self = *(AppAudio*)param; self.back(); };
 
 	strcpy(audioPathBuffer, AudioServer::getFilePath());
 	char* now = audioPathBuffer;
@@ -46,6 +46,7 @@ void AppAudio::init()
 
 					self.changeAppCallback(nullptr); // 退出explorer
 				};
+			self.running = false;
 			self.newAppCallback(appExplorer);
 		};
 
@@ -78,16 +79,26 @@ void AppAudio::init()
 		};
 
 	ESP_LOGI(TAG, "deamon started");
+	deamonRunning = true;
 	Task::addTask(deamonTask, "audio", this, 100);
+}
+
+void AppAudio::focusIn()
+{
+	running = true;
+	drawLocked = false;
 }
 
 void AppAudio::deinit()
 {
 	running = false;
+	deamonRunning = false;
 }
 
 void AppAudio::draw()
 {
+	while (drawLocked && running) vTaskDelay(1);
+	drawLocked = true;
 	lcd.clear();
 	lcd.draw(contents);
 }
@@ -120,6 +131,7 @@ void AppAudio::playAudio(const char* path)
 	now++;
 	audioFileText.text = now;
 	audioFileText.computeSize();
+	drawLocked = false;
 }
 
 void AppAudio::updatePauseStatus()
@@ -134,6 +146,7 @@ void AppAudio::updatePauseStatus()
 		audioPaused = false;
 		pauseText.text = "||";
 	}
+	drawLocked = false;
 }
 
 void AppAudio::switchPause()
@@ -165,13 +178,14 @@ void AppAudio::end()
 	audioFileText.text = audioPathBuffer;
 	AudioServer::close();
 	audioOpened = false;
+	drawLocked = false;
 }
 
 TickType_t AppAudio::deamonTask(void* param)
 {
 	auto& self = *(AppAudio*)param;
 
-	if (!self.running)
+	if (!self.deamonRunning)
 	{
 		self.deleteAble = true;
 		if (AudioServer::isInited() && !AudioServer::isOpened())
