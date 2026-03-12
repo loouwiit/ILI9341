@@ -20,7 +20,8 @@ public:
 		esp_audio_dec_unregister(ESP_AUDIO_TYPE_MP3);
 	}
 
-	MP3()
+	MP3(size_t bufferSize = 4096) :
+		audioIn{ bufferSize }
 	{
 		esp_mp3_dec_open(nullptr, 0, &handle);
 	}
@@ -79,6 +80,7 @@ public:
 		esp_audio_dec_info_t infoDefault{};
 		if (info == nullptr) info = &infoDefault;
 
+		// ESP_LOGI(TAG, "decode size = %d", audioIn.getPointer()->len);
 		auto ret = esp_mp3_dec_decode(handle, audioIn.getPointer(), &frameOut, info);
 		if (ret != ESP_AUDIO_ERR_OK)
 		{

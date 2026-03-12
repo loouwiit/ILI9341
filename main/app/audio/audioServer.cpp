@@ -51,7 +51,7 @@ void AudioServer::init()
 {
 	MP3::init();
 
-	mp3Loader = new MP3{};
+	mp3Loader = new MP3{ MP3BufferLength };
 
 	GPIO{ GPIO::GPIO_NUM::GPIO_NUM_41, GPIO::Mode::GPIO_MODE_OUTPUT } = true; // gain
 	pause();
@@ -158,10 +158,10 @@ void AudioServer::loaderMain(void*)
 				loaderThread.suspend();
 			}
 
-			auto loadSize = mp3Loader->getBuffer().tryLoad(); // 这个逻辑应该由信号出发，而不是轮询
+			auto loadSize = mp3Loader->getBuffer().tryLoad(MP3BufferLength); // 这个逻辑应该由信号出发，而不是轮询
 			if (loadSize == AudioBuffer::NoNeedToLoad) [[likely]]
 				vTaskDelay(1);
-			else if (loadSize == 0)
+			else if (loadSize == 0) [[unlikely]]
 			{
 				loaderPause = true;
 				loaderThread.suspend();
