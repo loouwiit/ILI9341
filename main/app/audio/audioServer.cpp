@@ -14,9 +14,12 @@ GPIO AudioServer::SD{ GPIO::GPIO_NUM::GPIO_NUM_42, GPIO::Mode::GPIO_MODE_DISABLE
 IIS AudioServer::iis{};
 
 bool AudioServer::audioPause = true;
-bool AudioServer::serverPaused = false;
 bool AudioServer::serverRunning = false;
-Thread AudioServer::audioServerThread{};
+
+Thread AudioServer::decoderThread{};
+Thread AudioServer::loaderThread{};
+bool AudioServer::decoderPause = false; // thread负责置true，外部负责置false
+bool AudioServer::loaderPause = false; // thread负责置true，外部负责置false
 
 void AudioServer::pause()
 {
@@ -28,19 +31,20 @@ void AudioServer::pause()
 void AudioServer::resume()
 {
 	SD.setMode(GPIO::Mode::GPIO_MODE_DISABLE);
-	serverPaused = audioPause = false;
+	decoderPause = loaderPause = audioPause = false;
 	iis.start();
-	audioServerThread.resume();
+	loaderThread.resume();
+	decoderThread.resume();
 }
 
 bool AudioServer::isPaused()
 {
-	return serverPaused;
+	return decoderPause;
 }
 
 bool AudioServer::isInited()
 {
-	return audioServerThread.isRunning();
+	return serverRunning;
 }
 
 void AudioServer::init()
@@ -56,11 +60,14 @@ void AudioServer::init()
 
 	frameBuffer = new uint8_t[FrameBufferLength];
 
-	audioServerThread = Thread{ serverMain, "audio server",nullptr, Task::Priority::RealTime };
-	serverRunning = audioServerThread.isRunning();
+	loaderThread = Thread{ loaderMain, "audio loader", nullptr, Task::Priority::High };
+	decoderThread = Thread{ decoderMain, "audio decoder", nullptr, Task::Priority::RealTime };
+	serverRunning = loaderThread.isRunning() && decoderThread.isRunning();
 	if (!serverRunning)
 	{
-		ESP_LOGE(TAG, "server not started!");
+		loaderThread = {};
+		decoderThread = {};
+		ESP_LOGE(TAG, "server started failed!");
 		pause();
 		GPIO{ GPIO::GPIO_NUM::GPIO_NUM_41 }.setMode(GPIO::Mode::GPIO_MODE_DISABLE); // gain
 		iis = {};
@@ -73,7 +80,8 @@ void AudioServer::init()
 void AudioServer::deinit()
 {
 	serverRunning = false;
-	audioServerThread.resume();
+	loaderThread.resume();
+	decoderThread.resume();
 }
 
 void AudioServer::setAutoDeinit(bool status)
@@ -126,12 +134,51 @@ void AudioServer::close()
 	pause();
 }
 
-void AudioServer::serverMain(void*)
+void AudioServer::loaderMain(void*)
 {
-	constexpr static auto TAG = "audioServer";
+	constexpr static auto TAG = "audio loader";
 
-	serverRunning = serverPaused = audioPause = true;
-	audioServerThread.suspend(); // 挂起自己等待唤醒
+	loaderPause = audioPause = true;
+	loaderThread.suspend(); // 挂起自己等待唤醒
+
+	ESP_LOGI(TAG, "started");
+
+	while (serverRunning)
+	{
+		while (!mp3Loader->isOpen() && serverRunning)
+			vTaskDelay(1);
+		if (!serverRunning) break;
+
+		// load
+		while (true)
+		{
+			if (audioPause) [[unlikely]]
+			{
+				loaderPause = true;
+				loaderThread.suspend();
+			}
+
+			auto loadSize = mp3Loader->getBuffer().tryLoad(); // 这个逻辑应该由信号出发，而不是轮询
+			if (loadSize == AudioBuffer::NoNeedToLoad) [[likely]]
+				vTaskDelay(1);
+			else if (loadSize == 0)
+			{
+				loaderPause = true;
+				loaderThread.suspend();
+			}
+		}
+	}
+
+	// delete self
+	loaderThread = {};
+}
+
+void AudioServer::decoderMain(void*)
+{
+	constexpr static auto TAG = "audio decoder";
+
+	decoderPause = audioPause = true;
+	decoderThread.suspend(); // 挂起自己等待唤醒
 
 	ESP_LOGI(TAG, "started");
 
@@ -148,24 +195,28 @@ void AudioServer::serverMain(void*)
 			{
 				if (iis.isInited())
 					iis.stop();
-				serverPaused = true;
-				vTaskSuspend(nullptr);
+				decoderPause = true;
+				decoderThread.suspend();
 			}
 
-			mp3Loader->loadBuffer();
+			while (mp3Loader->getBuffer().getReference().len < mp3Loader->getBuffer().getReference().consumed && !loaderPause)
+			{
+				mp3Loader->getBuffer().update();
+				vTaskDelay(1);
+			}
+
+			if (!audioPause && loaderPause) [[unlikely]] break; // 文件结束
+
 			auto size = mp3Loader->decode(frameBuffer, FrameBufferLength);
-			if (size == 0) break;
+			if (size == 0) [[unlikely]] break;
 
 			auto* pointer = frameBuffer;
 			while (true)
 			{
-				// ESP_LOGI(TAG, "try transmit %d", size);
 				auto transmitedSize = iis.transmit(pointer, size, 1);
 				size -= transmitedSize;
 				pointer += transmitedSize;
 				if (size == 0) break;
-				// ESP_LOGI(TAG, "transmited %d", transmitedSize);
-				mp3Loader->loadBuffer(); // 未发送完全，有空闲时间进行加载
 			}
 		}
 
@@ -191,5 +242,5 @@ void AudioServer::serverMain(void*)
 
 	MP3::deinit();
 
-	audioServerThread = {};
+	decoderThread = {};
 }

@@ -32,9 +32,13 @@ private:
 	EXT_RAM_BSS_ATTR static IIS iis;
 
 	EXT_RAM_BSS_ATTR static bool audioPause;
-	EXT_RAM_BSS_ATTR static bool serverPaused;
 	EXT_RAM_BSS_ATTR static bool serverRunning;
-	EXT_RAM_BSS_ATTR static Thread audioServerThread;
 
-	static void serverMain(void*);
+	EXT_RAM_BSS_ATTR static Thread decoderThread;
+	EXT_RAM_BSS_ATTR static Thread loaderThread;
+	EXT_RAM_BSS_ATTR static bool decoderPause;
+	EXT_RAM_BSS_ATTR static bool loaderPause;
+
+	static void loaderMain(void*);
+	static void decoderMain(void*);
 };
