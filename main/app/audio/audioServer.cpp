@@ -165,6 +165,7 @@ void AudioServer::loaderMain(void*)
 			{
 				loaderPause = true;
 				loaderThread.suspend();
+				break;
 			}
 		}
 	}
