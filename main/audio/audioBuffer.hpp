@@ -71,9 +71,10 @@ public:
 		return rawIn;
 	}
 
+	constexpr static size_t NoNeedToLoad = -1;
 	size_t tryLoad(size_t loadSizeMax = 4096)
 	{
-		if (fileBufferSize != 0) return 0;
+		if (fileBufferSize != 0) return NoNeedToLoad;
 		// fileBufferSize == 0, update不会发生，操作fileBuffer安全
 		fileBufferStart = 0;
 		return fileBufferSize = audioFile.read(fileBuffer, std::min(bufferCapacity, loadSizeMax));
