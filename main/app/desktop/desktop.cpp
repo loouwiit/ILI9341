@@ -121,7 +121,7 @@ App* AppDesktop::appFactory(unsigned char index)
 	case 7:
 		return new AppAudio{ lcd, touch, changeAppCallback, newAppCallback };
 	default:
-		ESP_LOGE(TAG, "failed to new app %s (case %d)", ApplicationName[index].english, index);
+		ESP_LOGE(TAG, "failed to new app case %d", index);
 		return nullptr;
 	}
 }
