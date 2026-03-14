@@ -153,12 +153,12 @@ void AudioServer::close()
 	pause();
 }
 
-void AudioServer::setGain(uint8_t gain)
+void AudioServer::setGain(int8_t gain)
 {
 	alc->setGain(gain);
 }
 
-uint8_t AudioServer::getGain()
+int8_t AudioServer::getGain()
 {
 	return alc->getGain();
 }

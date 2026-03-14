@@ -20,8 +20,8 @@ public:
 	static void openFile(const char* path);
 	static void close();
 
-	static void setGain(uint8_t gain);
-	static uint8_t getGain();
+	static void setGain(int8_t gain);
+	static int8_t getGain();
 
 private:
 	constexpr static size_t FrameBufferLength = 8192;
