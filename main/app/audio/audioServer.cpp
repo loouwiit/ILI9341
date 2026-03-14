@@ -200,9 +200,9 @@ void AudioServer::decoderMain(void*)
 				decoderThread.suspend();
 			}
 
-			while (mp3Loader->getBuffer().getReference().len < mp3Loader->getBuffer().getReference().consumed && !loaderPause)
+			while (mp3Loader->getBuffer().getReference().len < MP3BufferSThrehood && !loaderPause)
 			{
-				mp3Loader->getBuffer().update();
+				mp3Loader->getBuffer().update(MP3BufferSThrehood);
 				vTaskDelay(1);
 			}
 

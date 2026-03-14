@@ -42,6 +42,7 @@ public:
 			ESP_LOGE(TAG, "open %s failed", path);
 			return false;
 		}
+		fileBufferSize = 0;
 		readBufferSize = 0;
 		rawIn.len = 0;
 		return true;
@@ -87,9 +88,11 @@ public:
 		return ret;
 	}
 
-	size_t update()
+	size_t update(size_t targetSize = 0)
 	{
-		if (rawIn.len > rawIn.consumed) return NoNeedToLoad; // 无需加载
+		if (targetSize == 0) targetSize = rawIn.consumed;
+		if (rawIn.len > targetSize) return NoNeedToLoad; // 无需加载
+		assert(targetSize < bufferCapacity);
 
 		updateReadBuffer();
 		if (readBufferSize == 0) return 0; // 无法加载
@@ -98,14 +101,14 @@ public:
 		{
 			Lock lock{ bufferMutex };
 			memcpy(rawBuffer, rawIn.buffer, rawIn.len);
-			auto copySize = rawIn.consumed - rawIn.len;
-			memcpy(rawBuffer + rawIn.len, readBuffer, copySize);
+			auto copySize = std::min<size_t>(targetSize - rawIn.len, readBufferSize);
+			memcpy(rawBuffer + rawIn.len, readBuffer + readBufferStart, copySize);
 			readBufferStart += copySize;
 			readBufferSize -= copySize;
 			rawIn.len += copySize;
 			rawIn.buffer = rawBuffer;
 
-			ESP_LOGI(TAG, "buffer copyed to %d", rawIn.len);
+			// ESP_LOGI(TAG, "buffer copyed to %d, coped %d", rawIn.len, copySize);
 		}
 		else // swap加载
 		{
@@ -114,6 +117,7 @@ public:
 			readBufferStart -= rawIn.len;
 			readBufferSize += rawIn.len;
 
+			auto copySize = rawIn.len;
 			memcpy(readBuffer + readBufferStart, rawIn.buffer, rawIn.len);
 
 			rawIn.buffer = readBuffer + readBufferStart;
@@ -122,7 +126,7 @@ public:
 			readBufferStart = 0;
 			readBufferSize = 0;
 
-			ESP_LOGI(TAG, "buffer swaped to %d", rawIn.len);
+			// ESP_LOGI(TAG, "buffer swaped to %d, coped %d", rawIn.len, copySize);
 		}
 		return rawIn.len;
 	}
@@ -159,6 +163,7 @@ private:
 	{
 		if (readBufferSize == 0 && fileBufferSize != 0)
 		{
+			// readBufferSize == 0，update不会发生，操作readBuffer安全
 			std::swap(fileBuffer, readBuffer);
 			readBufferStart = 0;
 			readBufferSize = fileBufferSize;

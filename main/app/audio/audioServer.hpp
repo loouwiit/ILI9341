@@ -22,6 +22,7 @@ public:
 private:
 	constexpr static size_t FrameBufferLength = 8192;
 	constexpr static size_t MP3BufferLength = 4096;
+	constexpr static size_t MP3BufferSThrehood = 250;
 
 	EXT_RAM_BSS_ATTR static bool autoDeinit;
 

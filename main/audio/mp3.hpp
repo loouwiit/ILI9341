@@ -65,10 +65,10 @@ public:
 		return audioIn;
 	}
 
-	void loadBuffer(size_t loadSizeMax = 4096)
+	void loadBuffer(size_t loadSizeMax = 4096, size_t targetSize = 0)
 	{
 		if (audioIn.tryLoad(loadSizeMax) != 0)
-			audioIn.update();
+			audioIn.update(targetSize);
 	}
 
 	size_t decode(void* buffer, size_t bufferSize, esp_audio_dec_info_t* info = nullptr)
