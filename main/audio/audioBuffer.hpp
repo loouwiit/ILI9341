@@ -117,7 +117,7 @@ public:
 			readBufferStart -= rawIn.len;
 			readBufferSize += rawIn.len;
 
-			auto copySize = rawIn.len;
+			// auto copySize = rawIn.len;
 			memcpy(readBuffer + readBufferStart, rawIn.buffer, rawIn.len);
 
 			rawIn.buffer = readBuffer + readBufferStart;
