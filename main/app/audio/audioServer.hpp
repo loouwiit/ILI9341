@@ -1,4 +1,4 @@
-#include "audio/mp3.hpp"
+#include "audio/decoder.hpp"
 #include "audio/alc.hpp"
 #include "audio/iis.hpp"
 #include "task.hpp"
@@ -31,8 +31,8 @@ private:
 	EXT_RAM_BSS_ATTR static bool autoDeinit;
 
 	EXT_RAM_BSS_ATTR static char path[256];
-	EXT_RAM_BSS_ATTR static MP3* mp3Loader;
-	EXT_RAM_BSS_ATTR static uint8_t* mp3Buffer;
+	EXT_RAM_BSS_ATTR static Decoder* decoder;
+	EXT_RAM_BSS_ATTR static uint8_t* decoderBuffer;
 	EXT_RAM_BSS_ATTR static ALC* alc;
 	EXT_RAM_BSS_ATTR static uint8_t* alcBuffer;
 

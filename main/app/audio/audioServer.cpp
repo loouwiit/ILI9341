@@ -1,5 +1,10 @@
 #include "audioServer.hpp"
 
+#include "audio/mp3.hpp"
+#include "audio/aac.hpp"
+
+#include "stringCompare.hpp"
+
 #include "task.hpp"
 
 constexpr static auto TAG = "audioServer";
@@ -7,8 +12,8 @@ constexpr static auto TAG = "audioServer";
 bool AudioServer::autoDeinit = false;
 
 char AudioServer::path[256]{};
-MP3* AudioServer::mp3Loader{};
-uint8_t* AudioServer::mp3Buffer{};
+Decoder* AudioServer::decoder{};
+uint8_t* AudioServer::decoderBuffer{};
 ALC* AudioServer::alc{};
 uint8_t* AudioServer::alcBuffer{};
 
@@ -52,8 +57,9 @@ bool AudioServer::isInited()
 void AudioServer::init()
 {
 	MP3::init();
+	AAC::init();
 
-	mp3Loader = new MP3{ MP3BufferLength };
+	assert(decoder == nullptr);
 	alc = new ALC{};
 
 	GPIO{ GPIO::GPIO_NUM::GPIO_NUM_41, GPIO::Mode::GPIO_MODE_OUTPUT } = true; // gain
@@ -61,7 +67,7 @@ void AudioServer::init()
 
 	iis = { GPIO_NUM_38, GPIO_NUM_39, GPIO_NUM_40, 44100, i2s_data_bit_width_t::I2S_DATA_BIT_WIDTH_16BIT, i2s_slot_mode_t::I2S_SLOT_MODE_MONO };
 
-	mp3Buffer = new uint8_t[FrameBufferLength];
+	decoderBuffer = new uint8_t[FrameBufferLength];
 	alcBuffer = new uint8_t[FrameBufferLength];
 
 	loaderThread = Thread{ loaderMain, "audio loader", nullptr, Task::Priority::High };
@@ -79,16 +85,17 @@ void AudioServer::init()
 		delete[] alcBuffer;
 		alcBuffer = nullptr;
 
-		delete[] mp3Buffer;
-		mp3Buffer = nullptr;
+		delete[] decoderBuffer;
+		decoderBuffer = nullptr;
 
 		delete alc;
 		alc = nullptr;
 
-		delete mp3Loader;
-		mp3Loader = nullptr;
+		delete decoder;
+		decoder = nullptr;
 
 		MP3::deinit();
+		AAC::deinit();
 	}
 }
 
@@ -111,7 +118,7 @@ const char* AudioServer::getFilePath()
 
 bool AudioServer::isOpened()
 {
-	return isInited() && mp3Loader->isOpen();
+	return isInited() && decoder != nullptr && decoder->isOpen();
 }
 
 void AudioServer::openFile(const char* path)
@@ -119,21 +126,45 @@ void AudioServer::openFile(const char* path)
 	ESP_LOGI(TAG, "open %s", path);
 	pause();
 	while (isOpened() && !isPaused()) vTaskDelay(1);
+
+	auto pathLength = strlen(path);
+	if (stringCompare(path + pathLength - 4, 4, ".mp3", 4))
+	{
+		if (decoder == nullptr || decoder->type() != Decoder::Type::ESP_AUDIO_TYPE_MP3)
+		{
+			delete decoder;
+			decoder = new MP3{};
+		}
+	}
+	else if (stringCompare(path + pathLength - 4, 4, ".aac", 4))
+	{
+		if (decoder == nullptr || decoder->type() != Decoder::Type::ESP_AUDIO_TYPE_AAC)
+		{
+			delete decoder;
+			decoder = new AAC{};
+		}
+	}
+	else
+	{
+		ESP_LOGE(TAG, "unsupport audio file %s", path);
+		return;
+	}
+
 	strcpy(AudioServer::path, path);
-	if (!mp3Loader->open(path)) return;
+	if (!decoder->open(path)) return;
 
 	// load info
 	esp_audio_dec_info_t info{};
-	mp3Loader->loadBuffer(2048);
-	mp3Loader->decode(mp3Buffer, FrameBufferLength, &info);
-	mp3Loader->reset();
+	decoder->loadBuffer(2048);
+	decoder->decode(decoderBuffer, FrameBufferLength, &info);
+	decoder->reset();
 
 	ESP_LOGI(TAG, "sample rate = %dHz, bits = %dbit, %d channal, bitRate = %dkbps", info.sample_rate, info.bits_per_sample, info.channel, info.bitrate / 1000);
 
 	if (info.sample_rate == 0)
 	{
 		ESP_LOGE(TAG, "sample rate == 0!");
-		mp3Loader->close();
+		decoder->close();
 	}
 
 	auto gain = alc->getGain();
@@ -149,7 +180,8 @@ void AudioServer::close()
 {
 	ESP_LOGI(TAG, "close file");
 	AudioServer::path[0] = '\0';
-	mp3Loader->close();
+	if (decoder != nullptr)
+		decoder->close();
 	pause();
 }
 
@@ -174,7 +206,7 @@ void AudioServer::loaderMain(void*)
 
 	while (serverRunning)
 	{
-		while (!mp3Loader->isOpen() && serverRunning)
+		while (!decoder->isOpen() && serverRunning)
 			vTaskDelay(1);
 		if (!serverRunning) break;
 
@@ -187,7 +219,7 @@ void AudioServer::loaderMain(void*)
 				loaderThread.suspend();
 			}
 
-			auto loadSize = mp3Loader->getBuffer().tryLoad(MP3BufferLength); // 这个逻辑应该由信号出发，而不是轮询
+			auto loadSize = decoder->getBuffer().tryLoad(MP3BufferLength); // 这个逻辑应该由信号出发，而不是轮询
 			if (loadSize == AudioBuffer::NoNeedToLoad) [[likely]]
 				vTaskDelay(1);
 			else if (loadSize == 0) [[unlikely]]
@@ -214,7 +246,7 @@ void AudioServer::decoderMain(void*)
 
 	while (serverRunning)
 	{
-		while (!mp3Loader->isOpen() && serverRunning)
+		while (!decoder->isOpen() && serverRunning)
 			vTaskDelay(1);
 		if (!serverRunning) break;
 
@@ -229,18 +261,18 @@ void AudioServer::decoderMain(void*)
 				decoderThread.suspend();
 			}
 
-			while (mp3Loader->getBuffer().getReference().len < MP3BufferSThrehood && !loaderPause)
+			while (decoder->getBuffer().getReference().len < MP3BufferSThrehood && !loaderPause)
 			{
-				mp3Loader->getBuffer().update(MP3BufferSThrehood);
+				decoder->getBuffer().update(MP3BufferSThrehood);
 				vTaskDelay(1);
 			}
 
 			if (!audioPause && loaderPause) [[unlikely]] break; // 文件结束
 
-			auto size = mp3Loader->decode(mp3Buffer, FrameBufferLength);
+			auto size = decoder->decode(decoderBuffer, FrameBufferLength);
 			if (size == 0) [[unlikely]] break;
 
-			(*alc)(mp3Buffer, alcBuffer, size); // 音量调节
+			(*alc)(decoderBuffer, alcBuffer, size); // 音量调节
 
 			auto* pointer = alcBuffer;
 			while (true)
@@ -253,7 +285,7 @@ void AudioServer::decoderMain(void*)
 		}
 
 		// finish
-		mp3Loader->close();
+		decoder->close();
 		pause();
 
 		if (autoDeinit) deinit();
@@ -272,13 +304,14 @@ void AudioServer::decoderMain(void*)
 	delete alc;
 	alc = nullptr;
 
-	delete[] mp3Buffer;
-	mp3Buffer = nullptr;
+	delete[] decoderBuffer;
+	decoderBuffer = nullptr;
 
-	delete mp3Loader;
-	mp3Loader = nullptr;
+	delete decoder;
+	decoder = nullptr;
 
 	MP3::deinit();
+	AAC::deinit();
 
 	decoderThread = {};
 }
