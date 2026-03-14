@@ -1,4 +1,5 @@
 #include "audio/mp3.hpp"
+#include "audio/alc.hpp"
 #include "audio/iis.hpp"
 #include "task.hpp"
 
@@ -19,6 +20,9 @@ public:
 	static void openFile(const char* path);
 	static void close();
 
+	static void setGain(uint8_t gain);
+	static uint8_t getGain();
+
 private:
 	constexpr static size_t FrameBufferLength = 8192;
 	constexpr static size_t MP3BufferLength = 4096;
@@ -28,7 +32,9 @@ private:
 
 	EXT_RAM_BSS_ATTR static char path[256];
 	EXT_RAM_BSS_ATTR static MP3* mp3Loader;
-	EXT_RAM_BSS_ATTR static uint8_t* frameBuffer;
+	EXT_RAM_BSS_ATTR static uint8_t* mp3Buffer;
+	EXT_RAM_BSS_ATTR static ALC* alc;
+	EXT_RAM_BSS_ATTR static uint8_t* alcBuffer;
 
 	EXT_RAM_BSS_ATTR static GPIO SD;
 	EXT_RAM_BSS_ATTR static IIS iis;

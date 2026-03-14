@@ -13,8 +13,10 @@ void AppAudio::init()
 	contents[0] = &title;
 	contents[1] = &audioText;
 	contents[2] = &audioFileText;
-	contents[3] = &pauseText;
-	contents[4] = &endButton;
+	contents[3] = &audioGain;
+	contents[4] = &audioGainBar;
+	contents[5] = &pauseText;
+	contents[6] = &endButton;
 
 	title.position = { LCD::ScreenSize.x / 2, 0 };
 	title.position.x -= title.computeSize().x / 2;
@@ -50,6 +52,41 @@ void AppAudio::init()
 			self.newAppCallback(appExplorer);
 		};
 
+	if (AudioServer::isInited())
+		audioGainBar.setValue((AudioServer::getGain() + 64) * 2);
+	else audioGainBar.setValue((DefaultGain + 64) * 2);
+	audioGainBar.clickCallbackParam = this;
+	audioGainBar.pressCallback = [](Finger& finger, void* param)
+		{
+			auto& self = *(AppAudio*)param;
+			self.gainBarPressTime = xTaskGetTickCount();
+		};
+	audioGainBar.releaseCallback = [](Finger& finger, void* param)
+		{
+			auto& self = *(AppAudio*)param;
+			auto deltaTime = xTaskGetTickCount() - self.gainBarPressTime;
+			if (deltaTime > BarHoldTime) return;
+
+			auto target = finger.position.x;
+			if (target > 2 * 64) target = 2 * 64;
+			if (target < 0) target = 0;
+			self.audioGainBar.setValue(target);
+			self.drawLocked = false;
+			if (!AudioServer::isInited()) return;
+			int8_t gain = self.audioGainBar.getValue() / 2 - 64;
+			AudioServer::setGain(gain);
+		};
+	audioGainBar.holdCallback = [](Finger&, void* param)
+		{
+			auto& self = *(AppAudio*)param;
+			if (self.audioGainBar.getValue() > 2 * 64)
+				self.audioGainBar.setValue(2 * 64);
+			self.drawLocked = false;
+			if (!AudioServer::isInited()) return;
+			int8_t gain = self.audioGainBar.getValue() / 2 - 64;
+			AudioServer::setGain(gain);
+		};
+
 	AudioServer::setAutoDeinit(false);
 	audioOpened = true; // 假定上一次状态，从而激活deamon的reload
 	// 该任务应该由server完成，此处需要重构
@@ -81,6 +118,8 @@ void AppAudio::init()
 	ESP_LOGI(TAG, "deamon started");
 	deamonRunning = true;
 	Task::addTask(deamonTask, "audio", this, 100);
+
+	drawLocked = false;
 }
 
 void AppAudio::focusIn()
@@ -105,8 +144,12 @@ void AppAudio::draw()
 
 void AppAudio::touchUpdate()
 {
-	contents.finger(touch[0]);
-	contents.finger(touch[1]);
+	Finger finger[2] = { touch[0],touch[1] };
+
+	if (finger[0].state != Finger::State::None)
+		contents.finger(finger[0]);
+	if (finger[1].state != Finger::State::None)
+		contents.finger(finger[1]);
 }
 
 void AppAudio::playAudio(const char* path)
@@ -117,7 +160,10 @@ void AppAudio::playAudio(const char* path)
 	{
 		Lock lock{ deamonMutex };
 		if (!AudioServer::isInited())
+		{
 			AudioServer::init();
+			AudioServer::setGain(audioGainBar.getValue() / 2 - 64);
+		}
 		AudioServer::openFile(path);
 		audioOpened = AudioServer::isOpened();
 		if (!audioOpened) return;
@@ -205,7 +251,10 @@ TickType_t AppAudio::deamonTask(void* param)
 		if (opened != self.audioOpened)
 		{
 			if (!AudioServer::isInited())
+			{
 				AudioServer::init();
+				AudioServer::setGain(self.audioGainBar.getValue() / 2 - 64);
+			}
 			auto path = AudioServer::getFilePath();
 			if (path[0] != '\0')
 			{

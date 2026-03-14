@@ -8,7 +8,9 @@ bool AudioServer::autoDeinit = false;
 
 char AudioServer::path[256]{};
 MP3* AudioServer::mp3Loader{};
-uint8_t* AudioServer::frameBuffer{};
+uint8_t* AudioServer::mp3Buffer{};
+ALC* AudioServer::alc{};
+uint8_t* AudioServer::alcBuffer{};
 
 GPIO AudioServer::SD{ GPIO::GPIO_NUM::GPIO_NUM_42, GPIO::Mode::GPIO_MODE_DISABLE };
 IIS AudioServer::iis{};
@@ -52,13 +54,15 @@ void AudioServer::init()
 	MP3::init();
 
 	mp3Loader = new MP3{ MP3BufferLength };
+	alc = new ALC{};
 
 	GPIO{ GPIO::GPIO_NUM::GPIO_NUM_41, GPIO::Mode::GPIO_MODE_OUTPUT } = true; // gain
 	pause();
 
 	iis = { GPIO_NUM_38, GPIO_NUM_39, GPIO_NUM_40, 44100, i2s_data_bit_width_t::I2S_DATA_BIT_WIDTH_16BIT, i2s_slot_mode_t::I2S_SLOT_MODE_MONO };
 
-	frameBuffer = new uint8_t[FrameBufferLength];
+	mp3Buffer = new uint8_t[FrameBufferLength];
+	alcBuffer = new uint8_t[FrameBufferLength];
 
 	loaderThread = Thread{ loaderMain, "audio loader", nullptr, Task::Priority::High };
 	decoderThread = Thread{ decoderMain, "audio decoder", nullptr, Task::Priority::RealTime };
@@ -71,8 +75,19 @@ void AudioServer::init()
 		pause();
 		GPIO{ GPIO::GPIO_NUM::GPIO_NUM_41 }.setMode(GPIO::Mode::GPIO_MODE_DISABLE); // gain
 		iis = {};
+
+		delete[] alcBuffer;
+		alcBuffer = nullptr;
+
+		delete[] mp3Buffer;
+		mp3Buffer = nullptr;
+
+		delete alc;
+		alc = nullptr;
+
 		delete mp3Loader;
 		mp3Loader = nullptr;
+
 		MP3::deinit();
 	}
 }
@@ -110,7 +125,7 @@ void AudioServer::openFile(const char* path)
 	// load info
 	esp_audio_dec_info_t info{};
 	mp3Loader->loadBuffer(2048);
-	mp3Loader->decode(frameBuffer, FrameBufferLength, &info);
+	mp3Loader->decode(mp3Buffer, FrameBufferLength, &info);
 	mp3Loader->reset();
 
 	ESP_LOGI(TAG, "sample rate = %dHz, bits = %dbit, %d channal, bitRate = %dkbps", info.sample_rate, info.bits_per_sample, info.channel, info.bitrate / 1000);
@@ -120,6 +135,10 @@ void AudioServer::openFile(const char* path)
 		ESP_LOGE(TAG, "sample rate == 0!");
 		mp3Loader->close();
 	}
+
+	auto gain = alc->getGain();
+	*alc = ALC{ info.sample_rate, info.channel, info.bits_per_sample };
+	alc->setGain(gain);
 
 	iis.setSampleRate(info.sample_rate);
 	iis.setBitWidth((i2s_data_bit_width_t)info.bits_per_sample);
@@ -132,6 +151,16 @@ void AudioServer::close()
 	AudioServer::path[0] = '\0';
 	mp3Loader->close();
 	pause();
+}
+
+void AudioServer::setGain(uint8_t gain)
+{
+	alc->setGain(gain);
+}
+
+uint8_t AudioServer::getGain()
+{
+	return alc->getGain();
 }
 
 void AudioServer::loaderMain(void*)
@@ -208,10 +237,12 @@ void AudioServer::decoderMain(void*)
 
 			if (!audioPause && loaderPause) [[unlikely]] break; // 文件结束
 
-			auto size = mp3Loader->decode(frameBuffer, FrameBufferLength);
+			auto size = mp3Loader->decode(mp3Buffer, FrameBufferLength);
 			if (size == 0) [[unlikely]] break;
 
-			auto* pointer = frameBuffer;
+			(*alc)(mp3Buffer, alcBuffer, size); // 音量调节
+
+			auto* pointer = alcBuffer;
 			while (true)
 			{
 				auto transmitedSize = iis.transmit(pointer, size, 1);
@@ -235,8 +266,14 @@ void AudioServer::decoderMain(void*)
 
 	iis = {};
 
-	delete[] frameBuffer;
-	frameBuffer = nullptr;
+	delete[] alcBuffer;
+	alcBuffer = nullptr;
+
+	delete alc;
+	alc = nullptr;
+
+	delete[] mp3Buffer;
+	mp3Buffer = nullptr;
 
 	delete mp3Loader;
 	mp3Loader = nullptr;

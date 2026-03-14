@@ -17,3 +17,4 @@ dependencies:
   espressif/mdns: '*'
   espressif/led_strip: '*'
   espressif/esp_audio_codec: '*'
+  espressif/esp_audio_effects: '*'
