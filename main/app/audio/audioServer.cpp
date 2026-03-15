@@ -203,10 +203,10 @@ void AudioServer::loaderMain(void*)
 {
 	constexpr static auto TAG = "audio loader";
 
+	ESP_LOGI(TAG, "started");
+
 	loaderPause = audioPause = true;
 	loaderThread.suspend(); // 挂起自己等待唤醒
-
-	ESP_LOGI(TAG, "started");
 
 	while (serverRunning)
 	{
@@ -221,6 +221,7 @@ void AudioServer::loaderMain(void*)
 			{
 				loaderPause = true;
 				loaderThread.suspend();
+				if (!serverRunning) break;
 			}
 
 			auto loadSize = decoder->getBuffer().tryLoad(DecoderBufferLength); // 这个逻辑应该由信号出发，而不是轮询
@@ -235,7 +236,7 @@ void AudioServer::loaderMain(void*)
 		}
 	}
 
-	// delete self
+	ESP_LOGI(TAG, "stoped");
 	loaderThread = {};
 }
 
@@ -243,10 +244,10 @@ void AudioServer::decoderMain(void*)
 {
 	constexpr static auto TAG = "audio decoder";
 
+	ESP_LOGI(TAG, "started");
+
 	decoderPause = audioPause = true;
 	decoderThread.suspend(); // 挂起自己等待唤醒
-
-	ESP_LOGI(TAG, "started");
 
 	while (serverRunning)
 	{
@@ -263,6 +264,7 @@ void AudioServer::decoderMain(void*)
 					iis.stop();
 				decoderPause = true;
 				decoderThread.suspend();
+				if (!serverRunning) break;
 			}
 
 			while (decoder->getBuffer().getReference().len < decoderBufferThreshold && !loaderPause)
@@ -289,7 +291,7 @@ void AudioServer::decoderMain(void*)
 			(*alc)(decoderBuffer, alcBuffer, size); // 音量调节
 
 			auto* pointer = alcBuffer;
-			while (true)
+			while (!audioPause)
 			{
 				auto transmitedSize = iis.transmit(pointer, size, 1);
 				size -= transmitedSize;
@@ -327,5 +329,6 @@ void AudioServer::decoderMain(void*)
 	MP3::deinit();
 	AAC::deinit();
 
+	ESP_LOGI(TAG, "stoped");
 	decoderThread = {};
 }
