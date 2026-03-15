@@ -144,7 +144,9 @@ int memCloseDir(DIR* pdir);
 int memMakeDir(const char* name, mode_t mode);
 int memRemoveDir(const char* name);
 
+#if MemDebug && MemUsageDebug
 EXT_RAM_BSS_ATTR size_t memTotolUsage = 0;
+#endif
 EXT_RAM_BSS_ATTR MemFloorHead memRoot;
 EXT_RAM_BSS_ATTR MemFileView memFileDescriptions[MaxMemFileDescriptionCount] = {};
 EXT_RAM_BSS_ATTR Mutex mutex;
