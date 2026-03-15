@@ -117,8 +117,8 @@ public:
 			readBufferStart -= rawIn.len;
 			readBufferSize += rawIn.len;
 
-			// auto copySize = rawIn.len;
-			memcpy(readBuffer + readBufferStart, rawIn.buffer, rawIn.len);
+			auto copySize = rawIn.len;
+			memcpy(readBuffer + readBufferStart, rawIn.buffer, copySize);
 
 			rawIn.buffer = readBuffer + readBufferStart;
 			rawIn.len = readBufferSize;
@@ -133,12 +133,9 @@ public:
 
 	void consume(size_t consumed)
 	{
-		bufferMutex.lock();
+		Lock lock{ bufferMutex };
 		rawIn.len -= consumed;
 		rawIn.buffer += consumed;
-		bufferMutex.unlock();
-
-		update();
 	}
 
 private:

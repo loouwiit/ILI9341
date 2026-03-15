@@ -25,14 +25,17 @@ public:
 
 private:
 	constexpr static size_t FrameBufferLength = 8192;
-	constexpr static size_t MP3BufferLength = 4096;
-	constexpr static size_t MP3BufferSThrehood = 250;
+	constexpr static size_t DecoderBufferLength = 4096;
+	constexpr static size_t DecoderBufferThresholdDefault = 256;
+	constexpr static size_t DecoderBufferThresholdIncrease = 128;
+	constexpr static size_t DecoderBufferThresholdMax = 2048;
 
 	EXT_RAM_BSS_ATTR static bool autoDeinit;
 
 	EXT_RAM_BSS_ATTR static char path[256];
 	EXT_RAM_BSS_ATTR static Decoder* decoder;
 	EXT_RAM_BSS_ATTR static uint8_t* decoderBuffer;
+	EXT_RAM_BSS_ATTR static size_t decoderBufferThreshold;
 	EXT_RAM_BSS_ATTR static ALC* alc;
 	EXT_RAM_BSS_ATTR static uint8_t* alcBuffer;
 

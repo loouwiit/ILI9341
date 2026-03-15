@@ -63,7 +63,7 @@ public:
 		frameOut.len = bufferSize;
 
 		esp_audio_dec_info_t infoDefault{};
-		if (info == nullptr) info = &infoDefault;
+		if (info == nullptr) [[likely]] info = &infoDefault;
 
 		// ESP_LOGI(TAG, "decode size = %d", audioIn.getPointer()->len);
 		auto ret = esp_mp3_dec_decode(handle, audioIn.getPointer(), &frameOut, info);
@@ -73,9 +73,11 @@ public:
 				ESP_LOGE(TAG, "decode need %d while has %d", frameOut.needed_size, frameOut.len);
 			else ESP_LOGE(TAG, "error %d", ret);
 		}
-
-		// ESP_LOGI(TAG, "decode %d from %d", frameOut.decoded_size, rawIn.consumed);
-		audioIn.consume(audioIn.getReference().consumed);
+		else [[likely]]
+		{
+			// ESP_LOGI(TAG, "decode %d from %d", frameOut.decoded_size, rawIn.consumed);
+			audioIn.consume(audioIn.getReference().consumed);
+		}
 
 		return frameOut.decoded_size;
 	}

@@ -14,6 +14,7 @@ bool AudioServer::autoDeinit = false;
 char AudioServer::path[256]{};
 Decoder* AudioServer::decoder{};
 uint8_t* AudioServer::decoderBuffer{};
+size_t AudioServer::decoderBufferThreshold = DecoderBufferThresholdDefault;
 ALC* AudioServer::alc{};
 uint8_t* AudioServer::alcBuffer{};
 
@@ -165,7 +166,10 @@ void AudioServer::openFile(const char* path)
 	{
 		ESP_LOGE(TAG, "sample rate == 0!");
 		decoder->close();
+		return;
 	}
+
+	decoderBufferThreshold = DecoderBufferThresholdDefault;
 
 	auto gain = alc->getGain();
 	*alc = ALC{ info.sample_rate, info.channel, info.bits_per_sample };
@@ -219,7 +223,7 @@ void AudioServer::loaderMain(void*)
 				loaderThread.suspend();
 			}
 
-			auto loadSize = decoder->getBuffer().tryLoad(MP3BufferLength); // 这个逻辑应该由信号出发，而不是轮询
+			auto loadSize = decoder->getBuffer().tryLoad(DecoderBufferLength); // 这个逻辑应该由信号出发，而不是轮询
 			if (loadSize == AudioBuffer::NoNeedToLoad) [[likely]]
 				vTaskDelay(1);
 			else if (loadSize == 0) [[unlikely]]
@@ -261,16 +265,26 @@ void AudioServer::decoderMain(void*)
 				decoderThread.suspend();
 			}
 
-			while (decoder->getBuffer().getReference().len < MP3BufferSThrehood && !loaderPause)
+			while (decoder->getBuffer().getReference().len < decoderBufferThreshold && !loaderPause)
 			{
-				decoder->getBuffer().update(MP3BufferSThrehood);
+				decoder->getBuffer().update(decoderBufferThreshold);
 				vTaskDelay(1);
 			}
 
 			if (!audioPause && loaderPause) [[unlikely]] break; // 文件结束
 
 			auto size = decoder->decode(decoderBuffer, FrameBufferLength);
-			if (size == 0) [[unlikely]] break;
+			if (size == 0) [[unlikely]]
+			{
+				// 检查buffer还有没有增加的空间
+				if (decoderBufferThreshold < DecoderBufferThresholdMax) [[likely]]
+				{
+					decoderBufferThreshold += DecoderBufferThresholdIncrease;
+					ESP_LOGI(TAG, "decoderBufferThreshold increased to %d", decoderBufferThreshold);
+					continue; // 重新load
+				}
+				break;
+			}
 
 			(*alc)(decoderBuffer, alcBuffer, size); // 音量调节
 
