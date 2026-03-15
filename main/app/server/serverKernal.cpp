@@ -24,6 +24,7 @@ constexpr char TAG[] = "server";
 constexpr char ServerPath[] = "/server";
 constexpr char FormatingPassword[] = "I know exactly what I'm doing";
 constexpr size_t FlashPutMaxSize = 6 * 1024 * 1024; //6M
+constexpr size_t MemPutMaxSize = 6 * 1024 * 1024; //6M
 constexpr size_t SdPutMaxSize = 50 * 1024 * 1024; //50M
 constexpr size_t PutBufferSize = 512;
 
@@ -643,7 +644,11 @@ void httpPut(IOSocketStream& socketStream, HttpRequest& request)
 		{
 			tooLarge = request.getBodyLenght() > SdPutMaxSize;
 		}
-		else
+		else if (prefixCompare(path, pathLength, PerfixMem, strlen(PerfixMem)))
+		{
+			tooLarge = request.getBodyLenght() > MemPutMaxSize;
+		}
+		else // flash
 		{
 			tooLarge = request.getBodyLenght() > FlashPutMaxSize ||
 				request.getBodyLenght() > getFreeSpace();
