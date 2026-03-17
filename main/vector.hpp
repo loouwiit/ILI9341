@@ -43,5 +43,4 @@ template <class T>
 constexpr auto abs2(Vector2<T> v) { return v.abs2(); }
 
 using Vector2s = Vector2<short>;
-using Vector2us = Vector2<unsigned short>;
 using Vector2f = Vector2<float>;

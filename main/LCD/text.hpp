@@ -6,7 +6,7 @@
 #include "font.hpp"
 #include "cmath"
 
-template<ColorTemplate Color, Vector2us Size>
+template<ColorTemplate Color, Vector2s Size>
 class Character final : public Element<Color, Size>
 {
 public:
@@ -24,7 +24,7 @@ public:
 	Character(Character&&) = default;
 	Character& operator=(Character&&) = default;
 
-	Vector2us getSize()
+	Vector2s getSize()
 	{
 		return fonts->get(text).size * scale;
 	}
@@ -36,7 +36,7 @@ public:
 			sub.y < fonts->get(text).size.y * scale;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
+	virtual Vector2s drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		auto [fontSize, font] = this->fonts->get(text);
 		Vector2s modPositionStart = { 0,0 };
@@ -88,7 +88,7 @@ public:
 	}
 };
 
-template<ColorTemplate Color, Vector2us Size>
+template<ColorTemplate Color, Vector2s Size>
 class Text final : public Element<Color, Size>
 {
 public:
@@ -109,12 +109,12 @@ public:
 	Text(Text&&) = default;
 	Text& operator=(Text&&) = default;
 
-	Vector2us getSize()
+	Vector2s getSize()
 	{
 		return endPosition - position;
 	}
 
-	Vector2us computeSize()
+	Vector2s computeSize()
 	{
 		endPosition = position;
 		Vector2s nowPosition = position;
@@ -164,7 +164,7 @@ public:
 			position.y <= point.y && point.y < endPosition.y;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
+	virtual Vector2s drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		Vector2s drawPosition = position + offset;
 		Character<Color, Size> tempCharacter{ drawPosition, '\0', textColor, backgroundColor,scale, fonts };
@@ -203,7 +203,7 @@ public:
 	}
 };
 
-template<ColorTemplate Color, Vector2us Size, class T>
+template<ColorTemplate Color, Vector2s Size, class T>
 class Number final : public Element<Color, Size>
 {
 public:
@@ -223,12 +223,12 @@ public:
 	Number(Number&&) = default;
 	Number& operator=(Number&&) = default;
 
-	Vector2us getSize()
+	Vector2s getSize()
 	{
 		return endPosition - position;
 	}
 
-	Vector2us computeSize()
+	Vector2s computeSize()
 	{
 		T nowNumber = number;
 		endPosition = position;
@@ -251,7 +251,7 @@ public:
 			position.y <= point.y && point.y < endPosition.y;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
+	virtual Vector2s drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		Vector2s drawPosition = position + offset;
 		Character<Color, Size> tempCharacter{ drawPosition, '0', textColor, backgroundColor, scale, fonts };
@@ -281,6 +281,6 @@ public:
 
 		draw(nowNumber, draw); // 递归lambda
 
-		return nowPosition - drawPosition + Vector2us{ 0,16 } *scale;
+		return nowPosition - drawPosition + Vector2s{ 0,16 } *scale;
 	}
 };

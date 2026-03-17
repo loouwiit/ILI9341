@@ -14,7 +14,7 @@ namespace LayarClassicSize
 	constexpr unsigned char Huge = 50;
 };
 
-template <ColorTemplate Color, Vector2us Size, unsigned char elementMaxSize>
+template <ColorTemplate Color, Vector2s Size, unsigned char elementMaxSize>
 class Layar final : public Element<Color, Size>
 {
 public:
@@ -35,7 +35,21 @@ public:
 
 	auto& operator[](unsigned char index) { return elements[index]; }
 
-	Vector2us getSize()
+	Vector2s offset(Vector2s positionOffset)
+	{
+		start += positionOffset;
+		end += positionOffset;
+		return start;
+	}
+
+	Vector2s offset(short x, short y)
+	{
+		start += {x, y};
+		end += {x, y};
+		return start;
+	}
+
+	Vector2s getSize()
 	{
 		return end - start;
 	}
@@ -72,7 +86,7 @@ public:
 			elements[i]->finger(finger, target);
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
+	virtual Vector2s drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override
 	{
 		offset += start;
 		for (unsigned char i = 0; i < elementCount; i++)

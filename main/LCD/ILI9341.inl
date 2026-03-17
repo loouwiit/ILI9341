@@ -26,7 +26,7 @@ ILI9341<Color>& ILI9341<Color>::operator=(ILI9341&& move)
 }
 
 template <ColorTemplate Color>
-Vector2us ILI9341<Color>::draw(auto&& element)
+Vector2s ILI9341<Color>::draw(auto&& element)
 {
 	return element.drawTo(*frame);
 }
@@ -117,7 +117,7 @@ void ILI9341<Color>::drawModeContinue()
 }
 
 template <ColorTemplate Color>
-void ILI9341<Color>::setAddressWindow(Vector2us start, Vector2us end)
+void ILI9341<Color>::setAddressWindow(Vector2s start, Vector2s end)
 {
 	command(0x2A, { (char)(start.x >> 8), (char)(start.x & 0xFF), (char)((end.x) >> 8), (char)((end.x) & 0xFF) }, 4);
 	command(0x2B, { (char)(start.y >> 8), (char)(start.y & 0xFF), (char)((end.y) >> 8), (char)((end.y) & 0xFF) }, 4);

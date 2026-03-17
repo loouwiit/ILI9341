@@ -4,7 +4,7 @@
 #include "vector.hpp"
 #include "drawable.hpp"
 
-template <ColorTemplate Color, Vector2us Size>
+template <ColorTemplate Color, Vector2s Size>
 class Pixel final : public Drawable<Color, Size>
 {
 public:
@@ -18,7 +18,7 @@ public:
 	Vector2s position{};
 	Color color{};
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
+	virtual Vector2s drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		Vector2s drawPosition = position + offset;
 		if (drawPosition.x < 0) return { 1,1 };

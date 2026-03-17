@@ -21,7 +21,7 @@ public:
 	void setBlockType(BlockType type);
 	BlockType getBlockType();
 
-	virtual Vector2us drawTo(DrawTarget& target, Vector2s offset = {}) override final
+	virtual Vector2s drawTo(DrawTarget& target, Vector2s offset = {}) override final
 	{
 		offset += drawPosition;
 		for (int i = 0; i < 4; i++)

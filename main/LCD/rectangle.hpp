@@ -4,7 +4,7 @@
 #include "vector.hpp"
 #include "element.hpp"
 
-template <ColorTemplate Color, Vector2us Size>
+template <ColorTemplate Color, Vector2s Size>
 class Rectangle final : public Element<Color, Size>
 {
 public:
@@ -19,7 +19,7 @@ public:
 	Rectangle(Rectangle&&) = default;
 	Rectangle& operator=(Rectangle&&) = default;
 
-	Vector2us getSize()
+	Vector2s getSize()
 	{
 		return end - start;
 	}
@@ -30,7 +30,7 @@ public:
 			start.y <= point.y && point.y < end.y;
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
+	virtual Vector2s drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		Vector2s drawStart = start + offset;
 		Vector2s drawEnd = end + offset;

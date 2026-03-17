@@ -14,15 +14,15 @@ public:
 	virtual const unsigned char* get(Unicode text) const { return error; };
 	inline const unsigned char* operator()(Unicode text) const { return get(text); }
 
-	Vector2us getSize() const { return textSize; }
+	Vector2s getSize() const { return textSize; }
 
 	static Font* load(const char* path);
 
 	static const unsigned char* const error;
 
 protected:
-	constexpr Font(Vector2us textSize = {}) : textSize{ textSize } {}
-	Vector2us textSize{ 0,0 };
+	constexpr Font(Vector2s textSize = {}) : textSize{ textSize } {}
+	Vector2s textSize{ 0,0 };
 
 	constexpr static unsigned char errorTable[32] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF };
 };
@@ -37,7 +37,7 @@ class Fonts
 public:
 	struct Character
 	{
-		Vector2us size{};
+		Vector2s size{};
 		const unsigned char* font = nullptr;
 	};
 
@@ -77,7 +77,7 @@ private:
 	constexpr static int MaxFontSize = 3;
 
 	const Font* fonts[MaxFontSize];
-	Vector2us fontSize[MaxFontSize];
+	Vector2s fontSize[MaxFontSize];
 };
 
 extern Fonts fontsDefault;

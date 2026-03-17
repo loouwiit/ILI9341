@@ -29,7 +29,7 @@ class ILI9341
 public:
 	using Color = Color_t;
 
-	constexpr static Vector2us ScreenSize = { 320, 240 };
+	constexpr static Vector2s ScreenSize = { 320, 240 };
 	constexpr static size_t ScreenTotolSize = ScreenSize.y * ScreenSize.x;
 
 	using Frame = ::Frame<Color, ScreenSize>;
@@ -64,7 +64,7 @@ public:
 	operator Frame& () { return *frame; }
 	Frame& getFrame() { return *frame; }
 
-	Vector2us draw(auto&& element);
+	Vector2s draw(auto&& element);
 	bool isDrawing();
 
 	void reset();
@@ -84,7 +84,7 @@ protected:
 	bool data(SPIDevice::SmallData_t data, int size = 1);
 	bool data(char* data, size_t size);
 
-	void setAddressWindow(Vector2us start, Vector2us end);
+	void setAddressWindow(Vector2s start, Vector2s end);
 
 	void drawModeStart();
 	void drawModeContinue();

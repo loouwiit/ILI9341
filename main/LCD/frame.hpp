@@ -4,13 +4,13 @@
 #include "vector.hpp"
 
 // DMA_ATTR please
-template <ColorTemplate Color, Vector2us Size>
+template <ColorTemplate Color, Vector2s Size>
 class Frame
 {
 public:
 	Color buffer[Size.y][Size.x];
 
-	Vector2us draw(auto& element)
+	Vector2s draw(auto& element)
 	{
 		return element.drawTo(*this);
 	}

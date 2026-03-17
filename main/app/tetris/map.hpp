@@ -12,7 +12,7 @@ public:
 	Map();
 	~Map();
 
-	virtual Vector2us drawTo(DrawTarget& target, Vector2s offset = {}) override final
+	virtual Vector2s drawTo(DrawTarget& target, Vector2s offset = {}) override final
 	{
 		offset += position;
 		for (unsigned char y = 0; y < MapSize.y; y++) for (unsigned char x = 0; x < MapSize.x; x++)

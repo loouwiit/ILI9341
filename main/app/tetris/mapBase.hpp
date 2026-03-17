@@ -7,8 +7,8 @@ using Color = App::LCD::Color;
 using BlockType = AppTetris::BlockType;
 constexpr static unsigned char BlockTypeCount = AppTetris::BlockTypeCount;
 
-constexpr static Vector2us MapSize = { 10,24 };
-constexpr static Vector2us RealMapSize = { 10,20 };
+constexpr static Vector2s MapSize = { 10,24 };
+constexpr static Vector2s RealMapSize = { 10,20 };
 
 constexpr static Color BlockColor[9] =
 {

@@ -4,7 +4,7 @@
 #include "vector.hpp"
 #include "drawable.hpp"
 
-template <ColorTemplate Color, Vector2us Size>
+template <ColorTemplate Color, Vector2s Size>
 class Line final : public Drawable<Color, Size>
 {
 public:
@@ -19,7 +19,7 @@ public:
 	Line(Line&&) = default;
 	Line& operator=(Line&&) = default;
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
+	virtual Vector2s drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		Vector2s drawStart = start + offset;
 

@@ -2,7 +2,7 @@
 
 #include "element.hpp"
 
-template<ColorTemplate Color, Vector2us Size, class T>
+template<ColorTemplate Color, Vector2s Size, class T>
 class Bar final : public Element<Color, Size>
 {
 public:
@@ -70,7 +70,7 @@ public:
 		}
 	}
 
-	virtual Vector2us drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
+	virtual Vector2s drawTo(Drawable<Color, Size>::DrawTarget& target, Vector2s offset = {}) override final
 	{
 		offset += position;
 		bar.drawTo(target, offset);
