@@ -9,7 +9,8 @@ void AppTextEditor::init()
 	contents[0] = &title;
 	contents[1] = &fileLayar;
 
-	title.text = fileName;
+	title.text = titleBuffer ? titleBuffer : "";
+	title.position = { LCD::ScreenSize.x / 2, 0 };
 	title.position.x -= title.computeSize().x / 2;
 	if (title.position.x < 0) title.position.x = 0;
 	title.computeSize();
@@ -53,6 +54,9 @@ void AppTextEditor::deinit()
 		delete[] lineBuffers[i];
 		lines[i].text = lineBuffers[i] = nullptr;
 	}
+
+	delete[] titleBuffer;
+
 	deleteAble = true;
 }
 
@@ -113,6 +117,19 @@ void AppTextEditor::touchUpdate()
 void AppTextEditor::back()
 {
 	changeAppCallback(nullptr);
+}
+
+void AppTextEditor::setTitle(const char* newTitle)
+{
+	delete[] titleBuffer;
+	titleBuffer = new char[strlen(newTitle) + 1];
+	strcpy(titleBuffer, newTitle);
+
+	title.text = titleBuffer ? titleBuffer : "";
+	title.position = { LCD::ScreenSize.x / 2, 0 };
+	title.position.x -= title.computeSize().x / 2;
+	if (title.position.x < 0) title.position.x = 0;
+	title.computeSize();
 }
 
 FileBase::OffsetType AppTextEditor::loadText(FileBase::OffsetType offset)

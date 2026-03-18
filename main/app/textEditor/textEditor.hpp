@@ -16,8 +16,9 @@ public:
 	virtual void touchUpdate() override final;
 	virtual void back() override final;
 
+	void setTitle(const char* title);
+
 	IOFile file{};
-	const char* fileName = "";
 
 private:
 	constexpr static unsigned char TitleSize = 3;
@@ -30,6 +31,7 @@ private:
 	constexpr static unsigned char ContensSize = 2;
 	LCD::Layar<LayarClassicSize::Pair> contents{ ContensSize };
 
+	char* titleBuffer{};
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, "error", TitleSize };
 
 	constexpr static unsigned char LineCount = LayarClassicSize::Small;

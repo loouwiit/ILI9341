@@ -26,6 +26,7 @@ public:
 	using CallbackFunction_t = void(*)(const char* path, void* param); // safe for changeAppCallback & newAppCallback
 	CallbackFunction_t openFileCallback = nullptr;
 	void* callBackParam = nullptr;
+	bool enableLink = true;
 
 private:
 	constexpr static char TAG[] = "AppExplorer";
@@ -55,7 +56,7 @@ private:
 	LCD::Text files[FileLayarSize]{};
 
 	char* fileName[FileLayarSize]{};
-	char realFloorPath[1024] = "/root/";
+	char realFloorPath[256] = "/root/";
 	char* const nowFloorPath = realFloorPath + 5;
 	size_t nowFloorPointer = 1;
 	Floor floor{};
@@ -71,6 +72,7 @@ private:
 	void holdCallback(unsigned char index);
 	void clickCallback(unsigned char index);
 	void openFile(unsigned char index);
+	void openFile(const char* path, size_t length, unsigned char linkDepth = 5);
 	void updateText(unsigned char index, const char* text, Floor::Type type);
 
 	constexpr static float moveThreshold2 = 100.0f;

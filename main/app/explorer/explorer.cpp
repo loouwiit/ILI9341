@@ -305,9 +305,9 @@ bool AppExplorer::floorBack()
 	nowFloorPointer++;
 	nowFloorPath[nowFloorPointer] = '\0';
 	resetPosition();
-	updateFloor();
 	newFile.position.x = path.computeSize().x + GapSize;
 	newFile.computeSize();
+	updateFloor();
 	return true;
 }
 
@@ -357,24 +357,65 @@ void AppExplorer::openFile(unsigned char index)
 	char* fileName = this->fileName[index];
 	auto fileNameLength = strlen(fileName);
 
+	openFile(fileName, fileNameLength);
+}
+
+void AppExplorer::openFile(const char* path, size_t length, unsigned char linkDepth)
+{
+	if (enableLink && strcmp(path + length - 3, ".ln") == 0) do
+	{
+		if (linkDepth == 0)
+		{
+			// link过深
+			ESP_LOGI(TAG, "link %s too depth", path);
+			break;
+		}
+		IFile link{};
+		if (path[0] == '/') link.open(path); // from link
+		else floor.openFile(path, length, link); // from open
+		char* buffer = new char[256];
+		link.getLine(buffer, 256);
+		link.close();
+		if (testFile(buffer))
+			openFile(buffer, strlen(buffer), linkDepth - 1);
+		else if (testFloor(buffer))
+		{
+			strcpy(realFloorPath, buffer);
+			resetPosition();
+			newFile.position.x = this->path.computeSize().x + GapSize;
+			newFile.computeSize();
+			updateFloor();
+		}
+		else // 链接失效，由后续open处理
+		{
+			ESP_LOGI(TAG, "broken link %s -> %s", path, buffer);
+			delete[] buffer;
+			break;
+		}
+
+		delete[] buffer;
+		return; // 链接成功，直接返回
+	} while (false);
+
 	if (openFileCallback != nullptr)
 	{
 		auto floorLength = strlen(realFloorPath); // /root/xxx/floor/
 
-		char* buffer = new char[fileNameLength + floorLength + 1]; // one for \0
+		char* buffer = new char[length + floorLength + 1]; // one for \0
 		memcpy(buffer, realFloorPath, floorLength);
-		memcpy(buffer + floorLength, fileName, fileNameLength + 1); // with \0
+		memcpy(buffer + floorLength, fileName, length + 1); // with \0
 
 		openFileCallback(buffer, callBackParam);
 		delete[] buffer;
 		return;
 	}
 
-	if (strcmp(fileName + fileNameLength - 4, ".pic") == 0)
+	if (strcmp(path + length - 4, ".pic") == 0)
 	{
 		AppPicture* picture = new AppPicture{ lcd,touch, changeAppCallback, newAppCallback };
-		floor.openFile(fileName, fileNameLength, picture->file);
-		picture->fileName = fileName;
+		if (path[0] == '/') picture->file.open(path); // from link
+		else floor.openFile(path, length, picture->file); // from open
+		picture->fileName = path;
 		if (picture->file.isOpen())
 			newAppCallback(picture);
 		else delete picture;
@@ -382,8 +423,9 @@ void AppExplorer::openFile(unsigned char index)
 	else
 	{
 		AppTextEditor* editor = new AppTextEditor{ lcd,touch, changeAppCallback, newAppCallback };
-		floor.openFile(fileName, fileNameLength, editor->file);
-		editor->fileName = fileName; // 生命周期安全，newApp不会析构过去的app
+		if (path[0] == '/') editor->file.open(path); // from link
+		else floor.openFile(path, length, editor->file); // from open
+		editor->setTitle(path);
 		newAppCallback(editor);
 	}
 }
