@@ -205,7 +205,7 @@ void AudioServer::loaderMain(void*)
 
 	ESP_LOGI(TAG, "started");
 
-	loaderPause = audioPause = true;
+	loaderPause = true;
 	loaderThread.suspend(); // 挂起自己等待唤醒
 
 	while (serverRunning)
@@ -273,11 +273,11 @@ void AudioServer::decoderMain(void*)
 				vTaskDelay(1);
 			}
 
-			if (!audioPause && loaderPause) [[unlikely]] break; // 文件结束
-
 			auto size = decoder->decode(decoderBuffer, FrameBufferLength);
 			if (size == 0) [[unlikely]]
 			{
+				if (!audioPause && loaderPause) [[unlikely]] break; // 文件结束
+
 				// 检查buffer还有没有增加的空间
 				if (decoderBufferThreshold < DecoderBufferThresholdMax) [[likely]]
 				{
@@ -303,6 +303,8 @@ void AudioServer::decoderMain(void*)
 		// finish
 		decoder->close();
 		pause();
+		vTaskDelay(10);
+		iis.stop();
 
 		if (autoDeinit) deinit();
 	}
