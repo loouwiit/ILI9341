@@ -374,13 +374,21 @@ void AppExplorer::openFile(const char* path, size_t length, unsigned char linkDe
 		if (path[0] == '/') link.open(path); // from link
 		else floor.openFile(path, length, link); // from open
 		char* buffer = new char[256];
-		link.getLine(buffer, 256);
+		auto bufferLength = link.getLine(buffer, 256);
+		if (buffer[bufferLength - 1] == '\n')
+			buffer[--bufferLength] = '\0';
 		link.close();
 		if (testFile(buffer))
 			openFile(buffer, strlen(buffer), linkDepth - 1);
 		else if (testFloor(buffer))
 		{
+			if (buffer[bufferLength - 1] != '/')
+			{
+				buffer[bufferLength] = '/';
+				buffer[++bufferLength] = '\0';
+			}
 			strcpy(realFloorPath, buffer);
+			nowFloorPointer = bufferLength;
 			resetPosition();
 			newFile.position.x = this->path.computeSize().x + GapSize;
 			newFile.computeSize();
@@ -399,11 +407,20 @@ void AppExplorer::openFile(const char* path, size_t length, unsigned char linkDe
 
 	if (openFileCallback != nullptr)
 	{
+		if (path[0] == '/')
+		{
+			// from link
+			openFileCallback(path, callBackParam);
+			return;
+		}
+
+		// from open
+
 		auto floorLength = strlen(realFloorPath); // /root/xxx/floor/
 
 		char* buffer = new char[length + floorLength + 1]; // one for \0
 		memcpy(buffer, realFloorPath, floorLength);
-		memcpy(buffer + floorLength, fileName, length + 1); // with \0
+		memcpy(buffer + floorLength, path, length + 1); // with \0
 
 		openFileCallback(buffer, callBackParam);
 		delete[] buffer;
