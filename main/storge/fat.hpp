@@ -25,6 +25,8 @@ bool newFloor(const char* path);
 bool testFloor(const char* path);
 bool removeFloor(const char* path);
 
+const char* getBaseName(const char* path);
+
 class FileBase : public NonCopyAble
 {
 public:

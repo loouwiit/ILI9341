@@ -203,6 +203,15 @@ bool removeFloor(const char* path)
 	return rmdir(path) == 0;
 }
 
+const char* getBaseName(const char* path)
+{
+	auto ret = path;
+	while (*ret != '\0') ret++;
+	while (ret != path && *ret != '/' && *ret != '\\') ret--;
+	if (*ret == '/' || *ret == '\\') ret++;
+	return ret;
+}
+
 //FileBase
 
 FileBase::~FileBase()
