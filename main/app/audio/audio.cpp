@@ -1,6 +1,7 @@
 #include "audio.hpp"
 
 #include "app/explorer/explorer.hpp"
+#include "playList.hpp"
 
 #include "task.hpp"
 
@@ -16,7 +17,8 @@ void AppAudio::init()
 	contents[3] = &audioGain;
 	contents[4] = &audioGainBar;
 	contents[5] = &pauseText;
-	contents[6] = &endButton;
+	contents[6] = &playListButton;
+	contents[7] = &endButton;
 
 	title.position = { LCD::ScreenSize.x / 2, 0 };
 	title.position.x -= title.computeSize().x / 2;
@@ -24,13 +26,9 @@ void AppAudio::init()
 	title.clickCallbackParam = this;
 	title.releaseCallback = [](Finger&, void* param) { auto& self = *(AppAudio*)param; self.back(); };
 
-	strcpy(audioPathBuffer, AudioServer::getFilePath());
-	char* now = audioPathBuffer;
-	while (*now != '\0') now++;
-	while (*now != '/' && *now != '\\' && now >= audioPathBuffer) now--;
-	now++;
-	audioFileText.text = now;
-	audioFileText.computeSize();
+	updatePlayListStatus();
+	updatePathText();
+
 	audioFileText.clickCallbackParam = audioText.clickCallbackParam = this;
 	audioFileText.releaseCallback = audioText.releaseCallback = [](Finger&, void* param)
 		{
@@ -87,6 +85,8 @@ void AppAudio::init()
 			AudioServer::setGain(gain);
 		};
 
+	audioPlayListPointer = AudioServer::getPlayListNow();
+
 	AudioServer::setAutoDeinit(false);
 	audioOpened = true; // 假定上一次状态，从而激活deamon的reload
 	// 该任务应该由server完成，此处需要重构
@@ -100,13 +100,34 @@ void AppAudio::init()
 			self.switchPause();
 		};
 
+
+	playListButton.offset(-playListButton.getSize() / 2);
+	playListButton.offset(-playListButton.getSize().x / 2, 0);
+	playListButton.offset(-pauseText.getSize().x / 2, 0);
+	playListButton.offset(-GapSize * 2, 0);
+
+	playListButton[0] = &playListButtonBackground;
+	playListButton[1] = &playListButtonLines[0];
+	playListButton[2] = &playListButtonLines[1];
+	playListButton[3] = &playListButtonLines[2];
+
+	playListButtonBackground.clickCallbackParam = this;
+	playListButtonBackground.releaseCallback = [](Finger&, void* param)
+		{
+			auto& self = *(AppAudio*)param;
+			ESP_LOGI(TAG, "playListButton");
+			auto app = new AppPlayList{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+			self.running = false;
+			self.newAppCallback(app);
+		};
+
 	endButton[0] = &endButtonBackground;
 	endButton[1] = &endButtonFrontground;
 
-	endButton.start -= endButton.getSize() / 2;
-
-	endButton.start.x += pauseText.getSize().x; // endButton.end未同步修改
-	endButton.start.x += GapSize;
+	endButton.offset(-endButton.getSize() / 2);
+	endButton.offset(endButton.getSize().x / 2, 0);
+	endButton.offset(pauseText.getSize().x / 2, 0);
+	endButton.offset(GapSize * 2, 0);
 
 	endButtonBackground.clickCallbackParam = this;
 	endButtonBackground.releaseCallback = [](Finger&, void* param)
@@ -126,6 +147,9 @@ void AppAudio::focusIn()
 {
 	running = true;
 	drawLocked = false;
+
+	updatePlayListStatus();
+	updatePathText();
 }
 
 void AppAudio::deinit()
@@ -164,20 +188,41 @@ void AppAudio::playAudio(const char* path)
 			AudioServer::init();
 			AudioServer::setGain(audioGainBar.getValue() / 2 - 64);
 		}
+		if (AudioServer::isPlayListEnabled())
+		{
+			AudioServer::disablePlayList();
+			updatePlayListStatus();
+		}
 		AudioServer::openFile(path);
 		audioOpened = AudioServer::isOpened();
 		if (!audioOpened) return;
 		resume();
 	}
 
+	updatePathText();
+}
+
+void AppAudio::updatePathText()
+{
 	strcpy(audioPathBuffer, AudioServer::getFilePath());
-	char* now = audioPathBuffer;
-	while (*now != '\0') now++;
-	while (*now != '/' && *now != '\\' && now >= audioPathBuffer) now--;
-	now++;
-	audioFileText.text = now;
+	audioFileText.text = getBaseName(audioPathBuffer);
 	audioFileText.computeSize();
 	drawLocked = false;
+}
+
+void AppAudio::updatePlayListStatus()
+{
+	if (AudioServer::isPlayListEnabled())
+	{
+		audioText.textColor = audioFileText.textColor = LCD::Color::Blue;
+		audioText.text = AutoLnaguage{ "playlist:", "播放列表:" };
+	}
+	else
+	{
+		audioText.textColor = audioFileText.textColor = LCD::Color::White;
+		audioText.text = AutoLnaguage{ "playing:", "当前播放:" };
+	}
+	audioText.computeSize();
 }
 
 void AppAudio::updatePauseStatus()
@@ -198,7 +243,17 @@ void AppAudio::updatePauseStatus()
 void AppAudio::switchPause()
 {
 	if (!AudioServer::isOpened())
+	{
+		// 检查playlist是否开启以自动加载文件
+		if (AudioServer::getPlayList())
+		{
+			AudioServer::enablePlayList();
+			updatePlayListStatus();
+			if (AudioServer::isPlayListEnabled())
+				resume();
+		}
 		return;
+	}
 
 	if (AudioServer::isPaused())
 		resume();
@@ -219,6 +274,12 @@ void AppAudio::resume()
 
 void AppAudio::end()
 {
+	if (AudioServer::isPlayListEnabled())
+	{
+		AudioServer::disablePlayList();
+		updatePlayListStatus();
+	}
+
 	Lock lock{ deamonMutex };
 	audioPathBuffer[0] = '\0';
 	audioFileText.text = audioPathBuffer;
@@ -245,10 +306,11 @@ TickType_t AppAudio::deamonTask(void* param)
 	if (paused != self.audioPaused)
 		self.updatePauseStatus();
 
+	if (!AudioServer::isPlayListEnabled())
 	{
 		Lock lock{ self.deamonMutex };
 		auto opened = AudioServer::isOpened();
-		if (opened != self.audioOpened)
+		if (opened != self.audioOpened) // reopenFile
 		{
 			if (!AudioServer::isInited())
 			{
@@ -261,6 +323,14 @@ TickType_t AppAudio::deamonTask(void* param)
 				AudioServer::openFile(path);
 				self.audioOpened = AudioServer::isOpened();
 			}
+		}
+	}
+	else // playListEnabled
+	{
+		if (self.audioPlayListPointer != AudioServer::getPlayListNow())
+		{
+			self.updatePathText();
+			self.audioPlayListPointer = AudioServer::getPlayListNow();
 		}
 	}
 

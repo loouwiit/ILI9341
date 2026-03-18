@@ -29,6 +29,9 @@ Thread AudioServer::loaderThread{};
 bool AudioServer::decoderPause = false; // thread负责置true，外部负责置false
 bool AudioServer::loaderPause = false; // thread负责置true，外部负责置false
 
+AudioServer::PlayList* AudioServer::playListHead = nullptr;
+AudioServer::PlayList* AudioServer::playListNow = nullptr;
+
 void AudioServer::pause()
 {
 	audioPause = true;
@@ -201,6 +204,170 @@ int8_t AudioServer::getGain()
 	return alc->getGain();
 }
 
+AudioServer::PlayList* AudioServer::getPlayList()
+{
+	return playListHead;
+}
+
+AudioServer::PlayList* AudioServer::getPlayListNow()
+{
+	return playListNow;
+}
+
+bool AudioServer::isPlayListEnabled()
+{
+	return playListNow != nullptr;
+}
+
+void AudioServer::enablePlayList()
+{
+	ESP_LOGI(TAG, "playlist enable");
+	playListNow = playListHead;
+	if (playListNow) openFile(playListHead->getPath());
+}
+
+void AudioServer::disablePlayList()
+{
+	ESP_LOGI(TAG, "playlist disable");
+	playListNow = nullptr;
+}
+
+void AudioServer::addPlayList(const char* path, PlayList* insert)
+{
+	ESP_LOGI(TAG, "add play list %s", path);
+
+	assert(playListHead != nullptr || insert == nullptr); // 确保list存在，或者insert到nullptr
+
+	if (playListHead == nullptr) [[unlikely]]
+	{
+		// 没有list，此次创建
+		playListHead = new PlayList{};
+		playListHead->next = nullptr;
+		playListHead->last = nullptr;
+		playListHead->id = 0;
+		auto buffer = new char[strlen(path) + 1];
+		strcpy(buffer, path);
+		playListHead->songPath = buffer;
+		return;
+	}
+
+	auto newList = new PlayList{};
+	auto buffer = new char[strlen(path) + 1];
+	strcpy(buffer, path);
+	newList->songPath = buffer;
+
+	if (insert == nullptr)
+	{
+		// add to tail
+		auto* p = playListHead;
+		while (p->next != nullptr) p = p->next;
+		newList->id = p->id + 1;
+		newList->last = p;
+		p->next = newList;
+	}
+	else
+	{
+		// normal add
+		newList->id = insert->id;
+		newList->next = insert;
+		newList->last = insert->last;
+
+		newList->next->last = newList;
+		if (newList->last != nullptr) newList->last->next = newList;
+
+		if (insert == playListHead) playListHead = newList;
+	}
+
+	// 维护insert以后的id
+	while (insert != nullptr)
+	{
+		insert->id++;
+		insert = insert->next;
+	}
+}
+
+void AudioServer::removePlayList(PlayList* playList)
+{
+	assert(playList != nullptr);
+
+	if (playList == playListNow) switchToNextPlayList();
+	if (playList == playListNow) close();
+	if (playList == playListNow)
+	{
+		ESP_LOGW(TAG, "can't remove playlist %s, still playing", playList->getPath());
+		return;
+	}
+
+	if (playList->next != nullptr) playList->next->last = playList->last;
+	if (playList->last != nullptr) playList->last->next = playList->next;
+
+	if (playList == playListHead)
+		playListHead = playListHead->next;
+
+	// 维护playList以后的id
+	for (auto* subList = playList->next;
+		subList != nullptr;
+		subList = subList->next)
+		subList->id--;
+
+	delete[] playList->songPath;
+	playList->songPath = nullptr;
+	delete playList;
+}
+
+void AudioServer::changePlayList(PlayList* playList, const char* path)
+{
+	assert(playList != nullptr);
+
+	auto* newBuffer = new char[strlen(path) + 1];
+	strcpy(newBuffer, path);
+	delete[] std::exchange(playList->songPath, newBuffer);
+
+	if (playList == playListNow)
+		openFile(playListNow->getPath());
+}
+
+void AudioServer::switchToNextPlayList()
+{
+	if (playListNow == nullptr) return;
+
+	if (playListNow->next != nullptr)
+		playListNow = playListNow->next;
+	else playListNow = playListHead;
+
+	openFile(playListNow->getPath());
+}
+
+void AudioServer::switchToLastPlayList()
+{
+	if (playListNow == nullptr) return;
+
+	if (playListNow->last != nullptr)
+		playListNow = playListNow->last;
+	else while (playListNow->next != nullptr)
+		playListNow = playListNow->next;
+
+	openFile(playListNow->getPath());
+}
+
+void AudioServer::switchToPlayList(PlayList* playList)
+{
+	if (playListNow == nullptr)
+	{
+		ESP_LOGW(TAG, "playList not started");
+		return;
+	}
+
+	if (playList == nullptr)
+	{
+		ESP_LOGE(TAG, "switch to nullptr playlist!");
+		return;
+	}
+
+	playListNow = playList;
+	openFile(playListNow->getPath());
+}
+
 void AudioServer::loaderMain(void*)
 {
 	constexpr static auto TAG = "audio loader";
@@ -308,7 +475,12 @@ void AudioServer::decoderMain(void*)
 		vTaskDelay(10);
 		iis.stop();
 
-		if (autoDeinit) deinit();
+		if (playListNow)
+		{
+			switchToNextPlayList();
+			resume();
+		}
+		else if (autoDeinit) deinit();
 	}
 
 	// delete self

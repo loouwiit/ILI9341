@@ -29,7 +29,7 @@ private:
 	constexpr static short ContentXOffset = 20;
 	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
 
-	constexpr static unsigned char ContensSize = 7;
+	constexpr static unsigned char ContensSize = 8;
 	LCD::Layar<LayarClassicSize::Middle> contents{ ContensSize };
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{"audio", "音乐"}, TitleSize }; // 貌似翻译不太对的样子
 
@@ -43,7 +43,13 @@ private:
 
 	LCD::Text pauseText{ Vector2s{(short)LCD::ScreenSize.x , (short)(LCD::ScreenSize.y + audioGain.position.y + audioGain.getSize().y)} / 2, "|>", PauseSize, LCD::Color::White, BackgroundColor };
 
-	LCD::Layar<LayarClassicSize::Small> endButton{ {pauseText.position}, {(Vector2s)(fontsFullWidth(' ').size * ButtonSize)} ,2 }; // layer的size不稳定，初始化后数值不保证，或许以后会重构掉（因为修改start的时候不会同时修改end）；早期没有统一的element设计导致的
+	LCD::Layar<LayarClassicSize::Small> playListButton{ {pauseText.position}, {(Vector2s)(fontsFullWidth(' ').size * ButtonSize)} ,4 };
+	LCD::Rectangle playListButtonBackground{ {},playListButton.getSize() , BackgroundColor };
+	LCD::Rectangle playListButtonLines[3]{ {playListButtonBackground.start + Vector2s{ButtonBoardSize,ButtonBoardSize} + Vector2s{0, (short)((playListButtonBackground.getSize().y - 2 * ButtonBoardSize - ButtonBoardSize) / 2 * 0)}, Vector2s{(short)(playListButtonBackground.getSize().x - ButtonBoardSize * 2),ButtonBoardSize} , LCD::Color::White },
+		{playListButtonBackground.start + Vector2s{ButtonBoardSize,ButtonBoardSize} + Vector2s{0, (short)((playListButtonBackground.getSize().y - 2 * ButtonBoardSize - ButtonBoardSize) / 2 * 1)}, Vector2s{(short)(playListButtonBackground.getSize().x - ButtonBoardSize * 2),ButtonBoardSize} , LCD::Color::White },
+		{playListButtonBackground.start + Vector2s{ButtonBoardSize,ButtonBoardSize} + Vector2s{0, (short)((playListButtonBackground.getSize().y - 2 * ButtonBoardSize - ButtonBoardSize) / 2 * 2)}, Vector2s{(short)(playListButtonBackground.getSize().x - ButtonBoardSize * 2),ButtonBoardSize} , LCD::Color::White }, };
+
+	LCD::Layar<LayarClassicSize::Small> endButton{ {pauseText.position}, {(Vector2s)(fontsFullWidth(' ').size * ButtonSize)} ,2 };
 	LCD::Rectangle endButtonBackground{ {},endButton.getSize() , BackgroundColor };
 	LCD::Rectangle endButtonFrontground{ endButtonBackground.start + Vector2s{ButtonBoardSize,ButtonBoardSize},endButtonBackground.getSize() - Vector2s{ButtonBoardSize,ButtonBoardSize} * 2, LCD::Color::White };
 
@@ -53,7 +59,10 @@ private:
 
 	bool audioPaused{};
 	bool audioOpened{};
+	void* audioPlayListPointer{};
 
+	void updatePathText();
+	void updatePlayListStatus();
 	void updatePauseStatus();
 	void switchPause();
 	void pause();

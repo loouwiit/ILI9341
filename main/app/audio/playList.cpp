@@ -1,0 +1,316 @@
+#include "playList.hpp"
+
+#include "app/explorer/explorer.hpp"
+
+#include "audioServer.hpp"
+
+void AppPlayList::init()
+{
+	App::init();
+
+	contents[0] = &title;
+	contents[1] = &playListLayar;
+
+	title.position = { LCD::ScreenSize.x / 2, 0 };
+	title.position.x -= title.computeSize().x / 2;
+	title.computeSize();
+	title.clickCallbackParam = this;
+	title.releaseCallback = [](Finger&, void* param) { auto& self = *(AppPlayList*)param; self.back(); };
+
+	for (int i = 0; i < PlayListMaxSize; i++)
+	{
+		playListLayar[i] = &playListText[i];
+		playListText[i].textColor = LCD::Color::White;
+		playListText[i].backgroundColor = BackgroundColor;
+		playListText[i].scale = TextSize;
+		playListText[i].text = "";
+		playListText[i].clickCallbackParam = &playListCallbackParam[i];
+		playListCallbackParam[i] = this;
+	}
+	for (int i = 1; i < PlayListMaxSize;i++)
+	{
+		playListText[i].position.y = playListText[i - 1].position.y + playListText[i - 1].computeSize().y + GapSize;
+	}
+	playListText[PlayListMaxSize - 1].computeSize();
+	loadTexts();
+
+	if (AudioServer::isPlayListEnabled())
+	{
+		deamonRunning = Task::addTask(deamonTask, "app play list", this, 100) != nullptr;
+		if (deamonRunning) ESP_LOGI(TAG, "deamon started");
+		else ESP_LOGE(TAG, "deamon start failed");
+	}
+}
+
+void AppPlayList::focusIn()
+{
+	running = true;
+	loadTexts();
+}
+
+void AppPlayList::deinit()
+{
+	running = false;
+	deleteAble = !deamonRunning;
+	deamonRunning = false;
+}
+
+void AppPlayList::draw()
+{
+	while (drawLocked && running) vTaskDelay(1);
+	drawLocked = true;
+	lcd.clear();
+	lcd.draw(contents);
+}
+
+void AppPlayList::touchUpdate()
+{
+	Finger finger[2] = { touch[0],touch[1] };
+
+	if (finger[0].state == Finger::State::Press) do
+	{
+		fingerActive[0] = true;
+		fingerHoldTick[0] = xTaskGetTickCount() + holdTickThreshold;
+
+		lastFingerPosition[0] = finger[0].position;
+		fingerMoveTotol[0] = {};
+	} while (false);
+
+	if (fingerActive[0]) do
+	{
+		auto movement = finger[0].position - lastFingerPosition[0];
+		if (movement == Vector2s{ 0, 0 }) break;
+		fingerMoveTotol[0] += movement;
+		contents.start.y += movement.y;
+		lastFingerPosition[0] = finger[0].position;
+		drawLocked = false;
+	} while (false);
+
+	if (finger[0].state == Finger::State::Realease) do
+	{
+		if (abs2(fingerMoveTotol[0]) < moveThreshold2)
+		{
+			if (xTaskGetTickCount() > fingerHoldTick[0])
+				click({ Finger::State::Hold, finger[0].position });
+			else click(finger[0]);
+		}
+		fingerActive[0] = false;
+		releaseDetect();
+	} while (false);
+
+	if (finger[1].state == Finger::State::Press) do
+	{
+		fingerActive[1] = true;
+		fingerHoldTick[1] = xTaskGetTickCount() + holdTickThreshold;
+
+		lastFingerPosition[1] = finger[1].position;
+		fingerMoveTotol[1] = {};
+	} while (false);
+
+	if (fingerActive[1]) do
+	{
+		auto movement = finger[1].position - lastFingerPosition[1];
+		if (movement == Vector2s{ 0, 0 }) break;
+		fingerMoveTotol[1] += movement;
+		contents.start.y += movement.y;
+		lastFingerPosition[1] = finger[1].position;
+		drawLocked = false;
+	} while (false);
+
+	if (finger[1].state == Finger::State::Realease) do
+	{
+		if (abs2(fingerMoveTotol[1]) < moveThreshold2)
+		{
+			if (xTaskGetTickCount() > fingerHoldTick[1])
+				click({ Finger::State::Hold, finger[1].position });
+			else click(finger[1]);
+		}
+		fingerActive[1] = false;
+		releaseDetect();
+	} while (false);
+}
+
+void AppPlayList::loadTexts()
+{
+	auto* playListNow = AudioServer::getPlayListNow();
+	auto* p = AudioServer::getPlayList();
+	while (p != nullptr && p->getLast() != nullptr) p = p->getLast();
+	playListLayar.elementCount = 0;
+
+	if (p != nullptr) do
+	{
+		auto& i = playListLayar.elementCount;
+		playListText[i].textColor = p == playListNow ? LCD::Color::Blue : LCD::Color::White;
+		playListText[i].text = getBaseName(p->getPath());
+		playListText[playListLayar.elementCount].fonts = &fontsDefault;
+		playListText[i].computeSize();
+		playListText[i].holdCallback = [](Finger&, void* param)
+			{
+				auto& self = **(AppPlayList**)param;
+				unsigned id = (AppPlayList**)param - self.playListCallbackParam;
+
+				auto* p = AudioServer::getPlayList(); // 寻找id
+				while (p && p->getId() != id) p = p->getNext();
+
+				if (p == nullptr) [[unlikely]]
+				{
+					ESP_LOGE(TAG, "hold to play list with nullptr! id = %d", id);
+					return;
+				}
+
+				// 其他音乐：删除音乐
+				if (p != AudioServer::getPlayListNow())
+				{
+					ESP_LOGI(TAG, "remove play list %d: %s", id, p->getPath());
+					AudioServer::removePlayList(p);
+					self.loadTexts(); // 这个必须手动更新
+					return;
+				}
+
+				// 当前音乐：修改音乐
+				ESP_LOGI(TAG, "change %d: %s", id, p->getPath());
+
+				auto* app = new AppExplorer{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				app->setTitleBuffer(AutoLnaguage{ "change audio", "修改音乐" });
+				app->callBackParam = param;
+				app->openFileCallback = [](const char* path, void* param)
+					{
+						auto& self = **(AppPlayList**)param;
+						unsigned id = (AppPlayList**)param - self.playListCallbackParam;
+
+						auto* p = AudioServer::getPlayList(); // 寻找id
+						while (p && p->getId() != id) p = p->getNext();
+
+						// 对p修改音乐
+						if (p && path != nullptr)
+						{
+							auto isThisSongPlaying = AudioServer::getPlayListNow() == p && AudioServer::isOpened() && !AudioServer::isPaused();
+							AudioServer::changePlayList(p, path);
+							if (isThisSongPlaying) AudioServer::resume();
+						}
+
+						// 退出explorer
+						self.changeAppCallback(nullptr);
+					};
+				self.newAppCallback(app);
+				self.running = false;
+			};
+		playListText[i].releaseCallback = [](Finger&, void* param)
+			{
+				auto& self = **(AppPlayList**)param;
+				unsigned id = (AppPlayList**)param - self.playListCallbackParam;
+
+				// 未激活 -> 激活playlist
+				if (!AudioServer::isPlayListEnabled()) [[unlikely]]
+				{
+					AudioServer::enablePlayList();
+					self.audioPlayListPointer = nullptr; // 激活deamon
+					self.deamonRunning = Task::addTask(deamonTask, "app play list", &self, 100) != nullptr;
+					if (self.deamonRunning) ESP_LOGI(TAG, "deamon started");
+					else ESP_LOGE(TAG, "deamon start failed");
+					return;
+				}
+
+				auto* p = AudioServer::getPlayList(); // 寻找id
+				while (p && p->getId() != id) p = p->getNext();
+
+				if (p == nullptr) [[unlikely]]
+				{
+					ESP_LOGE(TAG, "switch play list with nullptr! id = %d", id);
+					return;
+				}
+
+				// 当前音乐：切换暂停
+				if (p == AudioServer::getPlayListNow())
+				{
+					ESP_LOGI(TAG, "switch pause status %d: %s", id, p->getPath());
+					if (AudioServer::isPaused())
+						AudioServer::resume();
+					else AudioServer::pause();
+					return;
+				}
+
+				// 其他音乐：切换音乐
+				ESP_LOGI(TAG, "switch play list %d: %s", id, p->getPath());
+				auto playing = AudioServer::isOpened() && !AudioServer::isPaused(); // 继续播放
+				AudioServer::switchToPlayList(p);
+				if (playing) AudioServer::resume();
+			};
+		i++;
+		p = p->getNext();
+		if (i >= PlayListMaxSize) break;
+	} while (p != nullptr);
+
+	if (playListLayar.elementCount < PlayListMaxSize)
+	{
+		// 有空余给新增
+		playListText[playListLayar.elementCount].textColor = LCD::Color::White;
+		playListText[playListLayar.elementCount].text = "+";
+		playListText[playListLayar.elementCount].fonts = &fontsFullWidth;
+		playListText[playListLayar.elementCount].computeSize();
+		playListText[playListLayar.elementCount].releaseCallback = [](Finger&, void* param)
+			{
+				auto& self = **(AppPlayList**)param;
+				auto* app = new AppExplorer{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+				app->setTitleBuffer(AutoLnaguage{ "add audio", "添加音乐" });
+				app->callBackParam = &self;
+				app->openFileCallback = [](const char* path, void* param)
+					{
+						// 打开文件
+						if (path != nullptr)
+							AudioServer::addPlayList(path);
+
+						// 退出explorer
+						auto& self = *(AppPlayList*)param;
+						self.changeAppCallback(nullptr);
+					};
+				self.newAppCallback(app);
+				self.running = false;
+			};
+		playListLayar.elementCount++;
+	}
+
+	drawLocked = false;
+}
+
+void AppPlayList::click(Finger finger)
+{
+	contents.finger(finger);
+}
+
+void AppPlayList::releaseDetect()
+{
+	if (touch[0].state != Finger::State::Contact && touch[1].state != Finger::State::Contact)
+	{
+		if (contents.start.y > 0)
+		{
+			contents.start.y = 0;
+			drawLocked = false;
+		}
+	}
+}
+
+TickType_t AppPlayList::deamonTask(void* param)
+{
+	auto& self = *(AppPlayList*)param;
+
+	if (!self.deamonRunning)
+	{
+		self.deleteAble = true;
+		if (AudioServer::isInited() && !AudioServer::isOpened())
+			AudioServer::deinit();
+		else AudioServer::setAutoDeinit(true);
+		ESP_LOGI(TAG, "deamon stoped");
+		return Task::infinityTime;
+	}
+
+	assert(AudioServer::isPlayListEnabled());
+
+	if (self.audioPlayListPointer != AudioServer::getPlayListNow())
+	{
+		self.audioPlayListPointer = AudioServer::getPlayListNow();
+		self.loadTexts();
+	}
+
+	return 100;
+}

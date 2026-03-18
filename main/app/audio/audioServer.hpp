@@ -23,6 +23,45 @@ public:
 	static void setGain(int8_t gain);
 	static int8_t getGain();
 
+	class PlayList
+	{
+	public:
+		~PlayList()
+		{
+			if (songPath) ESP_LOGW(TAG, "song path = %p, not nullptr, %s", songPath, songPath);
+		}
+
+		constexpr auto getId() const { return id; }
+		constexpr const char* getPath() const { return songPath; }
+		constexpr const PlayList* getNext() const { return next; }
+		constexpr const PlayList* getLast() const { return last; }
+		constexpr PlayList* getNext() { return next; }
+		constexpr PlayList* getLast() { return last; }
+
+	private:
+		constexpr static char TAG[] = "PlayList";
+		friend class AudioServer;
+
+		unsigned id = -1;
+
+		const char* songPath{};
+
+		PlayList* next{};
+		PlayList* last{};
+	};
+
+	static PlayList* getPlayList();
+	static PlayList* getPlayListNow();
+	static bool isPlayListEnabled();
+	static void enablePlayList();
+	static void disablePlayList();
+	static void addPlayList(const char* path, PlayList* insert = nullptr);
+	static void removePlayList(PlayList* playList);
+	static void changePlayList(PlayList* playList, const char* path);
+	static void switchToNextPlayList();
+	static void switchToLastPlayList();
+	static void switchToPlayList(PlayList* playList);
+
 private:
 	constexpr static size_t FrameBufferLength = 8192;
 	constexpr static size_t DecoderBufferLength = 4096;
@@ -49,6 +88,9 @@ private:
 	EXT_RAM_BSS_ATTR static Thread loaderThread;
 	EXT_RAM_BSS_ATTR static bool decoderPause;
 	EXT_RAM_BSS_ATTR static bool loaderPause;
+
+	EXT_RAM_BSS_ATTR static PlayList* playListHead;
+	EXT_RAM_BSS_ATTR static PlayList* playListNow;
 
 	static void loaderMain(void*);
 	static void decoderMain(void*);
