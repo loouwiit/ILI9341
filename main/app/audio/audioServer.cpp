@@ -103,8 +103,10 @@ void AudioServer::init()
 void AudioServer::deinit()
 {
 	serverRunning = false;
-	loaderThread.resume();
-	decoderThread.resume();
+	if (loaderThread.isRunning())
+		loaderThread.resume();
+	if (decoderThread.isRunning())
+		decoderThread.resume();
 }
 
 void AudioServer::setAutoDeinit(bool status)
