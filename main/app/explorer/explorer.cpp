@@ -28,6 +28,13 @@ void AppExplorer::init()
 	path.text = nowFloorPath;
 	path.computeSize();
 	path.clickCallbackParam = this;
+	path.holdCallback = [](Finger&, void* param)
+		{
+			// open floor
+			AppExplorer& self = *(AppExplorer*)param;
+			if (self.openFileCallback == nullptr) return;
+			self.openFileCallback(self.realFloorPath, self.callBackParam);
+		};
 	path.releaseCallback = [](Finger&, void* param) { AppExplorer& self = *(AppExplorer*)param; self.updateFloor(); };
 
 	newFile.position.x = path.getSize().x + GapSize;

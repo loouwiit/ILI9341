@@ -178,11 +178,19 @@ void AppPlayList::loadTexts()
 						auto& self = **(AppPlayList**)param;
 						unsigned id = (AppPlayList**)param - self.playListCallbackParam;
 
+						if (path == nullptr)
+						{
+							self.changeAppCallback(nullptr);
+							return;
+						}
+
+						if (path[strlen(path) - 1] == '/') return; // 文件夹
+
 						auto* p = AudioServer::getPlayList(); // 寻找id
 						while (p && p->getId() != id) p = p->getNext();
 
 						// 对p修改音乐
-						if (p && path != nullptr)
+						if (p)
 						{
 							auto isThisSongPlaying = AudioServer::getPlayListNow() == p && AudioServer::isOpened() && !AudioServer::isPaused();
 							AudioServer::changePlayList(p, path);
@@ -256,12 +264,40 @@ void AppPlayList::loadTexts()
 				app->callBackParam = &self;
 				app->openFileCallback = [](const char* path, void* param)
 					{
-						// 打开文件
-						if (path != nullptr)
+						auto& self = *(AppPlayList*)param;
+
+						if (path == nullptr)
+						{
+							self.changeAppCallback(nullptr);
+							return;
+						}
+
+						auto pathLength = strlen(path);
+						if (path[pathLength - 1] == '/')
+						{
+							// 文件夹
+							Floor floor{};
+							floor.open(path);
+							const char* fileName = nullptr;
+							char* buffer = new char[256];
+							strcpy(buffer, path);
+							while (true)
+							{
+								fileName = floor.read(Floor::Type::File);
+								if (fileName == nullptr) break;
+
+								strcpy(buffer + pathLength, fileName);
+								AudioServer::addPlayList(buffer);
+							}
+							delete[] buffer;
+						}
+						else
+						{
+							// 打开文件
 							AudioServer::addPlayList(path);
+						}
 
 						// 退出explorer
-						auto& self = *(AppPlayList*)param;
 						self.changeAppCallback(nullptr);
 					};
 				self.newAppCallback(app);

@@ -79,9 +79,14 @@ void AppStrip::init()
 			app->openFileCallback = [](const char* path, void* param)
 				{
 					AppStrip& self = *(AppStrip*)param;
-					self.changeAppCallback(nullptr);
 
-					if (path == nullptr) return;
+					if (path == nullptr)
+					{
+						self.changeAppCallback(nullptr);
+						return;
+					}
+
+					if (path[strlen(path) - 1] == '/') return; // 文件夹
 
 					IFile file{};
 					file.open(path);
@@ -97,6 +102,7 @@ void AppStrip::init()
 						self.lastTimeBar.setValue(stripManager.getLastTime() / 5);
 						sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, stripManager.getLastTime());
 					}
+					self.changeAppCallback(nullptr);
 				};
 
 			self.newAppCallback(app);
@@ -113,9 +119,14 @@ void AppStrip::init()
 			app->openFileCallback = [](const char* path, void* param)
 				{
 					AppStrip& self = *(AppStrip*)param;
-					self.changeAppCallback(nullptr);
 
-					if (path == nullptr) return;
+					if (path == nullptr)
+					{
+						self.changeAppCallback(nullptr);
+						return;
+					}
+
+					if (path[strlen(path) - 1] == '/') return; // 文件夹
 
 					OFile file{};
 					file.open(path);
@@ -131,6 +142,7 @@ void AppStrip::init()
 						self.lastTimeBar.setValue(stripManager.getLastTime() / 5);
 						sprintf(self.lastTimeTextBuffer, AutoLnaguage{ "time:%dms", "时长:%dms" }, stripManager.getLastTime());
 					}
+					self.changeAppCallback(nullptr);
 				};
 
 			self.newAppCallback(app);

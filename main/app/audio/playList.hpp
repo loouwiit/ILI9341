@@ -30,8 +30,8 @@ private:
 	LCD::Layar<LayarClassicSize::Middle> contents{ ContensSize };
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{"play list", "播放列表"}, TitleSize };
 
-	constexpr static size_t PlayListMaxSize = 20;
-	LCD::Layar<LayarClassicSize::Large> playListLayar{ {ContentXOffset, 16 * TitleSize + GapSize }, LCD::ScreenSize, 0 };
+	constexpr static size_t PlayListMaxSize = 50;
+	LCD::Layar<LayarClassicSize::Huge> playListLayar{ {ContentXOffset, 16 * TitleSize + GapSize }, LCD::ScreenSize, 0 };
 	LCD::Text playListText[PlayListMaxSize]{};
 	AppPlayList* playListCallbackParam[PlayListMaxSize]{};
 

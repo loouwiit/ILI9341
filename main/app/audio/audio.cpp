@@ -41,9 +41,15 @@ void AppAudio::init()
 				{
 					auto& self = *(AppAudio*)param;
 
-					if (path != nullptr)
-						self.playAudio(path);
+					if (path == nullptr)
+					{
+						self.changeAppCallback(nullptr);
+						return;
+					}
 
+					if (path[strlen(path) - 1] == '/') return; // 文件夹
+
+					self.playAudio(path);
 					self.changeAppCallback(nullptr); // 退出explorer
 				};
 			self.running = false;
