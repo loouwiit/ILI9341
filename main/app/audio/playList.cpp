@@ -208,19 +208,20 @@ void AppPlayList::loadTexts()
 				auto& self = **(AppPlayList**)param;
 				unsigned id = (AppPlayList**)param - self.playListCallbackParam;
 
+				auto* p = AudioServer::getPlayList(); // 寻找id
+				while (p && p->getId() != id) p = p->getNext();
+
 				// 未激活 -> 激活playlist
 				if (!AudioServer::isPlayListEnabled()) [[unlikely]]
 				{
 					AudioServer::enablePlayList();
+					AudioServer::switchToPlayList(p);
 					self.audioPlayListPointer = nullptr; // 激活deamon
 					self.deamonRunning = Task::addTask(deamonTask, "app play list", &self, 100) != nullptr;
 					if (self.deamonRunning) ESP_LOGI(TAG, "deamon started");
 					else ESP_LOGE(TAG, "deamon start failed");
 					return;
 				}
-
-				auto* p = AudioServer::getPlayList(); // 寻找id
-				while (p && p->getId() != id) p = p->getNext();
 
 				if (p == nullptr) [[unlikely]]
 				{
