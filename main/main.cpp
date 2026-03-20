@@ -19,7 +19,7 @@
 
 extern "C" void app_main(void);
 
-constexpr char TAG[] = "LCD";
+constexpr char TAG[] = "main";
 
 using LCD = ILI9341<Color565>;
 
@@ -301,8 +301,12 @@ void app_main(void)
 			}
 			else Task::addTask([](void*) -> TickType_t
 				{
+					ESP_LOGI(TAG, "re-init called, waiting for drawMutex");
 					while (!app[appIndex]->drawMutex.try_lock())
+					{
 						vTaskDelay(1);
+						if (!lcd.isDrawing()) app[appIndex]->focusIn(); // 如果是app持有drawMutex，使用focusIn强制刷新屏幕，使app放弃锁
+					}
 					lcd.waitForDisplay();
 					ESP_LOGI(TAG, "re-init");
 					touch.restart();
