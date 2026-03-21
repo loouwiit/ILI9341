@@ -172,7 +172,7 @@ void AppExplorer::touchUpdate()
 		auto movement = finger[0].position - lastFingerPosition[0];
 		fingerMoveTotol[0] += movement;
 		if (fingerActiveMovePath[0]) pathLayar.start.x += movement.x;
-		else contents.start.y += movement.y;
+		else contents.start += movement;
 		lastFingerPosition[0] = finger[0].position;
 	} while (false);
 
@@ -203,7 +203,7 @@ void AppExplorer::touchUpdate()
 		auto movement = finger[1].position - lastFingerPosition[1];
 		fingerMoveTotol[1] += movement;
 		if (fingerActiveMovePath[1]) pathLayar.start.x += movement.x;
-		else contents.start.y += movement.y;
+		else contents.start += movement;
 		lastFingerPosition[1] = finger[1].position;
 	} while (false);
 
@@ -489,6 +489,8 @@ void AppExplorer::releaseDetect()
 	{
 		if (contents.start.y > 0)
 			contents.start.y = 0;
+		if (contents.start.x > 0)
+			contents.start.x = 0;
 		if (pathLayar.start.x > ContentXOffset)
 			pathLayar.start.x = ContentXOffset;
 	}

@@ -81,7 +81,7 @@ void AppPlayList::touchUpdate()
 		auto movement = finger[0].position - lastFingerPosition[0];
 		if (movement == Vector2s{ 0, 0 }) break;
 		fingerMoveTotol[0] += movement;
-		contents.start.y += movement.y;
+		contents.start += movement;
 		lastFingerPosition[0] = finger[0].position;
 		drawLocked = false;
 	} while (false);
@@ -112,7 +112,7 @@ void AppPlayList::touchUpdate()
 		auto movement = finger[1].position - lastFingerPosition[1];
 		if (movement == Vector2s{ 0, 0 }) break;
 		fingerMoveTotol[1] += movement;
-		contents.start.y += movement.y;
+		contents.start += movement;
 		lastFingerPosition[1] = finger[1].position;
 		drawLocked = false;
 	} while (false);
@@ -142,7 +142,7 @@ void AppPlayList::loadTexts()
 		auto& i = playListLayar.elementCount;
 		playListText[i].textColor = p == playListNow ? LCD::Color::Blue : LCD::Color::White;
 		playListText[i].text = getBaseName(p->getPath());
-		playListText[playListLayar.elementCount].fonts = &fontsDefault;
+		playListText[i].fonts = &fontsDefault;
 		playListText[i].computeSize();
 		playListText[i].holdCallback = [](Finger&, void* param)
 			{
@@ -322,6 +322,11 @@ void AppPlayList::releaseDetect()
 		if (contents.start.y > 0)
 		{
 			contents.start.y = 0;
+			drawLocked = false;
+		}
+		if (contents.start.x > 0)
+		{
+			contents.start.x = 0;
 			drawLocked = false;
 		}
 	}
