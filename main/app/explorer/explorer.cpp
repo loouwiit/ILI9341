@@ -3,6 +3,7 @@
 #include "property.hpp"
 
 #include <cstring>
+#include "task.hpp"
 
 #include "app/picture/picture.hpp"
 #include "app/textEditor/textEditor.hpp"
@@ -268,34 +269,50 @@ void AppExplorer::resetPosition()
 
 void AppExplorer::updateFloor()
 {
-	floor.open(realFloorPath);
+	Task::addTask([](void* param)->TickType_t
+		{
+			auto& self = *(AppExplorer*)param;
 
-	floor.reCount();
-	size_t floorCount = floor.getCount(Floor::Type::Floor);
-	size_t fileCount = floor.getCount(Floor::Type::File);
-	size_t totolCount = floor.getCount(Floor::Type::Both);
-	if (floorCount > FileLayarSize)
-	{
-		floorCount = FileLayarSize - 1;
-		fileCount = 0;
-		totolCount = FileLayarSize;
-		updateText(FileLayarSize - 1, "......", Floor::Type::Floor);
-	}
-	if (totolCount > FileLayarSize)
-	{
-		totolCount = FileLayarSize;
-		fileCount = totolCount - floorCount;
-		if (fileCount > 0) fileCount--;
-		else floorCount--;
-		updateText(FileLayarSize - 1, "......", Floor::Type::File);
-	}
+			self.fileLayar.elementCount = 0;
 
-	for (size_t i = 0; i < floorCount; i++)
-		updateText(i, floor.read(Floor::Type::Floor), Floor::Type::Floor);
-	floor.backToBegin();
-	for (size_t i = 0; i < fileCount; i++)
-		updateText(floorCount + i, floor.read(Floor::Type::File), Floor::Type::File);
-	fileLayar.elementCount = totolCount;
+			self.floor.open(self.realFloorPath);
+
+			self.floor.reCount();
+			size_t floorCount = self.floor.getCount(Floor::Type::Floor);
+			size_t fileCount = self.floor.getCount(Floor::Type::File);
+			size_t totolCount = self.floor.getCount(Floor::Type::Both);
+			if (floorCount > FileLayarSize)
+			{
+				floorCount = FileLayarSize - 1;
+				fileCount = 0;
+				totolCount = FileLayarSize;
+				self.updateText(FileLayarSize - 1, "......", Floor::Type::Floor);
+				self.fileLayar.elementCount++;
+			}
+			if (totolCount > FileLayarSize)
+			{
+				totolCount = FileLayarSize;
+				fileCount = totolCount - floorCount;
+				if (fileCount > 0) fileCount--;
+				else floorCount--;
+				self.updateText(FileLayarSize - 1, "......", Floor::Type::File);
+			}
+
+			for (size_t i = 0; i < floorCount; i++)
+			{
+				self.updateText(i, self.floor.read(Floor::Type::Floor), Floor::Type::Floor);
+				self.fileLayar.elementCount++;
+			}
+			self.floor.backToBegin();
+			for (size_t i = 0; i < fileCount; i++)
+			{
+				self.updateText(floorCount + i, self.floor.read(Floor::Type::File), Floor::Type::File);
+				self.fileLayar.elementCount++;
+			}
+			self.fileLayar.elementCount = totolCount;
+
+			return Task::infinityTime;
+		}, "update floor", this);
 }
 
 bool AppExplorer::floorBack()
