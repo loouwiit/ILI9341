@@ -98,6 +98,7 @@ void AppDesktop::back()
 	lastFingerPosition[1] = touch[1].position;
 	fingerMoveTotol[0] = {};
 	fingerMoveTotol[1] = {};
+	drawLocked = false;
 }
 
 App* AppDesktop::appFactory(unsigned char index)
