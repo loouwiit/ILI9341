@@ -312,6 +312,7 @@ void app_main(void)
 					touch.restart();
 					lcd.init();
 					lcd.waitForDisplay();
+					lcd.display();
 					app[appIndex]->drawMutex.unlock();
 					return Task::infinityTime;
 				}, "reinit lcd");
