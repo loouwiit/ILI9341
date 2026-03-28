@@ -9,13 +9,33 @@ void AppPlayList::init()
 	App::init();
 
 	contents[0] = &title;
-	contents[1] = &playListLayar;
+	contents[1] = &playListModeText;
+	contents[2] = &playListLayar;
 
 	title.position = { LCD::ScreenSize.x / 2, 0 };
 	title.position.x -= title.computeSize().x / 2;
 	title.computeSize();
 	title.clickCallbackParam = this;
 	title.releaseCallback = [](Finger&, void* param) { auto& self = *(AppPlayList*)param; self.back(); };
+
+	updatePlayListMode();
+	playListModeText.clickCallbackParam = this;
+	playListModeText.releaseCallback = [](Finger&, void* param)
+		{
+			auto& self = *(AppPlayList*)param;
+			if (AudioServer::isRandomPlayEnabled())
+				AudioServer::disableRandomPlay();
+			else AudioServer::enableRandomPlay();
+			self.updatePlayListMode();
+			self.loadTexts();
+		};
+	playListModeText.holdCallback = [](Finger&, void* param)
+		{
+			if (!AudioServer::isRandomPlayEnabled()) return;
+			auto& self = *(AppPlayList*)param;
+			AudioServer::shufflePlayList();
+			self.loadTexts();
+		};
 
 	for (int i = 0; i < PlayListMaxSize; i++)
 	{
@@ -130,11 +150,20 @@ void AppPlayList::touchUpdate()
 	} while (false);
 }
 
+void AppPlayList::updatePlayListMode()
+{
+	if (AudioServer::isRandomPlayEnabled())
+		playListModeText.text = AutoLnaguage{ "random play","随机播放" };
+	else
+		playListModeText.text = AutoLnaguage{ "sequential play","顺序播放" };
+	playListModeText.computeSize();
+	drawLocked = false;
+}
+
 void AppPlayList::loadTexts()
 {
 	auto* playListNow = AudioServer::getPlayListNow();
-	auto* p = AudioServer::getPlayList();
-	while (p != nullptr && p->getLast() != nullptr) p = p->getLast();
+	auto* p = AudioServer::isRandomPlayEnabled() ? AudioServer::getPlayListRandom() : AudioServer::getPlayList();
 	playListLayar.elementCount = 0;
 
 	if (p != nullptr) do
@@ -149,8 +178,12 @@ void AppPlayList::loadTexts()
 				auto& self = **(AppPlayList**)param;
 				unsigned id = (AppPlayList**)param - self.playListCallbackParam;
 
-				auto* p = AudioServer::getPlayList(); // 寻找id
-				while (p && p->getId() != id) p = p->getNext();
+				// 寻找id
+				auto* p = AudioServer::isRandomPlayEnabled() ? AudioServer::getPlayListRandom() : AudioServer::getPlayList();
+				if (AudioServer::isRandomPlayEnabled())
+					for (unsigned i = 0; i < id; i++) p = p->getRandomNext();
+				else
+					for (unsigned i = 0; i < id; i++) p = p->getNext();
 
 				if (p == nullptr) [[unlikely]]
 				{
@@ -208,8 +241,12 @@ void AppPlayList::loadTexts()
 				auto& self = **(AppPlayList**)param;
 				unsigned id = (AppPlayList**)param - self.playListCallbackParam;
 
-				auto* p = AudioServer::getPlayList(); // 寻找id
-				while (p && p->getId() != id) p = p->getNext();
+				// 寻找id
+				auto* p = AudioServer::isRandomPlayEnabled() ? AudioServer::getPlayListRandom() : AudioServer::getPlayList();
+				if (AudioServer::isRandomPlayEnabled())
+					for (unsigned i = 0; i < id; i++) p = p->getRandomNext();
+				else
+					for (unsigned i = 0; i < id; i++) p = p->getNext();
 
 				// 未激活 -> 激活playlist
 				if (!AudioServer::isPlayListEnabled()) [[unlikely]]
@@ -246,7 +283,7 @@ void AppPlayList::loadTexts()
 				if (playing) AudioServer::resume();
 			};
 		i++;
-		p = p->getNext();
+		p = AudioServer::isRandomPlayEnabled() ? p->getRandomNext() : p->getNext();
 		if (i >= PlayListMaxSize) break;
 	} while (p != nullptr);
 

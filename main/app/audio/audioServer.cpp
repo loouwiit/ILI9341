@@ -30,7 +30,9 @@ bool AudioServer::decoderPause = false; // thread负责置true，外部负责置
 bool AudioServer::loaderPause = false; // thread负责置true，外部负责置false
 
 AudioServer::PlayList* AudioServer::playListHead = nullptr;
+AudioServer::PlayList* AudioServer::playListRandomHead = nullptr;
 AudioServer::PlayList* AudioServer::playListNow = nullptr;
+bool AudioServer::randomPlay{};
 
 void AudioServer::pause()
 {
@@ -222,8 +224,8 @@ bool AudioServer::isPlayListEnabled()
 void AudioServer::enablePlayList()
 {
 	ESP_LOGI(TAG, "playlist enable");
-	playListNow = playListHead;
-	if (playListNow) openFile(playListHead->getPath());
+	playListNow = randomPlay ? playListRandomHead : playListHead;
+	if (playListNow) openFile(playListNow->getPath());
 }
 
 void AudioServer::disablePlayList()
@@ -245,6 +247,11 @@ void AudioServer::addPlayList(const char* path, PlayList* insert)
 		playListHead->next = nullptr;
 		playListHead->last = nullptr;
 		playListHead->id = 0;
+
+		playListRandomHead = playListHead;
+		playListRandomHead->randomNext = nullptr;
+		playListRandomHead->randomLast = nullptr;
+
 		auto buffer = new char[strlen(path) + 1];
 		strcpy(buffer, path);
 		playListHead->songPath = buffer;
@@ -284,6 +291,8 @@ void AudioServer::addPlayList(const char* path, PlayList* insert)
 		insert->id++;
 		insert = insert->next;
 	}
+
+	playListRandomInsert(newList);
 }
 
 void AudioServer::removePlayList(PlayList* playList)
@@ -300,6 +309,9 @@ void AudioServer::removePlayList(PlayList* playList)
 
 	if (playList->next != nullptr) playList->next->last = playList->last;
 	if (playList->last != nullptr) playList->last->next = playList->next;
+
+	if (playList->randomNext != nullptr) playList->randomNext->randomLast = playList->randomLast;
+	if (playList->randomLast != nullptr) playList->randomLast->randomNext = playList->randomNext;
 
 	if (playList == playListHead)
 		playListHead = playListHead->next;
@@ -331,9 +343,22 @@ void AudioServer::switchToNextPlayList()
 {
 	if (playListNow == nullptr) return;
 
-	if (playListNow->next != nullptr)
-		playListNow = playListNow->next;
-	else playListNow = playListHead;
+	if (randomPlay)
+	{
+		if (playListNow->randomNext != nullptr)
+			playListNow = playListNow->randomNext;
+		else
+		{
+			shufflePlayList();
+			playListNow = playListRandomHead;
+		}
+	}
+	else
+	{
+		if (playListNow->next != nullptr)
+			playListNow = playListNow->next;
+		else playListNow = playListHead;
+	}
 
 	openFile(playListNow->getPath());
 }
@@ -366,6 +391,97 @@ void AudioServer::switchToPlayList(PlayList* playList)
 
 	playListNow = playList;
 	openFile(playListNow->getPath());
+}
+
+AudioServer::PlayList* AudioServer::getPlayListRandom()
+{
+	return playListRandomHead;
+}
+
+bool AudioServer::isRandomPlayEnabled()
+{
+	return randomPlay;
+}
+
+void AudioServer::enableRandomPlay()
+{
+	randomPlay = true;
+	ESP_LOGI(TAG, "random play enabled");
+}
+
+void AudioServer::disableRandomPlay()
+{
+	randomPlay = false;
+	ESP_LOGI(TAG, "random play disabled");
+}
+
+void AudioServer::shufflePlayList()
+{
+	auto* p = playListHead;
+	while (p->next) p = p->next;
+	auto count = p->id + 1; // id from 0
+
+	if (count <= 2) return;
+
+	ESP_LOGI(TAG, "shuffle playlist");
+
+
+	PlayList** playListArray = new PlayList * [count];
+	p = playListRandomHead;
+	for (auto i = 0; i < count; i++)
+	{
+		playListArray[i] = p;
+		p = p->randomNext;
+	}
+
+	auto swap = [](PlayList*& a, PlayList*& b) {auto t = a; a = b; b = t;};
+
+	PlayList* lastPlay = playListArray[count - 1];
+	for (auto i = 0; i < count; i++)
+		swap(playListArray[i], playListArray[rand() % count]);
+	if (playListArray[0] == lastPlay)
+		swap(playListArray[0], playListArray[(rand() % (count - 1)) + 1]); // 重新交换确保不会重复
+
+	// 应用
+	playListRandomHead = playListArray[0];
+	playListArray[0]->randomLast = nullptr;
+	playListArray[0]->randomNext = playListArray[1];
+	for (int i = 1; i < count - 1; i++)
+	{
+		playListArray[i]->randomLast = playListArray[i - 1];
+		playListArray[i]->randomNext = playListArray[i + 1];
+	}
+	playListArray[count - 1]->randomLast = playListArray[count - 2];
+	playListArray[count - 1]->randomNext = nullptr;
+
+	delete[] playListArray;
+}
+
+void AudioServer::playListRandomInsert(PlayList* newList)
+{
+	auto* p = newList;
+	while (p->next) p = p->next;
+	auto count = p->id; // listcount = id + 1; randomListCount = id; addablePlace = id + 1, from 0..count, while count means head
+	auto randInsertAfter = rand() % (count + 1);
+
+	if (randInsertAfter == count) // 定义为Head
+	{
+		newList->randomLast = nullptr;
+		newList->randomNext = playListRandomHead;
+
+		newList->randomNext->randomLast = newList;
+		playListRandomHead = newList;
+		return;
+	}
+
+	p = playListRandomHead;
+	for (int i = 0; i < randInsertAfter; i++)
+		p = p->randomNext;
+
+	newList->randomLast = p;
+	newList->randomNext = p->randomNext;
+	if (newList->randomNext) newList->randomNext->randomLast = p;
+	newList->randomLast->randomNext = newList;
 }
 
 void AudioServer::loaderMain(void*)

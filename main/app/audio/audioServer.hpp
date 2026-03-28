@@ -35,8 +35,12 @@ public:
 		constexpr const char* getPath() const { return songPath; }
 		constexpr const PlayList* getNext() const { return next; }
 		constexpr const PlayList* getLast() const { return last; }
+		constexpr const PlayList* getRandomNext() const { return randomNext; }
+		constexpr const PlayList* getRandomLast() const { return randomLast; }
 		constexpr PlayList* getNext() { return next; }
 		constexpr PlayList* getLast() { return last; }
+		constexpr PlayList* getRandomNext() { return randomNext; }
+		constexpr PlayList* getRandomLast() { return randomLast; }
 
 	private:
 		constexpr static char TAG[] = "PlayList";
@@ -48,6 +52,9 @@ public:
 
 		PlayList* next{};
 		PlayList* last{};
+
+		PlayList* randomNext{};
+		PlayList* randomLast{};
 	};
 
 	static PlayList* getPlayList();
@@ -61,6 +68,12 @@ public:
 	static void switchToNextPlayList();
 	static void switchToLastPlayList();
 	static void switchToPlayList(PlayList* playList);
+
+	static PlayList* getPlayListRandom();
+	static bool isRandomPlayEnabled();
+	static void enableRandomPlay();
+	static void disableRandomPlay();
+	static void shufflePlayList();
 
 private:
 	constexpr static size_t FrameBufferLength = 8192;
@@ -90,7 +103,11 @@ private:
 	EXT_RAM_BSS_ATTR static bool loaderPause;
 
 	EXT_RAM_BSS_ATTR static PlayList* playListHead;
+	EXT_RAM_BSS_ATTR static PlayList* playListRandomHead;
 	EXT_RAM_BSS_ATTR static PlayList* playListNow;
+	EXT_RAM_BSS_ATTR static bool randomPlay;
+
+	static void playListRandomInsert(PlayList* newList);
 
 	static void loaderMain(void*);
 	static void decoderMain(void*);
