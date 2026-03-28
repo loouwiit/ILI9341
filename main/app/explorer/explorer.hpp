@@ -75,6 +75,9 @@ private:
 	void openFile(const char* path, size_t length, unsigned char linkDepth = 5);
 	void updateText(unsigned char index, const char* text, Floor::Type type);
 
+	bool taskRunning = false;
+	bool taskReloding = false;
+
 	constexpr static float moveThreshold2 = 100.0f;
 	constexpr static TickType_t holdTickThreshold = 500;
 

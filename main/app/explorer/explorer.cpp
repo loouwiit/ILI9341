@@ -144,7 +144,7 @@ void AppExplorer::deinit()
 	}
 	delete titleBuffer;
 	titleBuffer = nullptr;
-	deleteAble = true;
+	deleteAble = !taskRunning;
 }
 
 void AppExplorer::draw()
@@ -269,6 +269,12 @@ void AppExplorer::resetPosition()
 
 void AppExplorer::updateFloor()
 {
+	if (taskRunning)
+	{
+		taskReloding = true;
+		return;
+	}
+	taskRunning = true;
 	Task::addTask([](void* param)->TickType_t
 		{
 			auto& self = *(AppExplorer*)param;
@@ -310,6 +316,20 @@ void AppExplorer::updateFloor()
 				self.fileLayar.elementCount++;
 			}
 			self.fileLayar.elementCount = totolCount;
+
+			self.taskRunning = false;
+			if (!self.running)
+			{
+				self.deleteAble = true;
+				return Task::infinityTime;
+			}
+
+			if (self.taskReloding)
+			{
+				ESP_LOGI(TAG, "reloading at %s", self.realFloorPath);
+				self.taskReloding = false;
+				return 100;
+			}
 
 			return Task::infinityTime;
 		}, "update floor", this);
