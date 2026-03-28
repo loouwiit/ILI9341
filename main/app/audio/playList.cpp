@@ -10,7 +10,8 @@ void AppPlayList::init()
 
 	contents[0] = &title;
 	contents[1] = &playListModeText;
-	contents[2] = &playListLayar;
+	contents[2] = &addText;
+	contents[3] = &playListLayar;
 
 	title.position = { LCD::ScreenSize.x / 2, 0 };
 	title.position.x -= title.computeSize().x / 2;
@@ -18,7 +19,6 @@ void AppPlayList::init()
 	title.clickCallbackParam = this;
 	title.releaseCallback = [](Finger&, void* param) { auto& self = *(AppPlayList*)param; self.back(); };
 
-	updatePlayListMode();
 	playListModeText.clickCallbackParam = this;
 	playListModeText.releaseCallback = [](Finger&, void* param)
 		{
@@ -36,6 +36,70 @@ void AppPlayList::init()
 			AudioServer::shufflePlayList();
 			self.loadTexts();
 		};
+
+	addText.clickCallbackParam = this;
+	addText.releaseCallback = [](Finger&, void* param)
+		{
+			auto& self = *(AppPlayList*)param;
+			auto* app = new AppExplorer{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+			app->setTitleBuffer(AutoLnaguage{ "add audio", "添加音乐" });
+			app->callBackParam = &self;
+			app->openFileCallback = [](const char* path, void* param)
+				{
+					auto& self = *(AppPlayList*)param;
+
+					if (path == nullptr)
+					{
+						self.changeAppCallback(nullptr);
+						return;
+					}
+
+					auto pathLength = strlen(path);
+					if (path[pathLength - 1] == '/')
+					{
+						// 文件夹
+						Floor floor{};
+						floor.open(path);
+						const char* fileName = nullptr;
+						char* buffer = new char[256];
+						strcpy(buffer, path);
+						while (true)
+						{
+							fileName = floor.read(Floor::Type::File);
+							if (fileName == nullptr) break;
+
+							strcpy(buffer + pathLength, fileName);
+							AudioServer::addPlayList(buffer);
+						}
+						delete[] buffer;
+					}
+					else
+					{
+						// 打开文件
+						AudioServer::addPlayList(path);
+					}
+
+					// 退出explorer
+					self.changeAppCallback(nullptr);
+				};
+			self.newAppCallback(app);
+			self.running = false;
+		};
+	addText.holdCallback = [](Finger&, void* param)
+		{
+			auto& self = *(AppPlayList*)param;
+			ESP_LOGI(TAG, "clear playlist");
+			AudioServer::disablePlayList();
+			while (true)
+			{
+				auto* p = AudioServer::getPlayList();
+				if (p) AudioServer::removePlayList(p);
+				else break;
+			}
+			self.drawLocked = false;
+			self.loadTexts(); // deamon停止，所以只能手动了
+		};
+	updatePlayListMode();
 
 	for (int i = 0; i < PlayListMaxSize; i++)
 	{
@@ -156,7 +220,8 @@ void AppPlayList::updatePlayListMode()
 		playListModeText.text = AutoLnaguage{ "random play","随机播放" };
 	else
 		playListModeText.text = AutoLnaguage{ "sequential play","顺序播放" };
-	playListModeText.computeSize();
+	addText.position.x = playListModeText.position.x + playListModeText.computeSize().x + GapSize;
+	addText.computeSize();
 	drawLocked = false;
 }
 
@@ -287,63 +352,6 @@ void AppPlayList::loadTexts()
 		if (i >= PlayListMaxSize) break;
 	} while (p != nullptr);
 
-	if (playListLayar.elementCount < PlayListMaxSize)
-	{
-		// 有空余给新增
-		playListText[playListLayar.elementCount].textColor = LCD::Color::White;
-		playListText[playListLayar.elementCount].text = "+";
-		playListText[playListLayar.elementCount].fonts = &fontsFullWidth;
-		playListText[playListLayar.elementCount].computeSize();
-		playListText[playListLayar.elementCount].releaseCallback = [](Finger&, void* param)
-			{
-				auto& self = **(AppPlayList**)param;
-				auto* app = new AppExplorer{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
-				app->setTitleBuffer(AutoLnaguage{ "add audio", "添加音乐" });
-				app->callBackParam = &self;
-				app->openFileCallback = [](const char* path, void* param)
-					{
-						auto& self = *(AppPlayList*)param;
-
-						if (path == nullptr)
-						{
-							self.changeAppCallback(nullptr);
-							return;
-						}
-
-						auto pathLength = strlen(path);
-						if (path[pathLength - 1] == '/')
-						{
-							// 文件夹
-							Floor floor{};
-							floor.open(path);
-							const char* fileName = nullptr;
-							char* buffer = new char[256];
-							strcpy(buffer, path);
-							while (true)
-							{
-								fileName = floor.read(Floor::Type::File);
-								if (fileName == nullptr) break;
-
-								strcpy(buffer + pathLength, fileName);
-								AudioServer::addPlayList(buffer);
-							}
-							delete[] buffer;
-						}
-						else
-						{
-							// 打开文件
-							AudioServer::addPlayList(path);
-						}
-
-						// 退出explorer
-						self.changeAppCallback(nullptr);
-					};
-				self.newAppCallback(app);
-				self.running = false;
-			};
-		playListLayar.elementCount++;
-	}
-
 	drawLocked = false;
 }
 
@@ -373,8 +381,9 @@ TickType_t AppPlayList::deamonTask(void* param)
 {
 	auto& self = *(AppPlayList*)param;
 
-	if (!self.deamonRunning)
+	if (!self.deamonRunning || !AudioServer::isPlayListEnabled())
 	{
+		self.deamonRunning = false;
 		self.deleteAble = true;
 		if (AudioServer::isInited() && !AudioServer::isOpened())
 			AudioServer::deinit();
@@ -382,8 +391,6 @@ TickType_t AppPlayList::deamonTask(void* param)
 		ESP_LOGI(TAG, "deamon stoped");
 		return Task::infinityTime;
 	}
-
-	assert(AudioServer::isPlayListEnabled());
 
 	if (self.audioPlayListPointer != AudioServer::getPlayListNow())
 	{

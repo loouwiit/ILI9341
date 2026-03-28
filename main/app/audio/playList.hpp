@@ -26,11 +26,13 @@ private:
 	constexpr static short ContentXOffset = 20;
 	constexpr static LCD::Color BackgroundColor = { 0x20,0x20,0x20 };
 
-	constexpr static unsigned char ContensSize = 3;
+	constexpr static unsigned char ContensSize = 4;
 	LCD::Layar<LayarClassicSize::Middle> contents{ ContensSize };
 	LCD::Text title{ {LCD::ScreenSize.x / 2, 0}, AutoLnaguage{"play list", "播放列表"}, TitleSize };
 
 	LCD::Text playListModeText{ {ContentXOffset, (short)(16 * TitleSize + GapSize) }, AutoLnaguage{"play mode", "播放模式"}, TextSize, LCD::Color::White, BackgroundColor };
+
+	LCD::Text addText{ {(short)(playListModeText.position.x + playListModeText.computeSize().x + GapSize), playListModeText.position.y }, "+", TextSize, LCD::Color::White, BackgroundColor, &fontsFullWidth };
 
 	constexpr static size_t PlayListMaxSize = 50;
 	LCD::Layar<LayarClassicSize::Huge> playListLayar{ {ContentXOffset, (short)(playListModeText.position.y + playListModeText.computeSize().y + GapSize) }, LCD::ScreenSize, 0 };
