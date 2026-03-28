@@ -316,6 +316,9 @@ void AudioServer::removePlayList(PlayList* playList)
 	if (playList == playListHead)
 		playListHead = playListHead->next;
 
+	if (playList == playListRandomHead)
+		playListRandomHead = playListRandomHead->next;
+
 	// 维护playList以后的id
 	for (auto* subList = playList->next;
 		subList != nullptr;
