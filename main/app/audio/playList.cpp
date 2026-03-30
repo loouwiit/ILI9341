@@ -38,52 +38,69 @@ void AppPlayList::init()
 		};
 
 	addText.clickCallbackParam = this;
-	addText.releaseCallback = [](Finger&, void* param)
-		{
+	addText.releaseCallback = [](Finger&, void* param) {
+		auto& self = *(AppPlayList*)param;
+		auto* app = new AppExplorer{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
+		app->setTitleBuffer(AutoLnaguage{ "add audio", "添加音乐" });
+		app->callBackParam = &self;
+		app->openFileCallback = [](const char* path, void* param) {
 			auto& self = *(AppPlayList*)param;
-			auto* app = new AppExplorer{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
-			app->setTitleBuffer(AutoLnaguage{ "add audio", "添加音乐" });
-			app->callBackParam = &self;
-			app->openFileCallback = [](const char* path, void* param)
+
+			if (path == nullptr)
+			{
+				// 取消
+				self.changeAppCallback(nullptr);
+				return;
+			}
+
+			auto pathLength = strlen(path);
+			if (path[pathLength - 1] != '/')
+			{
+				// 文件
+				AudioServer::addPlayList(path);
+				self.changeAppCallback(nullptr); // 退出explorer
+				return;
+			}
+
+			// 文件夹
+
+			// 存储参数
+			struct PathAndSelf
+			{
+				AppPlayList& self;
+				char path[256];
+				size_t pathLength{};
+			};
+			auto pathAndSelf = new PathAndSelf{ self, "", pathLength };
+			strcpy(pathAndSelf->path, path);
+
+			// 由于floor文件数量不定且open速度有可能缓慢，文件夹open将异步执行
+			Task::addTask([](void* param)->TickType_t {
+				auto* pathAndSelf = (PathAndSelf*)param;
+				auto& [self, path, pathLength] = *pathAndSelf;
+
+				Floor floor{};
+				floor.open(path);
+				while (true)
 				{
-					auto& self = *(AppPlayList*)param;
+					// 加载每一个文件
+					auto fileName = floor.read(Floor::Type::File);
+					if (fileName == nullptr) break;
 
-					if (path == nullptr)
-					{
-						self.changeAppCallback(nullptr);
-						return;
-					}
+					strcpy(path + pathLength, fileName);
+					AudioServer::addPlayList(path);
+				}
+				delete pathAndSelf;
+				self.loadTexts();
+				return Task::infinityTime;
+				}, "playList floor add", pathAndSelf, 100); // 异步加载文件夹
 
-					auto pathLength = strlen(path);
-					if (path[pathLength - 1] == '/')
-					{
-						// 文件夹
-						Floor floor{};
-						floor.open(path);
-						const char* fileName = nullptr;
-						char* buffer = new char[256];
-						strcpy(buffer, path);
-						while (true)
-						{
-							fileName = floor.read(Floor::Type::File);
-							if (fileName == nullptr) break;
+			self.changeAppCallback(nullptr); // 退出explorer
+			}; // exploere的openFileCallback
 
-							strcpy(buffer + pathLength, fileName);
-							AudioServer::addPlayList(buffer);
-						}
-						delete[] buffer;
-					}
-					else
-					{
-						// 打开文件
-						AudioServer::addPlayList(path);
-					}
-
-					// 退出explorer
-					self.changeAppCallback(nullptr);
-				};
-			self.newAppCallback(app);
-			self.running = false;
+		// 继续创建&启动explorer
+		self.newAppCallback(app);
+		self.running = false;
 		};
 	addText.holdCallback = [](Finger&, void* param)
 		{
