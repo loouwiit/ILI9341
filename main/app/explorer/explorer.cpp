@@ -274,7 +274,10 @@ void AppExplorer::updateFloor()
 		taskReloding = true;
 		return;
 	}
+
 	taskRunning = true;
+	path.textColor = newFile.textColor = LCD::Color::White;
+
 	Task::addTask([](void* param)->TickType_t
 		{
 			auto& self = *(AppExplorer*)param;
@@ -318,6 +321,8 @@ void AppExplorer::updateFloor()
 			self.fileLayar.elementCount = totolCount;
 
 			self.taskRunning = false;
+			self.path.textColor = self.newFile.textColor = FloorColor;
+
 			if (!self.running)
 			{
 				self.deleteAble = true;
