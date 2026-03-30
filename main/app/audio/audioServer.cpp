@@ -426,8 +426,7 @@ void AudioServer::shufflePlayList()
 
 	if (count <= 2) return;
 
-	ESP_LOGI(TAG, "shuffle playlist");
-
+	ESP_LOGI(TAG, "shuffle playlist for %d songs", count);
 
 	PlayList** playListArray = new PlayList * [count];
 	p = playListRandomHead;
