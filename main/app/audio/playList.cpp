@@ -81,19 +81,14 @@ void AppPlayList::init()
 			// 文件夹
 
 			// 存储参数
-			struct PathAndSelf
-			{
-				AppPlayList& self;
-				char path[256];
-				size_t pathLength{};
-			};
-			auto pathAndSelf = new PathAndSelf{ self, "", pathLength };
-			strcpy(pathAndSelf->path, path);
+			while (self.floorAddingParam) vTaskDelay(1);
+			self.floorAddingParam = new FloorAddingParam{ self, "", pathLength, true };
+			strcpy(self.floorAddingParam->path, path);
 
 			// 由于floor文件数量不定且open速度有可能缓慢，文件夹open将异步执行
 			Task::addTask([](void* param)->TickType_t {
-				auto* pathAndSelf = (PathAndSelf*)param;
-				auto& [self, path, pathLength] = *pathAndSelf;
+				auto* floorAddingParam = (FloorAddingParam*)param;
+				auto& [self, path, pathLength, selfCallable] = *floorAddingParam;
 
 				Floor floor{};
 				floor.open(path);
@@ -106,17 +101,17 @@ void AppPlayList::init()
 					strcpy(path + pathLength, fileName);
 					AudioServer::addPlayList(path);
 				}
-				delete pathAndSelf;
-				self.loadTexts();
+				if (selfCallable) self.loadTexts();
+				if (selfCallable) self.floorAddingParam = nullptr;
+				delete floorAddingParam;
 				return Task::infinityTime;
-				}, "playList floor add", pathAndSelf, 100); // 异步加载文件夹
+				}, "playList floor add", self.floorAddingParam, 100, Task::Affinity::None); // 异步加载文件夹
 
 			self.changeAppCallback(nullptr); // 退出explorer
 			}; // exploere的openFileCallback
 
 		// 继续创建&启动explorer
 		self.newAppCallback(app);
-		self.running = false;
 		};
 	addText.holdCallback = [](Finger&, void* param)
 		{
@@ -175,6 +170,7 @@ void AppPlayList::focusIn()
 void AppPlayList::deinit()
 {
 	running = false;
+	if (floorAddingParam) floorAddingParam->selfCallable = false;
 	deleteAble = !deamonRunning;
 	deamonRunning = false;
 }
