@@ -75,6 +75,7 @@ private:
 	void openFile(const char* path, size_t length, unsigned char linkDepth = 5);
 	void updateText(unsigned char index, const char* text, Floor::Type type);
 
+	Mutex taskMutex{};
 	bool taskRunning = false;
 	bool taskReloding = false;
 

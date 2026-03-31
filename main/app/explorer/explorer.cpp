@@ -137,14 +137,18 @@ void AppExplorer::focusIn()
 void AppExplorer::deinit()
 {
 	running = false;
-	for (unsigned char i = 0; i < FileLayarSize; i++)
-	{
-		delete[] fileName[i];
-		files[i].text = fileName[i] = nullptr;
-	}
-	delete titleBuffer;
 	titleBuffer = nullptr;
 	deleteAble = !taskRunning;
+
+	if (deleteAble)
+	{
+		for (unsigned char i = 0; i < FileLayarSize; i++)
+		{
+			delete[] fileName[i];
+			files[i].text = fileName[i] = nullptr;
+		}
+		delete titleBuffer;
+	}
 }
 
 void AppExplorer::draw()
@@ -269,18 +273,23 @@ void AppExplorer::resetPosition()
 
 void AppExplorer::updateFloor()
 {
+	taskMutex.lock();
 	if (taskRunning)
 	{
+		taskMutex.unlock();
 		taskReloding = true;
 		return;
 	}
-
 	taskRunning = true;
+	taskMutex.unlock();
+
 	path.textColor = newFile.textColor = LCD::Color::White;
 
 	Task::addTask([](void* param)->TickType_t
 		{
 			auto& self = *(AppExplorer*)param;
+
+			self.taskReloding = false;
 
 			self.fileLayar.elementCount = 0;
 
@@ -320,22 +329,35 @@ void AppExplorer::updateFloor()
 			}
 			self.fileLayar.elementCount = totolCount;
 
-			self.taskRunning = false;
-			self.path.textColor = self.newFile.textColor = FloorColor;
-
 			if (!self.running)
 			{
+				for (unsigned char i = 0; i < FileLayarSize; i++)
+				{
+					delete[] self.fileName[i];
+					self.files[i].text = self.fileName[i] = nullptr;
+				}
+				delete self.titleBuffer;
+
+				self.path.textColor = self.newFile.textColor = FloorColor;
+				self.taskMutex.lock();
+				self.taskRunning = false;
+				self.taskMutex.unlock();
+
 				self.deleteAble = true;
+
 				return Task::infinityTime;
 			}
 
 			if (self.taskReloding)
 			{
 				ESP_LOGI(TAG, "reloading at %s", self.realFloorPath);
-				self.taskReloding = false;
 				return 100;
 			}
 
+			self.path.textColor = self.newFile.textColor = FloorColor;
+			self.taskMutex.lock();
+			self.taskRunning = false;
+			self.taskMutex.unlock();
 			return Task::infinityTime;
 		}, "update floor", this);
 }
