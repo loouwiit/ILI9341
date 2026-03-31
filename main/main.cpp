@@ -244,7 +244,7 @@ void app_main(void)
 	lcd = LCD{ spi, {GPIO_NUM_21}, {GPIO_NUM_47}, {GPIO_NUM_48}, &screenBuffer };
 
 	AudioServer::pause();
-	Task::init();
+	Task::init(2);
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	nvsInit();
 	setenv("TZ", "CST-8", 1);
