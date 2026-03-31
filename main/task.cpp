@@ -3,36 +3,62 @@
 
 Task Task::head{};
 
-EXT_RAM_BSS_ATTR Thread daemonThread{};
-static bool daemonRunning = false;
+EXT_RAM_BSS_ATTR Thread* deamonThread{};
+EXT_RAM_BSS_ATTR size_t deamonThreadCount{};
+static bool deamonRunning = false;
 
-void Task::init()
+void Task::init(size_t deamonThreadCount)
 {
-	if (daemonRunning) return;
-	daemonRunning = true;
-	daemonThread = Thread{ daemonMain, "taskDaemon", nullptr, Task::Priority::Deamon, 4096 };
-	if (!daemonThread.isRunning())
-		daemonRunning = false;
+	if (deamonRunning) return;
+	if (deamonThreadCount == 0) return;
+	deamonRunning = true;
+	::deamonThreadCount = deamonThreadCount;
+	deamonThread = new Thread[deamonThreadCount]{};
+	for (size_t i = 0; i < deamonThreadCount; i++)
+		deamonThread[i] = { daemonMain, "taskDaemon", (void*)i, Task::Priority::Deamon, 4096 };
+
+	auto atLeastOneStarted = false;
+	for (size_t i = 0; i < deamonThreadCount; i++)
+		if (deamonThread[i].isRunning())
+			atLeastOneStarted = true;
+
+	deamonRunning = atLeastOneStarted;
 }
 
 // void Task::deinit()
 // {
-// 	daemonRunning = false;
+// 	deamonRunning = false;
 // 	for (Task* nowTask = head.next->next; nowTask->last != &head; nowTask = nowTask->next)
 // 		removeTask(nowTask->last);
 // 	// bug here, who release the stack?
 // }
 
+void Task::dumpTask()
+{
+	printf("now time = %lu\n", xTaskGetTickCount());
+	for (Task* nowTask = head.next; nowTask != &head; nowTask = nowTask->next)
+	{
+		printf("[%lu]: task %s(%p)\n", nowTask->nextCallTick, nowTask->name, nowTask->param);
+	}
+}
+
 void Task::daemonMain(void* param)
 {
-	while (daemonRunning)
+	size_t deamonThreadId = (size_t)param;
+
+	while (deamonRunning)
 	{
 		TickType_t closestTime = infinityTime;
 		TickType_t nowTime = xTaskGetTickCount();
 		for (Task* nowTask = head.next; nowTask != &head; nowTask = nowTask->next)
 		{
-			if (nowTask->nextCallTick < nowTime && nowTask->mutex.try_lock())
+			if (nowTask->nextCallTick < nowTime &&
+				(nowTask->affinityId == deamonThreadId || nowTask->affinityId >= deamonThreadCount)
+				&& nowTask->mutex.try_lock())
 			{
+				if (nowTask->affinityId == Affinity::NotAssigned) [[unlikely]]
+					nowTask->affinityId = deamonThreadId;
+
 				TickType_t intervalTick = nowTask->function(nowTask->param);
 				if (intervalTick == infinityTime)
 				{
@@ -58,7 +84,7 @@ void Task::daemonMain(void* param)
 	}
 }
 
-Task* Task::addTask(Function_t function, const char* name, void* param, TickType_t firstCallTick)
+Task* Task::addTask(Function_t function, const char* name, void* param, TickType_t firstCallTick, Affinity affinity)
 {
 	if (firstCallTick == infinityTime) return nullptr;
 
@@ -69,6 +95,7 @@ Task* Task::addTask(Function_t function, const char* name, void* param, TickType
 	task->function = function;
 	task->param = param;
 	task->name = name;
+	setAffinity(task, affinity);
 	task->nextCallTick = xTaskGetTickCount() + firstCallTick;
 
 	task->last = head.last;
@@ -89,6 +116,15 @@ void Task::removeTask(Task* task)
 	task->mutex.unlock();
 
 	delete task;
+}
+
+void Task::setAffinity(Task* task, Affinity affinity)
+{
+	if (affinity < deamonThreadCount ||
+		affinity == Affinity::None ||
+		affinity == Affinity::NotAssigned)
+		task->affinityId = affinity;
+	else task->affinityId = Affinity::NotAssigned;
 }
 
 Thread::Thread(Function_t function, const char* name, void* param, Priority priority, size_t stackSize)

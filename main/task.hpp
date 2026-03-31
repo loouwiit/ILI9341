@@ -8,6 +8,25 @@
 class Task
 {
 public:
+
+	class Affinity
+	{
+	public:
+		constexpr static size_t None = -1;
+		constexpr static size_t NotAssigned = -2;
+
+		Affinity() = default;
+		Affinity(size_t affinity) : affinity{ affinity } {}
+		Affinity(Affinity&) = default;
+		Affinity(Affinity&&) = default;
+
+		size_t affinity = None;
+		operator size_t& ()
+		{
+			return affinity;
+		}
+	};
+
 	class Priority
 	{
 	public:
@@ -33,16 +52,21 @@ public:
 
 	constexpr static TickType_t infinityTime = portMAX_DELAY;
 	constexpr static TickType_t maxSleepTime = 100;
+	constexpr static TickType_t Immediately = 0;
 
 	using Function_t = TickType_t(*)(void* param); // return value is how long the task will sleep
 
-	static void init();
+	static void init(size_t deamonThreadCount = 1);
 	// static void deinit();
+
+	static void dumpTask();
 
 	static void daemonMain(void* param);
 
-	static Task* addTask(Function_t function, const char* name, void* param = nullptr, TickType_t callTick = 0);
+	static Task* addTask(Function_t function, const char* name, void* param = nullptr, TickType_t callTick = 0, Affinity affinity = Affinity::NotAssigned);
 	static void removeTask(Task* task);
+
+	static void setAffinity(Task* task, Affinity affinity); // 决定Task能不能切换线程执行
 
 private:
 	constexpr static char TAG[] = "Task";
@@ -52,6 +76,7 @@ private:
 	Function_t function = nullptr;
 	void* param = nullptr;
 	const char* name = nullptr;
+	size_t affinityId = Affinity::None;
 	TickType_t nextCallTick = 0;
 	Mutex mutex{};
 
