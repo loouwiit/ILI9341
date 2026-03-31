@@ -34,9 +34,14 @@ void AppPlayList::init()
 	playListModeText.holdCallback = [](Finger&, void* param)
 		{
 			if (!AudioServer::isRandomPlayEnabled()) return;
-			auto& self = *(AppPlayList*)param;
-			AudioServer::shufflePlayList();
-			self.loadTexts();
+			Task::addTask([](void* param) -> TickType_t
+				{
+					auto& self = *(AppPlayList*)param;
+					if (self.floorAddingParam) return 10;
+					AudioServer::shufflePlayList();
+					self.loadTexts();
+					return Task::infinityTime;
+				}, "suffle play list", param, Task::Immediately, Task::Affinity::None);
 		};
 
 	lastSongText.releaseCallback = [](Finger&, void*)
@@ -423,6 +428,7 @@ TickType_t AppPlayList::deamonTask(void* param)
 	if (!self.deamonRunning || !AudioServer::isPlayListEnabled())
 	{
 		self.deamonRunning = false;
+		if (self.floorAddingParam) self.floorAddingParam->selfCallable = false;
 		self.deleteAble = true;
 		if (AudioServer::isInited() && !AudioServer::isOpened())
 			AudioServer::deinit();

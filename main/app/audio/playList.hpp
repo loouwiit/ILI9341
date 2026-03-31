@@ -41,6 +41,16 @@ private:
 	LCD::Text playListText[PlayListMaxSize]{};
 	AppPlayList* playListCallbackParam[PlayListMaxSize]{};
 
+	Mutex addMutex{};
+
+	struct FloorAddingParam
+	{
+		AppPlayList& self;
+		char path[256]{};
+		size_t pathLength{};
+		bool selfCallable{};
+	}*floorAddingParam{};
+
 	void updatePlayListMode();
 	void loadTexts();
 
