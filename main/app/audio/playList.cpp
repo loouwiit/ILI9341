@@ -49,6 +49,13 @@ void AppPlayList::init()
 	addText.clickCallbackParam = this;
 	addText.releaseCallback = [](Finger&, void* param) {
 		auto& self = *(AppPlayList*)param;
+
+		{
+			Lock lock{ self.addMutex };
+			if (!self.running) return; // 已经创建过，避免二次创建app
+			self.running = false;
+		}
+
 		auto* app = new AppExplorer{ self.lcd, self.touch, self.changeAppCallback, self.newAppCallback };
 		app->setTitleBuffer(AutoLnaguage{ "add audio", "添加音乐" });
 		app->callBackParam = &self;
