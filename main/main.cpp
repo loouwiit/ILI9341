@@ -37,7 +37,6 @@ EXT_RAM_BSS_ATTR static Thread drawThread{};
 EXT_RAM_BSS_ATTR static Thread touchThread{};
 
 EXT_RAM_BSS_ATTR static App* app[10]{};
-EXT_RAM_BSS_ATTR static App* deletingApp = nullptr;
 EXT_RAM_BSS_ATTR static unsigned char appIndex = 0;
 EXT_RAM_BSS_ATTR static Mutex changeMutex{};
 EXT_RAM_BSS_ATTR static bool changing = false;
@@ -108,74 +107,73 @@ void changeAppCallback(App* nextApp)
 	changing = true;
 	changeMutex.unlock();
 
-	Task::addTask([](void* param) -> TickType_t
+	Task::addTask([](void* param) -> TickType_t {
+		App* oldApp = app[appIndex];
+		App* nextApp = (App*)param;
+
+		// 切换app栈阶段
+		oldApp->touchMutex.lock(); // POSIX标准锁的析构必须释放状态
+		oldApp->drawMutex.lock(); // 记得释放
+		lcd.clear();
+
+		if (nextApp == nullptr)
 		{
-			App* oldApp = deletingApp;
-			App* nextApp = (App*)param;
-
-			if (oldApp == nullptr)
+			// exit back
+			if (appIndex == 0)
 			{
-				oldApp = app[appIndex];
-				oldApp->touchMutex.lock(); // POSIX标准锁的析构必须释放状态
-				oldApp->drawMutex.lock(); // 记得释放
-				lcd.clear();
-
-				if (nextApp == nullptr)
-				{
-					// exit back
-					if (appIndex == 0)
-					{
-						// back to desktop
-						void newAppCallback(App * nextApp);
-						nextApp = new AppDesktop{ lcd, touch, changeAppCallback, newAppCallback };
-						nextApp->init();
-						app[appIndex] = nextApp;
+				// back to desktop
+				void newAppCallback(App * nextApp);
+				nextApp = new AppDesktop{ lcd, touch, changeAppCallback, newAppCallback };
+				nextApp->init();
+				app[appIndex] = nextApp;
 #if ChangeAppLog
-						ESP_LOGI(TAG, "no back app, new desktop @ %p", app[appIndex]);
+				ESP_LOGI(TAG, "no back app, new desktop @ %p", app[appIndex]);
 #endif
-					}
-					else
-					{
-						// back to last one
-						appIndex--;
-						app[appIndex]->focusIn();
-#if ChangeAppLog
-						ESP_LOGI(TAG, "back to last app @ %p", app[appIndex]);
-#endif
-					}
-				}
-				else
-				{
-					// change to new app
-					nextApp->init();
-					app[appIndex] = nextApp;
-#if ChangeAppLog
-					ESP_LOGI(TAG, "change to app @ %p", app[appIndex]);
-#endif
-				}
-
-				// 删除旧app
-				oldApp->deinit();
-				deletingApp = oldApp;
-				return 5; // delay for draw & touch
 			}
+			else
+			{
+				// back to last one
+				appIndex--;
+				app[appIndex]->focusIn();
+#if ChangeAppLog
+				ESP_LOGI(TAG, "back to last app @ %p", app[appIndex]);
+#endif
+			}
+		}
+		else
+		{
+			// change to new app
+			nextApp->init();
+			app[appIndex] = nextApp;
+#if ChangeAppLog
+			ESP_LOGI(TAG, "change to app @ %p", app[appIndex]);
+#endif
+		}
 
+		changeMutex.lock();
+		changing = false; // app栈切换完成，允许下次切换
+		changeMutex.unlock();
+
+		// deinit阶段
+		vTaskDelay(5); // for save unlock
+		oldApp->deinit();
+
+		oldApp->drawMutex.unlock();
+		oldApp->touchMutex.unlock();
+
+		// delete阶段，不断尝试删除
+		Task::addTask([](void* param) -> TickType_t {
+			auto* oldApp = (App*)param;
 			if (!oldApp->isDeleteAble()) return 5; // continue to wait
-
-			oldApp->drawMutex.unlock();
-			oldApp->touchMutex.unlock();
-
 #if ChangeAppLog
 			ESP_LOGI(TAG, "delete old app @ %p", oldApp);
 #endif
 			delete oldApp;
-			deletingApp = nullptr;
-			changeMutex.lock();
-			changing = false;
-			changeMutex.unlock();
 			return Task::infinityTime;
-		}
-	, "change app", nextApp);
+			}, "delete app", oldApp, 5, Task::Affinity::None);
+
+		return Task::infinityTime;
+		}, "change app", nextApp);
 }
 
 void newAppCallback(App* nextApp)
