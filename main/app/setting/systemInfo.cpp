@@ -209,8 +209,14 @@ void SystemInfo::printInfo()
 
 	char* taskListBuffer = new char[TaskListBufferSize];
 	vTaskList(taskListBuffer);
-	printf("%s", taskListBuffer);
+	printf("%s\n", taskListBuffer);
 	delete[] taskListBuffer;
+
+	auto taskDeamonDump = Task::dumpTask();
+	for (int i = 0; taskDeamonDump[i][0] != '\0';i++)
+		printf("%s", taskDeamonDump[i]);
+	Task::deleteDump(taskDeamonDump);
+	printf("\n");
 
 	printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
 

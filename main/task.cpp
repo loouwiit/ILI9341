@@ -33,13 +33,40 @@ void Task::init(size_t deamonThreadCount)
 // 	// bug here, who release the stack?
 // }
 
-void Task::dumpTask()
+const char* const* Task::dumpTask()
 {
-	printf("now time = %lu\n", xTaskGetTickCount());
+	auto count = 0;
+	for (Task* nowTask = head.next; nowTask != &head; nowTask = nowTask->next)
+		count++;
+
+	char** ret = new char* [count + 2]; // for nowTime and \0
+
+	ret[0] = new char[32];
+	sprintf(ret[0], "now time = %lu\n", xTaskGetTickCount());
+
+	auto i = 1;
 	for (Task* nowTask = head.next; nowTask != &head; nowTask = nowTask->next)
 	{
-		printf("[%lu]: task %s(%p)\n", nowTask->nextCallTick, nowTask->name, nowTask->param);
+		ret[i] = new char[64];
+		sprintf(ret[i], "[%lu]: task %s(%p)\n", nowTask->nextCallTick, nowTask->name, nowTask->param);
+		i++;
 	}
+	ret[i] = new char[1] {'\0'};
+
+	return ret;
+}
+
+void Task::deleteDump(const char* const* dump)
+{
+	using String = const char*;
+	const String* i = dump;
+	while ((*i)[0] != '\0')
+	{
+		delete[] * i;
+		i++;
+	}
+	delete[] * i;
+	delete[] dump;
 }
 
 void Task::daemonMain(void* param)

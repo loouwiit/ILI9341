@@ -59,7 +59,8 @@ public:
 	static void init(size_t deamonThreadCount = 1);
 	// static void deinit();
 
-	static void dumpTask();
+	static const char* const* dumpTask();
+	static void deleteDump(const char* const* dump);
 
 	static void daemonMain(void* param);
 
