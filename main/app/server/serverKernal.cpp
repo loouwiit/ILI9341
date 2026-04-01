@@ -616,6 +616,14 @@ void httpPost(IOSocketStream& socketStream, HttpRequest& request)
 
 		respond.send(socketStream);
 	}
+	else if (stringCompare((char*)uri, uriLenght, "/api/systemRestart", 18))
+	{
+		sendOk(socketStream);
+		socketStream.sendNow();
+		printf("system restart at 1s\n");
+		vTaskDelay(1000);
+		esp_restart();
+	}
 	else
 	{
 		sendBadRequest(socketStream);
