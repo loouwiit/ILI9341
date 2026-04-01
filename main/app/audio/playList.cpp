@@ -41,7 +41,9 @@ void AppPlayList::init()
 
 	lastSongText.releaseCallback = [](Finger&, void*)
 		{
+			auto playing = AudioServer::isOpened() && !AudioServer::isPaused();
 			AudioServer::switchToLastPlayList();
+			if (playing) AudioServer::resume();
 		};
 
 	addText.clickCallbackParam = this;
@@ -127,7 +129,9 @@ void AppPlayList::init()
 
 	nextSongText.releaseCallback = [](Finger&, void*)
 		{
+			auto playing = AudioServer::isOpened() && !AudioServer::isPaused();
 			AudioServer::switchToNextPlayList(false);
+			if (playing) AudioServer::resume();
 		};
 
 	for (int i = 0; i < PlayListMaxSize; i++)
