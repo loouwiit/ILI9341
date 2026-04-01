@@ -495,7 +495,7 @@ void AudioServer::playListRandomInsert(PlayList* newList)
 
 	newList->randomLast = p;
 	newList->randomNext = p->randomNext;
-	if (newList->randomNext) newList->randomNext->randomLast = p;
+	if (newList->randomNext) newList->randomNext->randomLast = newList;
 	newList->randomLast->randomNext = newList;
 }
 
