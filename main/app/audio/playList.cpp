@@ -10,8 +10,10 @@ void AppPlayList::init()
 
 	contents[0] = &title;
 	contents[1] = &playListModeText;
-	contents[2] = &addText;
-	contents[3] = &playListLayar;
+	contents[2] = &lastSongText;
+	contents[3] = &addText;
+	contents[4] = &nextSongText;
+	contents[5] = &playListLayar;
 
 	title.position = { LCD::ScreenSize.x / 2, 0 };
 	title.position.x -= title.computeSize().x / 2;
@@ -35,6 +37,11 @@ void AppPlayList::init()
 			auto& self = *(AppPlayList*)param;
 			AudioServer::shufflePlayList();
 			self.loadTexts();
+		};
+
+	lastSongText.releaseCallback = [](Finger&, void*)
+		{
+			AudioServer::switchToLastPlayList();
 		};
 
 	addText.clickCallbackParam = this;
@@ -117,6 +124,11 @@ void AppPlayList::init()
 			self.loadTexts(); // deamon停止，所以只能手动了
 		};
 	updatePlayListMode();
+
+	nextSongText.releaseCallback = [](Finger&, void*)
+		{
+			AudioServer::switchToNextPlayList(false);
+		};
 
 	for (int i = 0; i < PlayListMaxSize; i++)
 	{
@@ -237,8 +249,11 @@ void AppPlayList::updatePlayListMode()
 		playListModeText.text = AutoLnaguage{ "random play","随机播放" };
 	else
 		playListModeText.text = AutoLnaguage{ "sequential play","顺序播放" };
-	addText.position.x = playListModeText.position.x + playListModeText.computeSize().x + GapSize;
-	addText.computeSize();
+
+	lastSongText.position.x = playListModeText.position.x + playListModeText.computeSize().x + GapSize;
+	addText.position.x = lastSongText.position.x + lastSongText.computeSize().x + GapSize;
+	nextSongText.position.x = addText.position.x + addText.computeSize().x + GapSize;
+	nextSongText.computeSize();
 	drawLocked = false;
 }
 

@@ -65,7 +65,7 @@ public:
 	static void addPlayList(const char* path, PlayList* insert = nullptr);
 	static void removePlayList(PlayList* playList);
 	static void changePlayList(PlayList* playList, const char* path);
-	static void switchToNextPlayList();
+	static void switchToNextPlayList(bool autoShuffle);
 	static void switchToLastPlayList();
 	static void switchToPlayList(PlayList* playList);
 

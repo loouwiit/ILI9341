@@ -299,7 +299,7 @@ void AudioServer::removePlayList(PlayList* playList)
 {
 	assert(playList != nullptr);
 
-	if (playList == playListNow) switchToNextPlayList();
+	if (playList == playListNow) switchToNextPlayList(false);
 	if (playList == playListNow) close();
 	if (playList == playListNow)
 	{
@@ -342,7 +342,7 @@ void AudioServer::changePlayList(PlayList* playList, const char* path)
 		openFile(playListNow->getPath());
 }
 
-void AudioServer::switchToNextPlayList()
+void AudioServer::switchToNextPlayList(bool autoShuffle)
 {
 	if (playListNow == nullptr) return;
 
@@ -352,7 +352,7 @@ void AudioServer::switchToNextPlayList()
 			playListNow = playListNow->randomNext;
 		else
 		{
-			shufflePlayList();
+			if (autoShuffle) shufflePlayList();
 			playListNow = playListRandomHead;
 		}
 	}
@@ -370,10 +370,23 @@ void AudioServer::switchToLastPlayList()
 {
 	if (playListNow == nullptr) return;
 
-	if (playListNow->last != nullptr)
-		playListNow = playListNow->last;
-	else while (playListNow->next != nullptr)
-		playListNow = playListNow->next;
+	if (randomPlay)
+	{
+		if (playListNow->randomLast != nullptr)
+			playListNow = playListNow->randomLast;
+		else
+		{
+			while (playListNow->randomNext != nullptr)
+				playListNow = playListNow->randomNext;
+		}
+	}
+	else
+	{
+		if (playListNow->last != nullptr)
+			playListNow = playListNow->last;
+		else while (playListNow->next != nullptr)
+			playListNow = playListNow->next;
+	}
 
 	openFile(playListNow->getPath());
 }
@@ -595,7 +608,7 @@ void AudioServer::decoderMain(void*)
 
 		if (playListNow)
 		{
-			switchToNextPlayList();
+			switchToNextPlayList(true);
 			resume();
 		}
 		else if (autoDeinit) deinit();
