@@ -1,6 +1,8 @@
 #include <iostream>
 #include <esp_log.h>
 #include <esp_event.h>
+#include <esp_random.h>
+
 #include "wifi/nvs.hpp"
 
 #include "LCD/ILI9341.hpp"
@@ -246,6 +248,8 @@ void app_main(void)
 	ESP_ERROR_CHECK(esp_event_loop_create_default());
 	nvsInit();
 	setenv("TZ", "CST-8", 1);
+
+	Task::addTask([](void*)->TickType_t { srand(esp_random()); return 60 * 1000; }, "srand");
 
 	mountFlash();
 	mountMem();
