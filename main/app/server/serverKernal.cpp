@@ -16,6 +16,8 @@
 
 #include "task.hpp"
 
+#include "app/audio/audioServer.hpp"
+
 EXT_RAM_BSS_ATTR static uint8_t autoRestartTimes = 0;
 EXT_RAM_BSS_ATTR static uint8_t maxRestartTimes = 0;
 
@@ -455,6 +457,44 @@ void httpPost(IOSocketStream& socketStream, HttpRequest& request)
 		}
 
 		respond.send(socketStream);
+	}
+	else if (stringCompare((char*)uri, uriLenght, "/api/audio/pauseResume", 22))
+	{
+		if (!AudioServer::isOpened())
+		{
+			HttpRespond respond{};
+			respond.setStatus(HttpStatus::BadRequest);
+			respond.setReason(HttpReason::BadRequest);
+			respond.setBody((void*)"audio server not playing");
+			respond.setBodyLenght(24);
+			respond.send(socketStream);
+		}
+		else
+		{
+			if (AudioServer::isPaused())
+				AudioServer::resume();
+			else AudioServer::pause();
+			sendOk(socketStream);
+		}
+	}
+	else if (stringCompare((char*)uri, uriLenght, "/api/audio/next", 15))
+	{
+		auto playing = AudioServer::isOpened() && !AudioServer::isPaused();
+		AudioServer::switchToNextPlayList(false);
+		if (playing) AudioServer::resume();
+		sendOk(socketStream);
+	}
+	else if (stringCompare((char*)uri, uriLenght, "/api/audio/last", 15))
+	{
+		auto playing = AudioServer::isOpened() && !AudioServer::isPaused();
+		AudioServer::switchToLastPlayList();
+		if (playing) AudioServer::resume();
+		sendOk(socketStream);
+	}
+	else if (stringCompare((char*)uri, uriLenght, "/api/audio/suffle", 17))
+	{
+		AudioServer::shufflePlayList();
+		sendOk(socketStream);
 	}
 	else if (stringCompare((char*)uri, uriLenght, "/api/floor", 10))
 	{
