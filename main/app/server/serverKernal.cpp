@@ -761,9 +761,11 @@ void httpPut(IOSocketStream& socketStream, HttpRequest& request)
 
 void httpDelete(IOSocketStream& socketStream, HttpRequest& request)
 {
-	const char* uri = request.getPath();
-	char* path = new char[sizeof(PerfixRoot) + strlen(uri)];
-	size_t pathLength = sprintf(path, "%s%s", PerfixRoot, uri);
+	char* path = new char[sizeof(PerfixRoot) + request.getBodyLenght()];
+	strcpy(path, PerfixRoot);
+	size_t pathLength = sizeof(PerfixRoot) - 1;
+	pathLength += socketStream.readByte(path + pathLength, request.getBodyLenght());
+	path[pathLength++] = '\0';
 
 	if (path[pathLength - 1] == '/')
 	{
