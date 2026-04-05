@@ -104,7 +104,7 @@
 					+ files[i].toString() + "</button> <br/>";
 			}
 			else {
-				file = "<button onclick='window.open(\"/file" + place + files[i].toString() + "\")'>"
+				file = "<button onclick='window.open(\"/file" + place + files[i].toString() + "\".replace(/%/g, \"%25\"))'>"
 					+ files[i].toString() + "</button> ";
 				file += "<button onclick='deleteFile(\"" + files[i].toString() + "\")'>删除</button> <br/>";
 			}
@@ -123,7 +123,7 @@
 
 	function upload(place, value) {
 		var request = new XMLHttpRequest();
-		request.open("PUT", place);
+		request.open("PUT", place.replace(/%/g, "%25"));
 		request.onload = load;
 		request.send(value);
 	}
