@@ -69,7 +69,7 @@
 		if (path == "/") return;
 		var request = new XMLHttpRequest();
 		request.open("DELETE", place);
-		request.onload = cd("../");
+		request.onload = function () { cd("../"); };
 		request.send(place);
 	}
 
