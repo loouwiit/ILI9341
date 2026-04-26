@@ -20,7 +20,9 @@
 | **Picture** | 图片查看器，从文件管理器进入 |
 | **Setting** | 系统设置（WiFi、时间、触摸测试、系统信息） |
 | **Strip** | LED 灯带控制 |
-| **Tracker** | 追踪器应用 |
+| **Explorer** | 文件管理器，浏览/打开文件 |
+| **Input** | 文本/颜色输入组件 |
+| **Tracker** | 追踪器应用（设备端） |
 
 ### 🌐 网络服务
 - **WiFi** - Station/AP 模式，自动连接，NAT 支持
@@ -29,7 +31,7 @@
   - 文件上传/管理 (`/file`)
   - 音乐远程控制 (`/audio/audio.html`)
   - WiFi 配置 (`/wifi/wifi.html`)
-  - 服务器管理 (`/server/server.html`)
+  - 服务器管理页面（需用户自行上传 `/server/server.html`）
 
 ### 💾 存储系统
 | 挂载点 | 位置 | 说明 |
@@ -55,8 +57,8 @@
 ### 引脚配置
 | 功能 | GPIO |
 |------|------|
-| SPI MOSI | 45 |
-| SPI MISO | 13 |
+| SPI MOSI | 13 |
+| SPI MISO | 45 |
 | SPI CLK | 14 |
 | LCD DC | 21 |
 | LCD RST | 47 |
@@ -100,11 +102,11 @@
 │   │   ├── server/         # Web 服务器
 │   │   └── ...             # 其他应用
 │   └── strip/               # LED 灯带控制
-├── reserces/               # 资源文件 (部署到 /root/system/)
+├── reserces/               # 资源文件 (通过/file部署到设备端)
 │   ├── system/             # 系统资源 (字体等)
 │   ├── server/             # Web 服务器资源
 │   └── show/               # 示例资源
-├── x86Tracker/             # x86 调试工具
+├── x86Tracker/             # PC 端性能指标采集与推送工具（配合设备端 Tracker 应用）
 ├── x86pictureTransformer/  # 图片转换工具
 ├── x86FontArranger/        # 字体处理工具
 ├── partitions.csv          # 分区表
@@ -156,7 +158,7 @@ changeApp()              newApp()                   back()
 deinit()                  继续运行                  自定义返回逻辑
     │                         │                         │
     ▼                         │                         ▼
-等待 deleteAble               │                      可能调用changeApp()
+等待 isDeleteAble()           │                      可能调用changeApp()
     │                         │                         │
     ▼                         │                         ▼
  delete                       │                      或其他返回方式
@@ -180,10 +182,10 @@ Drawable (可绘制)     Clickable (可点击)
 ### 文件系统虚拟化
 ```
 Web 请求路径          实际路径
-─────────────────────────────────
-/              →    /server/
+─────────────────────────────────────
+/              →    /server/index.html
 /file/xxx      →    /root/xxx
-/path/         →    /path/index.html
+/其他/路径     →    /root/server/其他/路径
 ```
 
 ## 🔧 配置
@@ -248,8 +250,8 @@ lcd.draw(LCD::Rectangle{{10, 10}, {100, 50}, Color::Red});
 // 绘制文本
 lcd.draw(LCD::Text{{10, 70}, "Hello", fontsDefault});
 
-// 使用图层（推荐使用LayarClassicSize确定容量）
-LCD::Layar<LCD::LayarClassicSize> layar{4};
+// 使用图层（推荐使用 LayarClassicSize 常量确定容量）
+LCD::Layar<LayarClassicSize::Small> layar{4};
 // 通过索引直接赋值元素（无add函数）
 layar.contents[0] = &title;
 layar.contents[1] = &nowDate;
@@ -258,6 +260,7 @@ layar.contents[3] = &ntpUpdate;
 lcd.draw(layar);
 ```
 
-## 🙏 致谢
+## ⚠️ AI提示
+本 README 由 AI 辅助生成。可能存在描述不准确或与源码不一致之处。所有功能细节请以实际代码为准。
 
-- [ESP-IDF](https://github.com/espressif/esp-idf) - Espressif IoT Development Framework
+感觉ai写文档写的比我好😢（
